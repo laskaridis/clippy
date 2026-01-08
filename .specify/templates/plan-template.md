@@ -31,7 +31,10 @@
 
 *GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
 
-[Gates determined based on constitution file]
+- **Simplicity & Architecture**: Does this plan keep to the simplest architecture that satisfies the feature (Chrome extension + backend API + database + web UI), or is any added complexity explicitly justified?
+- **Engineering Quality & Testing**: Are core user journeys for this feature (clip, persist, search, retrieve) mapped to concrete automated tests (backend, frontend, extension) and wired into CI where available?
+- **Consistent UX**: Does the proposal preserve consistent terminology, patterns, and feedback across extension and web UI, or clearly document intentional deviations?
+- **Security & Privacy**: Are data handling, permissions, and logging aligned with the security and privacy principles in the constitution?
 
 ## Project Structure
 
