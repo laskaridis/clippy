@@ -77,6 +77,7 @@ Engineering practices must protect reliability and maintainability as the system
 Users should experience WebClippings as one coherent product across all surfaces.
 
 - Terminology (e.g., "clip", "collection", "tag") MUST be consistent across the Chrome extension, web UI, and any other surfaces.
+ - Terminology (e.g., "clip", "collection", "tag", "label") MUST be consistent across the Chrome extension, web UI, and any other surfaces. For organizing clippings, "label" is the canonical term; where "tag" appears, it MUST be treated as synonymous with "label".
 - Visual feedback patterns for success, loading, and errors SHOULD be consistent across extension and web UI.
 - UX changes that diverge from existing patterns MUST be justified in design or specification documents and, where feasible, validated with usage or feedback.
 - Accessibility and usability considerations (e.g., keyboard usage, color contrast) SHOULD be respected when introducing new UI elements.

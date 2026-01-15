@@ -50,6 +50,7 @@ As a user looking for something I saved earlier, I want to browse and search my 
 1. **Given** a user has clippings with different labels, **when** they filter the list of clippings by a single label, **then** only clippings that have that label are shown.
 2. **Given** a user has clippings from multiple websites, **when** they choose to view clippings grouped or filtered by source website, **then** they can see clippings organized by website (for example, showing all clippings from the same domain together).
 3. **Given** a user remembers a few words from a clipping, **when** they search using those words, **then** clippings whose text or title contains those words appear in the results.
+4. **Given** a user has clippings created over a long period of time, **when** they filter clippings using a date range (for example, "last 7 days" or a specific from/to date), **then** only clippings whose capture timestamps fall within that range are shown.
 
 ---
 
@@ -77,6 +78,7 @@ As a user looking for something I saved earlier, I want to browse and search my 
 - **FR-010**: Users MUST be able to delete clippings they no longer want to keep, and deleted clippings MUST no longer appear in any list, search result, or grouping.
 - **FR-011**: System MUST ensure that each user can only view and manage their own clippings; clippings are private to the user and are not visible to other users.
 - **FR-012**: System MUST provide a simple explanation or help content that tells users how to capture clippings and how to access them in the web application.
+- **FR-013**: Users MUST be able to limit search or browsing results to clippings captured within a specified time range (for example, between two dates or using a relative range such as "last 30 days").
 
 ### Key Entities *(include if feature involves data)*
 
@@ -92,12 +94,16 @@ As a user looking for something I saved earlier, I want to browse and search my 
 - **SC-002**: In usability tests simulating a user with at least 50 clippings, at least 80% of participants can successfully use labels or website-based grouping to locate a relevant clipping within 30 seconds, without assistance.
 - **SC-003**: For a representative sample of 100 recently created clippings where the original pages are still available on the internet, at least 95% of "Open original page" actions successfully load the correct website page.
 - **SC-004**: In user feedback collected after at least two weeks of use, the average satisfaction score for "Saving a clipping" and "Finding a clipping again" is at least 4.0 out of 5.
-- **SC-005**: Under typical usage conditions (for example, up to 1,000 clippings for a single user), the time from requesting the list or search results to seeing them rendered in the web application is perceived by users as responsive, with at least 95% of test interactions completing within a few seconds.
+- **SC-005**: Under typical usage conditions (for example, up to 1,000 clippings for a single user), the time from requesting the list or search results (including with filters such as label, domain, and time range) to seeing them rendered in the web application is perceived by users as responsive, with at least 95% of test interactions completing within 2 seconds from the user's perspective.
 
 ## Assumptions and Dependencies
 
 - Users create an account and sign in before saving or viewing clippings; the specific sign-in mechanism will be decided separately and is not defined in this specification.
-- The primary content captured is text selected by the user; capturing images, full-page screenshots, or complex formatting is outside the scope of this feature.
+- The primary content captured is text selected by the user; capturing images, full-page screenshots, full-page HTML, or complete article bodies is outside the scope of this feature.
 - Users have access to a modern web browser and an approved capture mechanism (such as a browser-based tool) that allows selected text and associated metadata to be sent to the system.
 - The system stores clipping text and metadata even if the original webpage later changes or is removed; returning to the original page depends on the continued availability of that page on the public internet.
 - Sharing clippings with other users, collaborative workspaces, and advanced permission models are explicitly out of scope for this feature.
+
+**Help and Guidance**: The help content referenced in FR-012 is expected to cover at minimum: how to install and use the Chrome extension to capture selected text, how to find clippings in the web application (including filters by label, website, and time range), and how to delete clippings or manage labels.
+
+**Offline Capture Behavior**: If a user attempts to save a clipping while temporarily offline, the extension SHOULD queue the clipping locally and attempt to send it once connectivity is restored. This behavior is an implementation guidance for the capture mechanism and does not change the backend API surface.

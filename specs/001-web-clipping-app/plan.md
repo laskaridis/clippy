@@ -39,6 +39,7 @@ The system will follow a cloud-native-first approach: containerized services (Dj
 - **Engineering Quality & Testing**: PASS (with explicit commitments). Core journeys (clip via extension → API persist → search/list in web UI → open original page) will have Django tests for models and APIs, contract tests for the HTTP surface, and at least smoke tests for the Chrome extension UI. GitHub Actions workflows will run tests and linters on every push and pull request.
 - **Consistent UX**: PASS. Terminology such as “clip”, “label”, and “source website” will be used consistently between the extension and the web UI. Success and error feedback will follow simple, mirrored patterns (e.g., non-intrusive toasts) documented in the UI section of the spec and refined during implementation.
 - **Security & Privacy**: PASS. All clip data is scoped per authenticated user on the backend, APIs will enforce per-user access at the data layer, and communication between extension/web UI and backend will be over HTTPS only. Browser permissions will follow least privilege, data in transit will be encrypted, and application logs will avoid storing clip content while still recording key events.
+ Where other materials use the term “tag”, it will be treated as synonymous with “label” for this feature.
 
 **Post–Phase 1 Re-check (Design Completed)**: No additional architectural complexity beyond what is described above is introduced in the data model, API contracts, or quickstart design. The solution remains a single Django app + Chrome extension + PostgreSQL, with CI/CD and observability added in a lightweight way, so the constitution gates remain in PASS state and the plan can proceed to implementation.
 
@@ -161,6 +162,8 @@ This section defines a concrete, ordered sequence of work items for the MVP. Eac
 10. **Implement search and filtering on backend**  
   - Extend list endpoints (`GET /api/clips/`) to support `q`, `label`, and `domain` filters as described in [specs/001-web-clipping-app/contracts/openapi.yaml](specs/001-web-clipping-app/contracts/openapi.yaml).  
   - Ensure query behavior aligns with FR-007–FR-009 in [specs/001-web-clipping-app/spec.md](specs/001-web-clipping-app/spec.md).
+ - Extend list endpoints (`GET /api/clips/`) to support `q`, `label`, `domain`, and time-range filters (for example, `date-from`/`date-to` capture dates) as described in [specs/001-web-clipping-app/contracts/openapi.yaml](specs/001-web-clipping-app/contracts/openapi.yaml).  
+ - Ensure query behavior aligns with FR-007–FR-009 and FR-013 in [specs/001-web-clipping-app/spec.md](specs/001-web-clipping-app/spec.md).
 
 11. **Wire search and grouping into web UI**  
   - Add UI controls to filter/group by label and website and to perform text search.  
@@ -175,6 +178,7 @@ This section defines a concrete, ordered sequence of work items for the MVP. Eac
 13. **Contract tests and cross-surface checks**  
   - Add tests under `tests/contract/` that assert the Chrome extension’s HTTP requests and the backend’s API responses conform to [specs/001-web-clipping-app/contracts/openapi.yaml](specs/001-web-clipping-app/contracts/openapi.yaml).  
   - Cover core journeys: clip → persist → search → open original.
+ - Cover core journeys: clip → persist → search (including filters by label, domain, and date range) → open original, and deletion of clips.
 
 14. **Logging and basic metrics**  
   - Implement structured logging for key events (clip created, clip searched, API errors) while avoiding clip content in logs, following Observability guidance in [specs/001-web-clipping-app/research.md](specs/001-web-clipping-app/research.md).  

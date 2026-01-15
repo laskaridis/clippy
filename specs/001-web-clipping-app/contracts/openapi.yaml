@@ -63,6 +63,18 @@ paths:
           schema:
             type: string
           description: Search query across title, URL, and content
+        - in: query
+          name: date-from
+          schema:
+            type: string
+            format: date
+          description: Filter by clips captured on or after this date (ISO 8601, e.g., 2026-01-01)
+        - in: query
+          name: date-to
+          schema:
+            type: string
+            format: date
+          description: Filter by clips captured on or before this date (ISO 8601, e.g., 2026-01-31)
       responses:
         "200":
           description: List of clips
