@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+
+{% block title %}Sign in - WebClippings{% endblock %}
+
+{% block content %}
+  <h1>Sign in</h1>
+
+  {% if form.errors %}
+    <p class="error">Please check your email and password and try again.</p>
+  {% endif %}
+
+  <form method="post" action="">
+    {% csrf_token %}
+    <div>
+      <label for="id_username">Email</label>
+      {{ form.username }}
+    </div>
+    <div>
+      <label for="id_password">Password</label>
+      {{ form.password }}
+    </div>
+    <button type="submit">Sign in</button>
+  </form>
+{% endblock %}

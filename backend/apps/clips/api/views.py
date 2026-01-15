@@ -1,14 +1,12 @@
-from django.utils.decorators import method_decorator
-from django.views.decorators.csrf import csrf_exempt
 from rest_framework import generics, permissions, status
 from rest_framework.response import Response
 
 from apps.clips.models import Clip
 from apps.clips.api.serializers import CreateClipCommandSerializer, ClipSerializer
+from webclippings.authentication import CsrfExemptSessionAuthentication
 
-
-@method_decorator(csrf_exempt, name="dispatch")
 class ClipListCreateView(generics.ListCreateAPIView):
+    authentication_classes = [CsrfExemptSessionAuthentication]
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):

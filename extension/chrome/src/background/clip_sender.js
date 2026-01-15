@@ -87,9 +87,14 @@ async function sendClipToBackend(clip) {
 
   if (!response.ok) {
     const text = await response.text().catch(() => "");
-    const error = new Error(
-      `Failed to create clip: HTTP ${response.status}` + (text ? ` - ${text}` : ""),
-    );
+    let message = `Failed to create clip: HTTP ${response.status}`;
+    if (response.status === 401 || response.status === 403) {
+      message =
+        "Not signed in. Open the WebClippings site, sign in, and then try saving again.";
+    } else if (text) {
+      message += ` - ${text}`;
+    }
+    const error = new Error(message);
     error.status = response.status;
     error.body = text;
     throw error;
