@@ -51,7 +51,7 @@
 - [x] T012 [P] [US1] Implement Clip REST API (create, list, retrieve) in backend/apps/clips/api/serializers.py and backend/apps/clips/api/views.py following specs/001-web-clipping-app/contracts/openapi.yaml
 - [x] T013 [US1] Add API routing for Clip endpoints under /api/clips/ and /api/clips/{id}/ in backend/apps/clips/urls.py and backend/webclippings/urls.py
 - [x] T014 [P] [US1] Implement server-rendered clip list and detail views in backend/apps/clips/views.py and templates/clips/list.html and templates/clips/detail.html
-- [ ] T015 [US1] Add navigation entry point for "My clips" in a base template such as backend/webclippings/templates/base.html linking to templates/clips/list.html
+- [x] T015 [US1] Add navigation entry point for "My clips" in a base template such as backend/webclippings/templates/base.html linking to templates/clips/list.html
 - [ ] T016 [P] [US1] Implement Chrome content script to capture selected text, page title, and URL in extension/chrome/src/content/clipper.js
 - [ ] T017 [P] [US1] Implement Chrome background script to send POST /api/clips/ requests to the backend in extension/chrome/src/background/clip_sender.js
 - [ ] T018 [US1] Implement minimal Chrome popup UI to trigger clipping and show success/failure in extension/chrome/src/popup/popup.js and extension/chrome/src/popup/popup.html
