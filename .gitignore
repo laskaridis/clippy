@@ -24,6 +24,28 @@ dist/
 
 # IDE and tooling
 .vscode/
+__pycache__/
+*.py[cod]
+*.sqlite3
+*.db
+*.log
+.DS_Store
+node_modules/
+dist/
+build/
+env/
+.env
+.env.*
+venv/
+.venv/
+coverage/
+*.coverage
+htmlcov/
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.idea/
+.vscode/
 .idea/
 .DS_Store
 Thumbs.db
