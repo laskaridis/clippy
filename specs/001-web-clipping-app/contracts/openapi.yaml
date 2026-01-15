@@ -1,0 +1,319 @@
+openapi: 3.0.3
+info:
+  title: WebClippings API
+  version: 0.1.0
+  description: |
+    JSON REST API for the Web Clipping and Reference Application.
+    Used by the Chrome extension and the web application.
+servers:
+  - url: https://api.example.com
+    description: Production API (placeholder)
+  - url: https://api.staging.example.com
+    description: Staging API (placeholder)
+
+paths:
+  /api/auth/login/:
+    post:
+      summary: Log a user in and establish a session
+      operationId: login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+              required: [email, password]
+      responses:
+        "200":
+          description: Login successful; session cookie set
+        "400":
+          description: Invalid credentials or malformed request
+
+  /api/auth/logout/:
+    post:
+      summary: Log the current user out
+      operationId: logout
+      responses:
+        "204":
+          description: Logout successful
+
+  /api/clips/:
+    get:
+      summary: List current user's clips
+      operationId: listClips
+      parameters:
+        - in: query
+          name: label
+          schema:
+            type: string
+          description: Filter by label name
+        - in: query
+          name: domain
+          schema:
+            type: string
+          description: Filter by source domain
+        - in: query
+          name: q
+          schema:
+            type: string
+          description: Search query across title, URL, and content
+      responses:
+        "200":
+          description: List of clips
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Clip"
+
+    post:
+      summary: Create a new clip
+      operationId: createClip
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ClipCreateRequest"
+      responses:
+        "201":
+          description: Clip created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Clip"
+
+  /api/clips/{id}/:
+    get:
+      summary: Retrieve a single clip
+      operationId: getClip
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Clip detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Clip"
+        "404":
+          description: Clip not found
+
+    delete:
+      summary: Delete a clip
+      operationId: deleteClip
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Clip deleted
+
+    patch:
+      summary: Update a clip's labels or notes
+      operationId: updateClip
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ClipUpdateRequest"
+      responses:
+        "200":
+          description: Clip updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Clip"
+
+  /api/labels/:
+    get:
+      summary: List current user's labels
+      operationId: listLabels
+      responses:
+        "200":
+          description: List of labels
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Label"
+
+    post:
+      summary: Create a new label
+      operationId: createLabel
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LabelCreateRequest"
+      responses:
+        "201":
+          description: Label created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Label"
+
+  /api/labels/{id}/:
+    patch:
+      summary: Update a label
+      operationId: updateLabel
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LabelUpdateRequest"
+      responses:
+        "200":
+          description: Label updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Label"
+
+    delete:
+      summary: Delete a label
+      operationId: deleteLabel
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Label deleted
+
+components:
+  schemas:
+    Clip:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        url:
+          type: string
+          format: uri
+        domain:
+          type: string
+        raw_content:
+          type: string
+        normalized_text:
+          type: string
+        notes:
+          type: string
+          nullable: true
+        labels:
+          type: array
+          items:
+            $ref: "#/components/schemas/Label"
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    ClipCreateRequest:
+      type: object
+      properties:
+        title:
+          type: string
+        url:
+          type: string
+          format: uri
+        raw_content:
+          type: string
+        notes:
+          type: string
+          nullable: true
+        labels:
+          type: array
+          items:
+            type: string
+          description: Label names to associate
+      required: [url, raw_content]
+
+    ClipUpdateRequest:
+      type: object
+      properties:
+        notes:
+          type: string
+          nullable: true
+        labels:
+          type: array
+          items:
+            type: string
+
+    Label:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+          nullable: true
+        color:
+          type: string
+          nullable: true
+        clip_count:
+          type: integer
+
+    LabelCreateRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+          nullable: true
+        color:
+          type: string
+          nullable: true
+      required: [name]
+
+    LabelUpdateRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+          nullable: true
+        color:
+          type: string
+          nullable: true
