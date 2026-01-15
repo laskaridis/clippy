@@ -29,12 +29,12 @@
 
 **⚠️ CRITICAL**: No user story work (US1–US3) can begin until this phase is complete.
 
-- [ ] T006 Configure PostgreSQL database settings and environment-based configuration in backend/webclippings/settings.py
-- [ ] T007 [P] Configure Django authentication setup (including accounts app registration and AUTH_USER_MODEL if customized) in backend/webclippings/settings.py and backend/apps/accounts/apps.py
-- [ ] T008 [P] Implement core data models for Clip, Label, and ClipLabel in backend/apps/clips/models.py according to specs/001-web-clipping-app/data-model.md
-- [ ] T009 Generate and apply initial Django migrations for clips and labels using backend/manage.py and migration files under backend/apps/clips/migrations/
-- [ ] T010 Configure base URL routing for API and web UI in backend/webclippings/urls.py including includes for backend/apps/clips/urls.py and backend/apps/accounts/urls.py
-- [ ] T011 Configure basic logging and 12-factor environment handling (DJANGO_SECRET_KEY, DATABASE_URL, ALLOWED_HOSTS) in backend/webclippings/settings.py
+- [x] T006 Configure PostgreSQL database settings and environment-based configuration in backend/webclippings/settings.py
+- [x] T007 [P] Configure Django authentication setup (including accounts app registration and AUTH_USER_MODEL if customized) in backend/webclippings/settings.py and backend/apps/accounts/apps.py
+- [x] T008 [P] Implement core data models for Clip, Label, and ClipLabel in backend/apps/clips/models.py according to specs/001-web-clipping-app/data-model.md
+- [x] T009 Generate and apply initial Django migrations for clips and labels using backend/manage.py and migration files under backend/apps/clips/migrations/
+- [x] T010 Configure base URL routing for API and web UI in backend/webclippings/urls.py including includes for backend/apps/clips/urls.py and backend/apps/accounts/urls.py
+- [x] T011 Configure basic logging and 12-factor environment handling (DJANGO_SECRET_KEY, DATABASE_URL, ALLOWED_HOSTS) in backend/webclippings/settings.py
 
 **Checkpoint**: Backend foundation ready – safe to start user story implementation.
 

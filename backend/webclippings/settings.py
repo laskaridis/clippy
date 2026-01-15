@@ -1,11 +1,20 @@
 from pathlib import Path
 import os
+from urllib.parse import urlparse
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+
 SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "change-me")
 DEBUG = os.environ.get("DJANGO_DEBUG", "true").lower() == "true"
-ALLOWED_HOSTS: list[str] = []
+
+_allowed_hosts_env = os.environ.get("ALLOWED_HOSTS", "")
+if _allowed_hosts_env:
+    ALLOWED_HOSTS: list[str] = [h.strip() for h in _allowed_hosts_env.split(",") if h.strip()]
+else:
+    # Sensible defaults for local development
+    ALLOWED_HOSTS: list[str] = ["localhost", "127.0.0.1", "[::1]"]
+
 
 INSTALLED_APPS = [
     "django.contrib.admin",
@@ -14,6 +23,8 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "apps.accounts",
+    "apps.clips",
 ]
 
 MIDDLEWARE = [
@@ -46,12 +57,40 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "webclippings.wsgi.application"
 
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
+
+def _database_from_env() -> dict:
+    """Build DATABASES["default"] from DATABASE_URL if present, else sqlite.
+
+    Supports URLs like:
+      postgres://user:password@host:port/dbname
+    """
+
+    database_url = os.environ.get("DATABASE_URL")
+    if not database_url:
+        return {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": BASE_DIR / "db.sqlite3",
+        }
+
+    parsed = urlparse(database_url)
+    if parsed.scheme not in {"postgres", "postgresql"}:
+        # Fallback to sqlite if the URL is not a Postgres URL we recognize
+        return {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": BASE_DIR / "db.sqlite3",
+        }
+
+    return {
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": parsed.path.lstrip("/"),
+        "USER": parsed.username or "",
+        "PASSWORD": parsed.password or "",
+        "HOST": parsed.hostname or "",
+        "PORT": str(parsed.port) if parsed.port else "",
     }
-}
+
+
+DATABASES = {"default": _database_from_env()}
 
 AUTH_PASSWORD_VALIDATORS = [
     {
@@ -76,3 +115,19 @@ USE_TZ = True
 STATIC_URL = "static/"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+        }
+    },
+    "root": {
+        "handlers": ["console"],
+        "level": os.environ.get("DJANGO_LOG_LEVEL", "INFO"),
+    },
+}
+
