@@ -1,5 +1,6 @@
 from django.contrib.auth import get_user_model
 from django.test import TestCase
+from django.urls import resolve
 
 from rest_framework.test import APIRequestFactory, force_authenticate
 
@@ -143,3 +144,11 @@ class ClipApiTests(TestCase):
         response = view(request, pk=str(clip.id))
 
         self.assertEqual(response.status_code, 404)
+
+    def test_clip_list_url_routing(self) -> None:
+        match = resolve("/api/clips/")
+        self.assertIs(match.func.view_class, ClipListCreateView)
+
+    def test_clip_detail_url_routing(self) -> None:
+        match = resolve("/api/clips/00000000-0000-0000-0000-000000000000/")
+        self.assertIs(match.func.view_class, ClipDetailView)
