@@ -1,18 +1,12 @@
-from django.http import HttpResponse
 from django.urls import path
 
-from apps.clips.api.views import ClipDetailView, ClipListCreateView
+from apps.clips.views import ClipDetailView, ClipListView
 
 
-def health(request):  # Placeholder; real views will be added in later phases
-    return HttpResponse("OK")
-
-
-app_name = "clips"
+app_name = "clips_web"
 
 
 urlpatterns = [
-    path("health/", health, name="health"),
-    path("clips/", ClipListCreateView.as_view(), name="clip-list-create"),
-    path("clips/<uuid:pk>/", ClipDetailView.as_view(), name="clip-detail"),
+    path("", ClipListView.as_view(), name="list"),
+    path("<uuid:pk>/", ClipDetailView.as_view(), name="detail"),
 ]

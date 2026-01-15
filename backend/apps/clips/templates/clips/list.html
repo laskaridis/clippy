@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>My clips</title>
+  </head>
+  <body>
+    <h1>My clips</h1>
+
+    {% if clips %}
+      <ul>
+        {% for clip in clips %}
+          <li>
+            <a href="{% url 'clips_web:detail' clip.id %}">
+              {{ clip.title|default:clip.url }}
+            </a>
+            <span>{{ clip.created_at }}</span>
+            <span>{{ clip.domain }}</span>
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p>No clips yet.</p>
+    {% endif %}
+  </body>
+  </html>

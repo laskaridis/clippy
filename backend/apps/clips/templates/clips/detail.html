@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>{{ clip.title|default:"Clip" }}</title>
+  </head>
+  <body>
+    <h1>{{ clip.title|default:clip.url }}</h1>
+
+    <p>Captured on {{ clip.created_at }}</p>
+    <p>
+      Source:
+      <a href="{{ clip.url }}">{{ clip.url }}</a>
+    </p>
+
+    {% if clip.notes %}
+      <section>
+        <h2>Notes</h2>
+        <p>{{ clip.notes }}</p>
+      </section>
+    {% endif %}
+
+    <section>
+      <h2>Content</h2>
+      <pre>{{ clip.raw_content }}</pre>
+    </section>
+
+    {% with labels=clip.labels.all %}
+      {% if labels %}
+        <section>
+          <h2>Labels</h2>
+          <ul>
+            {% for label in labels %}
+              <li>{{ label.name }}</li>
+            {% endfor %}
+          </ul>
+        </section>
+      {% endif %}
+    {% endwith %}
+
+    <p>
+      <a href="{% url 'clips_web:list' %}">Back to my clips</a>
+    </p>
+  </body>
+  </html>
