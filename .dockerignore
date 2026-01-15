@@ -2,6 +2,10 @@
 .git
 .gitignore
 
+# Docker files
+Dockerfile*
+.dockerignore
+
 # Python virtualenv and caches
 .venv
 __pycache__
@@ -13,6 +17,7 @@ node_modules
 # Build artifacts
 build
 dist
+coverage/
 
 # Docs and specs (not needed in image)
 specs
@@ -21,4 +26,4 @@ specs
 # Local config
 .env
 .env.*
-*.log
+*.log*

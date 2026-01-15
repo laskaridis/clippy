@@ -48,7 +48,7 @@
 
 ### Implementation for User Story 1
 
-- [ ] T012 [P] [US1] Implement Clip REST API (create, list, retrieve) in backend/apps/clips/api/serializers.py and backend/apps/clips/api/views.py following specs/001-web-clipping-app/contracts/openapi.yaml
+- [x] T012 [P] [US1] Implement Clip REST API (create, list, retrieve) in backend/apps/clips/api/serializers.py and backend/apps/clips/api/views.py following specs/001-web-clipping-app/contracts/openapi.yaml
 - [ ] T013 [US1] Add API routing for Clip endpoints under /api/clips/ and /api/clips/{id}/ in backend/apps/clips/urls.py and backend/webclippings/urls.py
 - [ ] T014 [P] [US1] Implement server-rendered clip list and detail views in backend/apps/clips/views.py and templates/clips/list.html and templates/clips/detail.html
 - [ ] T015 [US1] Add navigation entry point for "My clips" in a base template such as backend/webclippings/templates/base.html linking to templates/clips/list.html

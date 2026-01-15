@@ -70,12 +70,10 @@ backend/
 ├── manage.py
 ├── webclippings/                # Django project (settings, URLs, WSGI/ASGI)
 ├── apps/
-│   ├── clips/                   # Core app: clipping + label models, services, APIs
-│   └── accounts/                # Authentication, user profile, session management
-└── tests/
-  ├── unit/                    # Model and service tests
-  ├── api/                     # API and contract tests
-  └── integration/             # End-to-end tests across DB + views
+│   ├── clips/                   # Core app: clipping + label models, services, APIs, tests
+│   │   └── tests/               # App-scoped tests (unit, API, integration) for clips
+│   └── accounts/                # Authentication, user profile, session management, tests
+│       └── tests/               # App-scoped tests (unit, API, integration) for accounts
 
 extension/
 └── chrome/
@@ -138,9 +136,9 @@ This section defines a concrete, ordered sequence of work items for the MVP. Eac
    - Ensure UI covers P1/P2/P3 user journeys from [specs/001-web-clipping-app/spec.md](specs/001-web-clipping-app/spec.md) (capture/revisit, label organization, search/browse).
 
 6. **Backend tests**  
-   - Add unit tests for models (constraints, relationships) under `backend/tests/unit/`.  
-   - Add API tests aligned with [specs/001-web-clipping-app/contracts/openapi.yaml](specs/001-web-clipping-app/contracts/openapi.yaml) under `backend/tests/api/`.  
-   - Add minimal integration tests (auth + create clip + list/search) under `backend/tests/integration/` targeting the flows in the User Scenarios section of [specs/001-web-clipping-app/spec.md](specs/001-web-clipping-app/spec.md).
+  - Add unit tests for models (constraints, relationships) under each Django app's `tests/` package (for example, `backend/apps/clips/tests/`).  
+  - Add API tests aligned with [specs/001-web-clipping-app/contracts/openapi.yaml](specs/001-web-clipping-app/contracts/openapi.yaml) under the relevant app's `tests/` package.  
+  - Add minimal integration tests (auth + create clip + list/search) under app-local `tests/` packages, targeting the flows in the User Scenarios section of [specs/001-web-clipping-app/spec.md](specs/001-web-clipping-app/spec.md).
 
 ### Phase 2 – Chrome Extension MVP
 
@@ -186,7 +184,7 @@ This section defines a concrete, ordered sequence of work items for the MVP. Eac
 
 15. **GitHub Actions CI pipeline**  
   - Add `.github/workflows/ci.yml` that runs:  
-    - Backend tests (`backend/tests`) and any extension tests.  
+    - Backend tests (app-local `tests/` packages under `backend/apps/*`) and any extension tests.  
     - Linting/formatting where applicable.  
     - Build of Docker image(s) defined under `infra/docker/`.  
   - Align workflow stages with the CI/CD decisions in [specs/001-web-clipping-app/research.md](specs/001-web-clipping-app/research.md) and the overview in [specs/001-web-clipping-app/quickstart.md](specs/001-web-clipping-app/quickstart.md).
