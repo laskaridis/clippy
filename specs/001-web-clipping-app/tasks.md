@@ -54,7 +54,7 @@
 - [x] T015 [US1] Add navigation entry point for "My clips" in a base template such as backend/webclippings/templates/base.html linking to templates/clips/list.html
 - [x] T016 [P] [US1] Implement Chrome content script to capture selected text, page title, and URL in extension/chrome/src/content/clipper.js
  - [x] T017 [P] [US1] Implement Chrome background script to send POST /api/clips/ requests to the backend in extension/chrome/src/background/clip_sender.js
-- [ ] T018 [US1] Implement minimal Chrome popup UI to trigger clipping and show success/failure in extension/chrome/src/popup/popup.js and extension/chrome/src/popup/popup.html
+ - [x] T018 [US1] Implement minimal Chrome popup UI to trigger clipping and show success/failure in extension/chrome/src/popup/popup.js and extension/chrome/src/popup/popup.html
 - [ ] T019 [US1] Ensure authenticated session between web app and extension (sign-in via backend/apps/accounts/views.py and use of same-domain cookies in extension/chrome/src/background/clip_sender.js)
  - [ ] T036 [US1] Ensure delete operations on clips are fully implemented and wired in the web UI, removing deleted clips from all lists and searches in backend/apps/clips/api/views.py, backend/apps/clips/views.py, and templates/clips/list.html
  - [ ] T040 [P] Add targeted tests for the Chrome extension’s request payloads and offline queueing behavior in extension/chrome/tests/test_extension_flows.js

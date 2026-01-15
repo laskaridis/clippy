@@ -1,6 +1,6 @@
 // Content script for capturing selected text, page title, and URL.
 
-export function getCurrentSelection() {
+function getCurrentSelection() {
   const selection = window.getSelection();
   if (!selection) {
     return "";
@@ -8,14 +8,14 @@ export function getCurrentSelection() {
   return selection.toString();
 }
 
-export function getPageMetadata() {
+function getPageMetadata() {
   return {
     title: document.title || "",
     url: window.location.href || "",
   };
 }
 
-export function getClipData() {
+function getClipData() {
   const raw_content = getCurrentSelection();
   const { title, url } = getPageMetadata();
 
