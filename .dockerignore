@@ -1,0 +1,24 @@
+# Exclude Git metadata
+.git
+.gitignore
+
+# Python virtualenv and caches
+.venv
+__pycache__
+*.py[cod]
+
+# Node modules
+node_modules
+
+# Build artifacts
+build
+dist
+
+# Docs and specs (not needed in image)
+specs
+.docs
+
+# Local config
+.env
+.env.*
+*.log

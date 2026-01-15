@@ -15,11 +15,11 @@
 
 **Purpose**: Initialize repository structure and core directories so later phases have a consistent layout.
 
-- [ ] T001 Create Django project skeleton for backend in backend/manage.py and backend/webclippings/settings.py
-- [ ] T002 [P] Create feature app scaffolds in backend/apps/clips/__init__.py and backend/apps/accounts/__init__.py
-- [ ] T003 [P] Create backend test directory structure in backend/tests/unit/__init__.py, backend/tests/api/__init__.py, and backend/tests/integration/__init__.py
-- [ ] T004 [P] Create Chrome extension skeleton directories and placeholder files in extension/chrome/manifest.json and extension/chrome/src/content/clipper.js
-- [ ] T005 [P] Create infrastructure directory skeleton in infra/docker/README.md, infra/k8s/README.md, and infra/ci/github/README.md
+- [x] T001 Create Django project skeleton for backend in backend/manage.py and backend/webclippings/settings.py
+- [x] T002 [P] Create feature app scaffolds in backend/apps/clips/__init__.py and backend/apps/accounts/__init__.py
+- [x] T003 [P] Create backend test directory structure in backend/tests/unit/__init__.py, backend/tests/api/__init__.py, and backend/tests/integration/__init__.py
+- [x] T004 [P] Create Chrome extension skeleton directories and placeholder files in extension/chrome/manifest.json and extension/chrome/src/content/clipper.js
+- [x] T005 [P] Create infrastructure directory skeleton in infra/docker/README.md, infra/k8s/README.md, and infra/ci/github/README.md
 
 ---
 

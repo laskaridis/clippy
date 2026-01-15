@@ -1,0 +1,23 @@
+{
+  "manifest_version": 3,
+  "name": "WebClippings",
+  "version": "0.1.0",
+  "description": "Capture selected text as clippings and send to the WebClippings app.",
+  "permissions": ["activeTab"],
+  "host_permissions": [
+    "http://localhost:8000/*",
+    "https://api.example.com/*"
+  ],
+  "action": {
+    "default_title": "Save clipping"
+  },
+  "background": {
+    "service_worker": "src/background/clip_sender.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["src/content/clipper.js"]
+    }
+  ]
+}
