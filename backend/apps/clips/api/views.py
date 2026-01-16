@@ -1,8 +1,14 @@
 from rest_framework import generics, permissions, status
 from rest_framework.response import Response
 
-from apps.clips.models import Clip
-from apps.clips.api.serializers import CreateClipCommandSerializer, ClipSerializer
+from apps.clips.models import Clip, Label
+from apps.clips.api.serializers import (
+    ClipSerializer,
+    CreateClipCommandSerializer,
+    LabelCreateCommandSerializer,
+    LabelSerializer,
+    LabelUpdateCommandSerializer,
+)
 from webclippings.authentication import CsrfExemptSessionAuthentication
 
 class ClipListCreateView(generics.ListCreateAPIView):
@@ -41,3 +47,46 @@ class ClipDetailView(generics.RetrieveDestroyAPIView):
             .select_related("user")
             .prefetch_related("labels")
         )
+
+
+class LabelListCreateView(generics.ListCreateAPIView):
+    authentication_classes = [CsrfExemptSessionAuthentication]
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return Label.objects.filter(user=self.request.user).prefetch_related("clips")
+
+    def get_serializer_class(self):
+        if self.request.method == "POST":
+            return LabelCreateCommandSerializer
+        return LabelSerializer
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        label = serializer.save()
+        output_serializer = LabelSerializer(label, context=self.get_serializer_context())
+        headers = self.get_success_headers(output_serializer.data)
+        return Response(output_serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+
+
+class LabelDetailView(generics.RetrieveUpdateDestroyAPIView):
+    authentication_classes = [CsrfExemptSessionAuthentication]
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = LabelSerializer
+
+    def get_queryset(self):
+        return Label.objects.filter(user=self.request.user).prefetch_related("clips")
+
+    def partial_update(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = LabelUpdateCommandSerializer(
+            instance, data=request.data, partial=True, context=self.get_serializer_context()
+        )
+        serializer.is_valid(raise_exception=True)
+        label = serializer.save()
+        output_serializer = LabelSerializer(label, context=self.get_serializer_context())
+        return Response(output_serializer.data, status=status.HTTP_200_OK)
+
+    def patch(self, request, *args, **kwargs):  # explicit alias for clarity
+        return self.partial_update(request, *args, **kwargs)
