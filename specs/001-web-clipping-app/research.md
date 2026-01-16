@@ -53,6 +53,21 @@ This document captures key technical decisions for the MVP, along with rationale
 
 ---
 
+## Label Management Semantics
+
+**Decision**: Allow labels to be specified in the same API request that creates a clip, by accepting an array of label names on `POST /api/clips/` and implicitly creating any missing labels in the user’s namespace.
+
+**Rationale**:
+- Matches the user requirement that labels can be added "when I save" a clipping, without forcing a separate label-creation step.
+- Simplifies the Chrome extension and web UI: both can send human-readable label names without having to look up label IDs first.
+- Keeps behavior intuitive: if a user types a new label while saving, that label simply exists and is visible in label lists and filters.
+
+**Alternatives considered**:
+- **Require labels to be created via `/api/labels/` before use**: More explicit but adds friction and complicates the extension’s UX (users would need a separate flow to manage labels before clipping).
+- **Accept only label IDs on `POST /api/clips/`**: Enforces stronger referential integrity at the API boundary but forces clients to fetch label IDs and complicates quick clipping flows. The chosen approach still enforces per-user uniqueness via `(user, name)` constraints in the backend.
+
+---
+
 ## Authentication and Authorization
 
 **Decision**: Use Django’s built-in authentication system (session-based) with per-user scoping of clippings and labels; Chrome extension will rely on the same cookies and CSRF protections as the web app.

@@ -86,7 +86,7 @@ paths:
                   $ref: "#/components/schemas/Clip"
 
     post:
-      summary: Create a new clip
+      summary: Create a new clip (with optional labels)
       operationId: createClip
       requestBody:
         required: true
@@ -275,7 +275,10 @@ components:
           type: array
           items:
             type: string
-          description: Label names to associate
+          description: |
+            Label names to associate with the new clip.
+            For each name, the backend will either attach an existing label in the
+            current user's namespace or create a new label if one does not yet exist.
       required: [url, raw_content]
 
     ClipUpdateRequest:
