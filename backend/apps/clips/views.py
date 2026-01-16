@@ -1,4 +1,5 @@
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.http import HttpResponse
 from django.views.generic import DetailView, ListView
 
 from apps.clips.models import Clip
@@ -28,3 +29,8 @@ class ClipDetailView(LoginRequiredMixin, DetailView):
             .select_related("user")
             .prefetch_related("labels")
         )
+
+    def delete(self, request, *args, **kwargs):
+        self.object = self.get_object()
+        self.object.delete()
+        return HttpResponse(status=204)

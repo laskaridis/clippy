@@ -84,3 +84,37 @@ class ClipHtmlViewsTests(TestCase):
         self.client.force_login(self.other_user)
         response = self.client.get(url)
         self.assertEqual(response.status_code, 404)
+
+    def test_delete_removes_clip_for_current_user_via_delete_method(self) -> None:
+        clip = Clip.objects.create(
+            user=self.user,
+            title="Owned",
+            url="https://example.com/owned",
+            domain="example.com",
+            raw_content="Owned clip",
+            normalized_text="owned clip",
+        )
+
+        url = reverse("clips_web:detail", args=[clip.id])
+        self.client.force_login(self.user)
+        response = self.client.delete(url)
+
+        self.assertEqual(response.status_code, 204)
+        self.assertFalse(Clip.objects.filter(id=clip.id).exists())
+
+    def test_delete_not_accessible_to_other_user_via_delete_method(self) -> None:
+        clip = Clip.objects.create(
+            user=self.user,
+            title="Owned",
+            url="https://example.com/owned",
+            domain="example.com",
+            raw_content="Owned clip",
+            normalized_text="owned clip",
+        )
+
+        url = reverse("clips_web:detail", args=[clip.id])
+        self.client.force_login(self.other_user)
+        response = self.client.delete(url)
+
+        self.assertEqual(response.status_code, 404)
+        self.assertTrue(Clip.objects.filter(id=clip.id).exists())

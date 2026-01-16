@@ -30,7 +30,8 @@ class ClipListCreateView(generics.ListCreateAPIView):
         return Response(output_serializer.data, status=status.HTTP_201_CREATED, headers=headers)
 
 
-class ClipDetailView(generics.RetrieveAPIView):
+class ClipDetailView(generics.RetrieveDestroyAPIView):
+    authentication_classes = [CsrfExemptSessionAuthentication]
     permission_classes = [permissions.IsAuthenticated]
     serializer_class = ClipSerializer
 

@@ -33,6 +33,11 @@ class ClipApiTests(TestCase):
         force_authenticate(request, user=user or self.user)
         return request
 
+    def _auth_delete(self, path: str, user=None):
+        request = self.factory.delete(path)
+        force_authenticate(request, user=user or self.user)
+        return request
+
     def test_list_clips_returns_only_current_user_clips(self) -> None:
         # Create two clips for the authenticated user and one for another user
         Clip.objects.create(
@@ -152,3 +157,37 @@ class ClipApiTests(TestCase):
     def test_clip_detail_url_routing(self) -> None:
         match = resolve("/api/clips/00000000-0000-0000-0000-000000000000/")
         self.assertIs(match.func.view_class, ClipDetailView)
+
+    def test_delete_clip_removes_clip_for_current_user(self) -> None:
+        clip = Clip.objects.create(
+            user=self.user,
+            title="Owned",
+            url="https://example.com/owned",
+            domain="example.com",
+            raw_content="Owned clip",
+            normalized_text="owned clip",
+        )
+
+        view = ClipDetailView.as_view()
+        request = self._auth_delete(f"/api/clips/{clip.id}/")
+        response = view(request, pk=str(clip.id))
+
+        self.assertEqual(response.status_code, 204)
+        self.assertFalse(Clip.objects.filter(id=clip.id).exists())
+
+    def test_delete_clip_not_accessible_to_other_user(self) -> None:
+        clip = Clip.objects.create(
+            user=self.user,
+            title="Owned",
+            url="https://example.com/owned",
+            domain="example.com",
+            raw_content="Owned clip",
+            normalized_text="owned clip",
+        )
+
+        view = ClipDetailView.as_view()
+        request = self._auth_delete(f"/api/clips/{clip.id}/", user=self.other_user)
+        response = view(request, pk=str(clip.id))
+
+        self.assertEqual(response.status_code, 404)
+        self.assertTrue(Clip.objects.filter(id=clip.id).exists())

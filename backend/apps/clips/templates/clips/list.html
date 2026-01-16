@@ -14,10 +14,63 @@
           </a>
           <span>{{ clip.created_at }}</span>
           <span>{{ clip.domain }}</span>
+          <button type="button" class="clip-delete" data-delete-url="{% url 'clips_web:detail' clip.id %}">Delete</button>
         </li>
       {% endfor %}
     </ul>
   {% else %}
     <p>No clips yet.</p>
   {% endif %}
+  <script>
+    (function() {
+      function getCookie(name) {
+        var cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+          var cookies = document.cookie.split(';');
+          for (var i = 0; i < cookies.length; i++) {
+            var cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+              cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+              break;
+            }
+          }
+        }
+        return cookieValue;
+      }
+
+      var csrfToken = getCookie('csrftoken');
+      var buttons = document.querySelectorAll('.clip-delete');
+      buttons.forEach(function(button) {
+        button.addEventListener('click', function(event) {
+          event.preventDefault();
+          var url = button.getAttribute('data-delete-url');
+          if (!url) {
+            return;
+          }
+
+          fetch(url, {
+            method: 'DELETE',
+            headers: {
+              'X-CSRFToken': csrfToken,
+              'X-Requested-With': 'XMLHttpRequest'
+            },
+            credentials: 'same-origin'
+          }).then(function(response) {
+            if (response.status === 204 || response.status === 200) {
+              var li = button.closest('li');
+              if (li) {
+                li.remove();
+              }
+            } else if (response.status === 403) {
+              alert('You are not allowed to delete this clip.');
+            } else {
+              alert('Failed to delete clip.');
+            }
+          }).catch(function() {
+            alert('Failed to delete clip.');
+          });
+        });
+      });
+    })();
+  </script>
 {% endblock %}
