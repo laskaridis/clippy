@@ -2,7 +2,7 @@ from django.contrib.auth import get_user_model
 from django.test import TestCase
 from django.urls import resolve, reverse
 
-from apps.clips.models import Clip
+from apps.clips.models import Clip, Label
 from apps.clips.views import ClipDetailView, ClipListView
 
 
@@ -118,3 +118,48 @@ class ClipHtmlViewsTests(TestCase):
 
         self.assertEqual(response.status_code, 404)
         self.assertTrue(Clip.objects.filter(id=clip.id).exists())
+
+    def test_owner_can_update_clip_labels_via_post(self) -> None:
+        clip = Clip.objects.create(
+            user=self.user,
+            title="Owned",
+            url="https://example.com/owned",
+            domain="example.com",
+            raw_content="Owned clip",
+            normalized_text="owned clip",
+        )
+
+        # Existing label for the user should be reused
+        existing_label = Label.objects.create(user=self.user, name="research")
+        clip.labels.add(existing_label)
+
+        url = reverse("clips_web:detail", args=[clip.id])
+        self.client.force_login(self.user)
+        response = self.client.post(url, {"labels": "research, work"})
+
+        self.assertEqual(response.status_code, 302)
+        clip.refresh_from_db()
+        label_names = list(clip.labels.order_by("name").values_list("name", flat=True))
+        self.assertEqual(label_names, ["research", "work"])
+
+    def test_other_user_cannot_update_clip_labels(self) -> None:
+        clip = Clip.objects.create(
+            user=self.user,
+            title="Owned",
+            url="https://example.com/owned",
+            domain="example.com",
+            raw_content="Owned clip",
+            normalized_text="owned clip",
+        )
+
+        label = Label.objects.create(user=self.user, name="research")
+        clip.labels.add(label)
+
+        url = reverse("clips_web:detail", args=[clip.id])
+        self.client.force_login(self.other_user)
+        response = self.client.post(url, {"labels": "hijack"})
+
+        self.assertEqual(response.status_code, 404)
+        clip.refresh_from_db()
+        label_names = list(clip.labels.order_by("name").values_list("name", flat=True))
+        self.assertEqual(label_names, ["research"])

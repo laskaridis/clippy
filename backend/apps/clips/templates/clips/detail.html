@@ -23,18 +23,33 @@
     <pre>{{ clip.raw_content }}</pre>
   </section>
 
-  {% with labels=clip.labels.all %}
-    {% if labels %}
-      <section>
-        <h2>Labels</h2>
+  <section>
+    <h2>Labels</h2>
+
+    {% with labels=clip.labels.all %}
+      {% if labels %}
         <ul>
           {% for label in labels %}
             <li>{{ label.name }}</li>
           {% endfor %}
         </ul>
-      </section>
-    {% endif %}
-  {% endwith %}
+      {% else %}
+        <p>No labels yet.</p>
+      {% endif %}
+    {% endwith %}
+
+    <form method="post">
+      {% csrf_token %}
+      <label for="id_labels">Edit labels (comma-separated):</label>
+      <input
+        type="text"
+        id="id_labels"
+        name="labels"
+        value="{{ labels_text }}"
+      />
+      <button type="submit">Save labels</button>
+    </form>
+  </section>
 
   <p>
     <a href="{% url 'clips_web:list' %}">Back to my clips</a>
