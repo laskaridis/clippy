@@ -73,7 +73,7 @@
 
 - [x] T020 [P] [US2] Implement label CRUD REST API (list, create, update, delete) in backend/apps/clips/api/serializers.py and backend/apps/clips/api/views.py following specs/001-web-clipping-app/contracts/openapi.yaml
 - [x] T021 [US2] Add API routing for Label endpoints under /api/labels/ and /api/labels/{id}/ in backend/apps/clips/urls.py and backend/webclippings/urls.py
-- [ ] T022 [P] [US2] Enforce per-user label uniqueness and Clip–Label relationships in backend/apps/clips/models.py consistent with specs/001-web-clipping-app/data-model.md
+ - [x] T022 [P] [US2] Enforce per-user label uniqueness and Clip–Label relationships in backend/apps/clips/models.py consistent with specs/001-web-clipping-app/data-model.md
 - [ ] T023 [US2] Add web UI for viewing and editing labels associated with a clip in templates/clips/detail.html and form handling in backend/apps/clips/views.py
 - [ ] T024 [P] [US2] Add a simple "Labels" management page (list and create/update/delete) in backend/apps/clips/views.py and templates/clips/labels.html
 - [ ] T025 [US2] Extend Chrome popup to allow specifying label names when creating a clip in extension/chrome/src/popup/popup.js so labels are sent in the POST /api/clips/ payload
