@@ -1,4 +1,38 @@
+
 (function () {
+  /**
+   * Update the popup status message and styling.
+   * @param {string} message - Text to display in the status area.
+   * @param {"success"|"error"|""} [kind] - Visual style for the status message.
+   */
+  function setStatus(message, kind) {
+    var el = document.getElementById("status");
+    if (!el) return;
+
+    el.textContent = message || "";
+    el.className = "";
+    if (kind === "success") {
+      el.classList.add("success");
+    } else if (kind === "error") {
+      el.classList.add("error");
+    }
+  }
+  /**
+   * Toggle the saving state of the save button in the popup.
+   * @param {boolean} isSaving - Whether a clip save operation is in progress.
+   */
+  function setSaving(isSaving) {
+    var button = document.getElementById("save-clip");
+    if (!button) return;
+
+    button.disabled = isSaving;
+    if (isSaving) {
+      button.textContent = "Saving...";
+    } else {
+      button.textContent = "Save selected text";
+    }
+  }
+
   /**
    * Get clip data from the active tab via the content script.
    * Resolves with { title, url, raw_content } or rejects with an Error.
@@ -11,8 +45,12 @@
       }
 
       chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
-        if (chrome.runtime.lastError) {
-          reject(new Error(chrome.runtime.lastError.message || "Failed to query active tab"));
+        if (chrome.runtime && chrome.runtime.lastError) {
+          var queryMsg = mapChromeRuntimeErrorToMessage(
+            chrome.runtime.lastError,
+            "Failed to query active tab"
+          );
+          reject(new Error(queryMsg));
           return;
         }
 
@@ -22,14 +60,12 @@
           return;
         }
 
-        chrome.tabs.sendMessage(tab.id, { type: "GET_CLIP_DATA" }, function (response) {
-          if (chrome.runtime.lastError) {
-            var msg = chrome.runtime.lastError.message || "Failed to contact content script";
-            // Map the common "receiving end does not exist" case to a clearer explanation.
-            if (msg.indexOf("Receiving end does not exist") !== -1) {
-              msg =
-                "This page does not allow the WebClippings extension to run. Try a normal website (not a Chrome settings or Web Store page).";
-            }
+        chrome.tabs.sendMessage(tab.id, { type: MESSAGE_TYPES.GET_CLIP_DATA }, function (response) {
+          if (chrome.runtime && chrome.runtime.lastError) {
+            var msg = mapChromeRuntimeErrorToMessage(
+              chrome.runtime.lastError,
+              "Failed to contact content script"
+            );
             reject(new Error(msg));
             return;
           }
@@ -59,9 +95,13 @@
    */
   function saveClip(clip) {
     return new Promise(function (resolve, reject) {
-      chrome.runtime.sendMessage({ type: "SAVE_CLIP", clip: clip }, function (response) {
-        if (chrome.runtime.lastError) {
-          reject(new Error(chrome.runtime.lastError.message || "Failed to send clip"));
+      chrome.runtime.sendMessage({ type: MESSAGE_TYPES.SAVE_CLIP, clip: clip }, function (response) {
+        if (chrome.runtime && chrome.runtime.lastError) {
+          var sendMsg = mapChromeRuntimeErrorToMessage(
+            chrome.runtime.lastError,
+            "Failed to send clip"
+          );
+          reject(new Error(sendMsg));
           return;
         }
 
@@ -77,32 +117,10 @@
       });
     });
   }
-
-  function setStatus(message, kind) {
-    var el = document.getElementById("status");
-    if (!el) return;
-
-    el.textContent = message || "";
-    el.className = "";
-    if (kind === "success") {
-      el.classList.add("success");
-    } else if (kind === "error") {
-      el.classList.add("error");
-    }
-  }
-
-  function setSaving(isSaving) {
-    var button = document.getElementById("save-clip");
-    if (!button) return;
-
-    button.disabled = isSaving;
-    if (isSaving) {
-      button.textContent = "Saving...";
-    } else {
-      button.textContent = "Save selected text";
-    }
-  }
-
+  /**
+   * Initialize the popup once the DOM is ready by wiring up the save button 
+   * click handler.
+   */
   document.addEventListener("DOMContentLoaded", function () {
     var button = document.getElementById("save-clip");
     if (!button) return;

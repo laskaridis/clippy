@@ -3,7 +3,7 @@
   "name": "WebClippings",
   "version": "0.1.0",
   "description": "Capture selected text as clippings and send to the WebClippings app.",
-  "permissions": ["activeTab"],
+  "permissions": ["activeTab", "contextMenus"],
   "host_permissions": [
     "http://localhost:8000/*",
     "https://api.example.com/*"
@@ -18,7 +18,12 @@
   "content_scripts": [
     {
       "matches": ["<all_urls>"],
-      "js": ["src/content/clipper.js"]
+      "js": [
+        "src/shared/messages.js",
+        "src/content/clipSelection.js",
+        "src/content/messageHandlers.js",
+        "src/content/clipper.js"
+      ]
     }
   ]
 }
