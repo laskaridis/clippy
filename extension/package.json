@@ -1,0 +1,12 @@
+{
+  "name": "webclippings-extension",
+  "private": true,
+  "version": "0.0.1",
+  "description": "WebClippings browser extension scripts and tests",
+  "scripts": {
+    "test": "node --test chrome/src/**/*.test.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

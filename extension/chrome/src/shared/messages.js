@@ -27,6 +27,17 @@ function successResponse(payload) {
   return base;
 }
 
+// Export shared message helpers for unit testing and Node
+// environments while remaining compatible with the extension
+// runtime.
+if (typeof module !== "undefined" && module.exports) {
+  module.exports = {
+    MESSAGE_TYPES: MESSAGE_TYPES,
+    successResponse: successResponse,
+    errorResponse: errorResponse,
+  };
+}
+
 // Helper to build a standard "error" response envelope.
 // Example: errorResponse("Failed", { status: 500 }) =>
 // { success: false, error: "Failed", status: 500 }

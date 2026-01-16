@@ -44,3 +44,12 @@ function getApiBaseUrl() {
 function getClipsEndpoint() {
   return getApiBaseUrl() + "/api/clips/";
 }
+
+// Export helpers for unit testing and Node environments while
+// remaining compatible with the extension runtime.
+if (typeof module !== "undefined" && module.exports) {
+  module.exports = {
+    getApiBaseUrl: getApiBaseUrl,
+    getClipsEndpoint: getClipsEndpoint,
+  };
+}

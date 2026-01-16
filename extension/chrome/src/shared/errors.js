@@ -29,3 +29,11 @@ function mapChromeRuntimeErrorToMessage(lastError, fallbackMessage) {
 
   return message;
 }
+
+// Export helper for unit testing and Node environments while
+// remaining compatible with the extension runtime.
+if (typeof module !== "undefined" && module.exports) {
+  module.exports = {
+    mapChromeRuntimeErrorToMessage: mapChromeRuntimeErrorToMessage,
+  };
+}

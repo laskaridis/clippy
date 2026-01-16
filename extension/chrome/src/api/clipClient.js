@@ -83,3 +83,12 @@ async function createClip(clip) {
     return null;
   }
 }
+
+// Export for use in tests and Node environments while remaining
+// compatible with the browser extension runtime.
+if (typeof module !== "undefined" && module.exports) {
+  module.exports = {
+    buildClipCreatePayload: buildClipCreatePayload,
+    createClip: createClip,
+  };
+}

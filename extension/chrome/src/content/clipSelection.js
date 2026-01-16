@@ -25,3 +25,13 @@ function buildClipFromPage() {
     raw_content: raw_content,
   };
 }
+
+// Export helpers for unit testing in Node while remaining
+// compatible with the content-script runtime in the browser.
+if (typeof module !== "undefined" && module.exports) {
+  module.exports = {
+    getCurrentSelection: getCurrentSelection,
+    getPageMetadata: getPageMetadata,
+    buildClipFromPage: buildClipFromPage,
+  };
+}
