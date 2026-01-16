@@ -123,6 +123,7 @@
    */
   document.addEventListener("DOMContentLoaded", function () {
     var button = document.getElementById("save-clip");
+    var labelsInput = document.getElementById("labels-input");
     if (!button) return;
 
     button.addEventListener("click", function () {
@@ -131,6 +132,21 @@
 
       requestClipFromActiveTab()
         .then(function (clip) {
+          // Attach labels from the popup input (comma-separated names).
+          if (labelsInput && labelsInput.value) {
+            var names = labelsInput.value.split(",");
+            var labels = names
+              .map(function (name) {
+                return name.trim();
+              })
+              .filter(function (name) {
+                return name.length > 0;
+              });
+            clip.labels = labels;
+          } else {
+            clip.labels = [];
+          }
+
           setStatus("Sending to WebClippings...", "");
           return saveClip(clip);
         })
