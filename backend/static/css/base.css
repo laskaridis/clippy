@@ -1,0 +1,81 @@
+/* ==============================
+   CLIPPY DESIGN SYSTEM
+   Bootstrap 5.3
+   ============================== */
+
+:root,
+[data-bs-theme="dark"] {
+  --bs-body-bg: #0B0E14;
+  --bs-body-color: #F8FAFC;
+
+  --bs-secondary-bg: #121826;
+  --bs-tertiary-bg: #1A2236;
+
+  --bs-secondary-color: #CBD5E1;
+  --bs-tertiary-color: #94A3B8;
+
+  --bs-primary: #8B5CF6;
+  --bs-secondary: #EC4899;
+  --bs-info: #3B82F6;
+
+  --bs-link-color: #8B5CF6;
+  --bs-link-hover-color: #A78BFA;
+
+  --bs-border-color: rgba(255, 255, 255, 0.08);
+  --bs-border-radius: 0.75rem;
+
+  --bs-focus-ring-color: rgba(139, 92, 246, 0.4);
+}
+
+[data-bs-theme="light"] {
+  --bs-body-bg: #F8FAFC;
+  --bs-body-color: #0B0E14;
+
+  --bs-secondary-bg: #FFFFFF;
+  --bs-tertiary-bg: #E5E7EB;
+
+  --bs-secondary-color: #334155;
+  --bs-tertiary-color: #64748B;
+
+  --bs-border-color: rgba(15, 23, 42, 0.12);
+
+  --bs-link-color: #7C3AED;
+  --bs-link-hover-color: #6D28D9;
+
+  --bs-focus-ring-color: rgba(139, 92, 246, 0.25);
+}
+
+/* Brand gradient */
+.bg-brand-gradient {
+  background: linear-gradient(
+    135deg,
+    #8B5CF6 0%,
+    #EC4899 45%,
+    #3B82F6 100%
+  );
+  color: #fff;
+}
+
+/* Cards */
+.card {
+  background-color: var(--bs-secondary-bg);
+  border-color: var(--bs-border-color);
+  border-radius: 1rem;
+}
+
+/* Buttons */
+.btn-primary {
+  box-shadow:
+    0 0 0 1px rgba(139, 92, 246, 0.4),
+    0 0 24px rgba(236, 72, 153, 0.35);
+}
+
+/* Selection (Clippy-specific) */
+.clippy-selection {
+  border: 2px dashed #F8FAFC;
+  background: rgba(139, 92, 246, 0.15);
+  box-shadow:
+    0 0 0 1px rgba(139, 92, 246, 0.4),
+    0 0 24px rgba(236, 72, 153, 0.35);
+  border-radius: 0.5rem;
+}

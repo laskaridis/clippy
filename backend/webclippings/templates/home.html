@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+
+{% block title %}Clippy – Clip anything. Instantly.{% endblock %}
+
+{% block content %}
+<div class="row">
+    <section class="p-5 rounded-4 bg-brand-gradient mb-4">
+    <h1 class="display-5 fw-bold mb-3">Clip anything. Instantly.</h1>
+    <p class="lead mb-4 opacity-75">
+        Save the best parts of the web in a couple of clicks. Organise
+        articles, research and inspiration so you never lose them again.
+    </p>
+    <div class="d-flex flex-wrap gap-3">
+        {% if user.is_authenticated %}
+        <a href="{% url 'clips_web:list' %}" class="btn btn-light btn-lg">Go to my clips</a>
+        {% else %}
+        <a href="{% url 'accounts:login' %}" class="btn btn-light btn-lg">Sign in to start clipping</a>
+        {% endif %}
+        <button type="button" class="btn btn-outline-light btn-lg">View docs</button>
+    </div>
+    </section>
+</div>
+<div class="row">
+    <div class="col-md-4">
+        <div class="card h-100 p-3">
+            <h5 class="mb-2">Capture</h5>
+            <p class="text-secondary mb-0">Clip selections, full pages or media directly from your browser.</p>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card h-100 p-3">
+            <h5 class="mb-2">Organise</h5>
+            <p class="text-secondary mb-0">Label, search and group clips so everything stays discoverable.</p>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card h-100 p-3">
+            <h5 class="mb-2">Sync</h5>
+            <p class="text-secondary mb-0">Access your library from any device, anytime.</p>
+        </div>
+    </div>
+</div>
+{% endblock %}

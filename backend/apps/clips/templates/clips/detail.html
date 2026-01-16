@@ -1,57 +1,70 @@
 {% extends "base.html" %}
 
-{% block title %}{{ clip.title|default:"Clip" }}{% endblock %}
+{% block title %}{{ clip.title|default:"Clip" }} – Clippy{% endblock %}
 
 {% block content %}
-  <h1>{{ clip.title|default:clip.url }}</h1>
+  <div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-4">
+    <div>
+      <h1 class="h3 mb-2">{{ clip.title|default:clip.url }}</h1>
+      <div class="small text-secondary">
+        Captured on {{ clip.created_at }} · {{ clip.domain }}
+      </div>
+    </div>
+    <div class="d-flex gap-2">
+      <a href="{{ clip.url }}" class="btn btn-outline-light btn-sm" target="_blank" rel="noopener noreferrer">Open source</a>
+      <a href="{% url 'clips_web:list' %}" class="btn btn-outline-secondary btn-sm">Back to clips</a>
+    </div>
+  </div>
 
-  <p>Captured on {{ clip.created_at }}</p>
-  <p>
-    Source:
-    <a href="{{ clip.url }}">{{ clip.url }}</a>
-  </p>
-
-  {% if clip.notes %}
-    <section>
-      <h2>Notes</h2>
-      <p>{{ clip.notes }}</p>
-    </section>
-  {% endif %}
-
-  <section>
-    <h2>Content</h2>
-    <pre>{{ clip.raw_content }}</pre>
-  </section>
-
-  <section>
-    <h2>Labels</h2>
-
-    {% with labels=clip.labels.all %}
-      {% if labels %}
-        <ul>
-          {% for label in labels %}
-            <li>{{ label.name }}</li>
-          {% endfor %}
-        </ul>
-      {% else %}
-        <p>No labels yet.</p>
+  <div class="row g-4">
+    <div class="col-lg-8">
+      {% if clip.notes %}
+        <section class="card p-4 mb-3">
+          <h2 class="h5 mb-3">Notes</h2>
+          <p class="mb-0">{{ clip.notes }}</p>
+        </section>
       {% endif %}
-    {% endwith %}
 
-    <form method="post">
-      {% csrf_token %}
-      <label for="id_labels">Edit labels (comma-separated):</label>
-      <input
-        type="text"
-        id="id_labels"
-        name="labels"
-        value="{{ labels_text }}"
-      />
-      <button type="submit">Save labels</button>
-    </form>
-  </section>
+      <section class="card p-4">
+        <h2 class="h5 mb-3">Content</h2>
+        <pre class="mb-0 small" style="white-space: pre-wrap; background: transparent; border: 0; color: inherit;">{{ clip.raw_content }}</pre>
+      </section>
+    </div>
 
-  <p>
-    <a href="{% url 'clips_web:list' %}">Back to my clips</a>
-  </p>
+    <div class="col-lg-4">
+      <section class="card p-4 mb-3">
+        <h2 class="h6 mb-3">Labels</h2>
+
+        {% with labels=clip.labels.all %}
+          {% if labels %}
+            <div class="mb-3">
+              {% for label in labels %}
+                <span class="badge text-bg-primary me-1 mb-1">{{ label.name }}</span>
+              {% endfor %}
+            </div>
+          {% else %}
+            <p class="text-secondary mb-3 small">No labels yet.</p>
+          {% endif %}
+        {% endwith %}
+
+        <form method="post">
+          {% csrf_token %}
+          <div class="mb-3">
+            <label for="id_labels" class="form-label">Edit labels</label>
+            <input
+              type="text"
+              id="id_labels"
+              name="labels"
+              value="{{ labels_text }}"
+              class="form-control form-control-sm"
+              placeholder="research, inspiration, reading-list"
+            />
+            <div class="form-text">Comma-separated list, e.g. <code>research, css, inspiration</code>.</div>
+          </div>
+          <button type="submit" class="btn btn-primary btn-sm">Save labels</button>
+        </form>
+      </section>
+    </div>
+  </div>
 {% endblock %}
+

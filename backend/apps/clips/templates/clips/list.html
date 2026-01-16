@@ -1,26 +1,60 @@
 {% extends "base.html" %}
 
-{% block title %}My clips{% endblock %}
+{% block title %}My clips – Clippy{% endblock %}
 
 {% block content %}
-  <h1>My clips</h1>
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h1 class="h3 mb-1">My clips</h1>
+      <p class="text-secondary mb-0">All the pieces of the web you’ve saved with Clippy.</p>
+    </div>
+    <div class="text-end small text-secondary d-none d-md-block">
+      <span class="badge text-bg-primary">{{ clips|length }} total</span>
+    </div>
+  </div>
 
   {% if clips %}
-    <ul>
-      {% for clip in clips %}
-        <li>
-          <a href="{% url 'clips_web:detail' clip.id %}">
-            {{ clip.title|default:clip.url }}
-          </a>
-          <span>{{ clip.created_at }}</span>
-          <span>{{ clip.domain }}</span>
-          <button type="button" class="clip-delete" data-delete-url="{% url 'clips_web:detail' clip.id %}">Delete</button>
-        </li>
-      {% endfor %}
-    </ul>
+    <div class="table-responsive card overflow-hidden">
+      <table class="table table-hover align-middle mb-0">
+        <thead>
+          <tr>
+            <th scope="col">Title</th>
+            <th scope="col" class="d-none d-md-table-cell">Domain</th>
+            <th scope="col" class="d-none d-md-table-cell">Captured</th>
+            <th scope="col" class="text-end">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for clip in clips %}
+            <tr data-clip-row>
+              <td>
+                <a href="{% url 'clips_web:detail' clip.id %}" class="fw-semibold text-decoration-none">
+                  {{ clip.title|default:clip.url }}
+                </a>
+                <div class="small text-secondary text-truncate" style="max-width: 360px;">
+                  {{ clip.url }}
+                </div>
+              </td>
+              <td class="d-none d-md-table-cell small text-secondary">{{ clip.domain }}</td>
+              <td class="d-none d-md-table-cell small text-secondary">{{ clip.created_at }}</td>
+              <td class="text-end">
+                <button type="button" class="btn btn-outline-danger btn-sm clip-delete" data-delete-url="{% url 'clips_web:detail' clip.id %}">
+                  Delete
+                </button>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
   {% else %}
-    <p>No clips yet.</p>
+    <div class="card p-4 text-center">
+      <h2 class="h5 mb-2">No clips yet</h2>
+      <p class="text-secondary mb-3">Use the Clippy browser extension to start capturing the web.</p>
+      <p class="mb-0 small text-secondary">Once you save your first clip, it will appear here automatically.</p>
+    </div>
   {% endif %}
+
   <script>
     (function() {
       function getCookie(name) {
@@ -57,9 +91,9 @@
             credentials: 'same-origin'
           }).then(function(response) {
             if (response.status === 204 || response.status === 200) {
-              var li = button.closest('li');
-              if (li) {
-                li.remove();
+              var row = button.closest('[data-clip-row]');
+              if (row) {
+                row.remove();
               }
             } else if (response.status === 403) {
               alert('You are not allowed to delete this clip.');
@@ -74,3 +108,4 @@
     })();
   </script>
 {% endblock %}
+
