@@ -3,8 +3,8 @@
 Run relevant tests after changes. Minimum commands:
 
 ```bash
-cd backend && python manage.py test
-cd extension && npm test
+(cd backend && python manage.py test)
+(cd extension && npm test)
 ```
 
 ## Expectations

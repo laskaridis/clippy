@@ -2,16 +2,11 @@
 
 This repository follows a branch-based workflow to keep `master` always releasable.
 
-## Branch Naming
+## Branching Rules
 
-- `feature/*`: default branch type for all planned work (features, refactors, chores).
-- `hotfix/*`: urgent production fixes.
-- `docs/*` (optional): documentation-only changes when a dedicated docs branch is useful.
-
-Use short, descriptive suffixes, for example:
-- `feature/agent-guidelines`
-- `hotfix/login-redirect-loop`
-- `docs/workflow-guidelines`
+- New feature work must be done on a dedicated non-`master` branch.
+- Do not implement features directly on `master`.
+- Branch naming should follow repository tooling conventions (Speckit-compatible naming).
 
 ## Day-to-Day Flow
 
@@ -30,4 +25,4 @@ Use short, descriptive suffixes, for example:
 
 - `master` must remain in a releasable state at all times.
 - Create release tags from `master` only.
-- Do not tag releases from feature or hotfix branches.
+- Do not tag releases from non-`master` branches.
