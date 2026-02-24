@@ -92,3 +92,13 @@ When refactoring existing backend code:
 2. Move non-trivial logic out of views/serializers into module application services.
 3. Keep interfaces orchestration-only.
 4. Add or adjust tests for module behavior and boundary contracts before further refactors.
+
+
+## Architecture Decision Records (ADRs)
+
+Architecturally significant decisions must be lightly documented as ADRs under `docs/adrs/`.
+
+ADR policy:
+- Create one ADR per significant decision using the standard sections: **Context**, **Decision**, and **Consequences**.
+- Keep ADRs immutable once accepted; when a decision changes, add a new ADR that supersedes the previous one.
+- Reference related ADRs in implementation PRs when changes affect architecture boundaries or invariants.

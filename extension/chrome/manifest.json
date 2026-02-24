@@ -13,16 +13,16 @@
     "default_popup": "src/popup/popup.html"
   },
   "background": {
-    "service_worker": "src/background/clip_sender.js"
+    "service_worker": "dist/background/clip_sender.js"
   },
   "content_scripts": [
     {
       "matches": ["<all_urls>"],
       "js": [
-        "src/shared/messages.js",
-        "src/content/clipSelection.js",
-        "src/content/messageHandlers.js",
-        "src/content/clipper.js"
+        "dist/shared/messages.js",
+        "dist/content/clipSelection.js",
+        "dist/content/messageHandlers.js",
+        "dist/content/clipper.js"
       ]
     }
   ]

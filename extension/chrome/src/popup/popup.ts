@@ -22,7 +22,7 @@
    * @param {boolean} isSaving - Whether a clip save operation is in progress.
    */
   function setSaving(isSaving) {
-    var button = document.getElementById("save-clip");
+    var button = document.getElementById("save-clip") as HTMLButtonElement | null;
     if (!button) return;
 
     button.disabled = isSaving;
@@ -78,7 +78,7 @@
             return;
           }
 
-          var clip = response.clip || {};
+          var clip = (response.clip || {}) as { raw_content?: string; labels?: string[] };
           if (!clip.raw_content) {
             reject(new Error("No text selected. Select text on the page and try again."));
             return;
@@ -122,8 +122,8 @@
    * click handler.
    */
   document.addEventListener("DOMContentLoaded", function () {
-    var button = document.getElementById("save-clip");
-    var labelsInput = document.getElementById("labels-input");
+    var button = document.getElementById("save-clip") as HTMLButtonElement | null;
+    var labelsInput = document.getElementById("labels-input") as HTMLInputElement | null;
     if (!button) return;
 
     button.addEventListener("click", function () {
@@ -131,7 +131,7 @@
       setSaving(true);
 
       requestClipFromActiveTab()
-        .then(function (clip) {
+        .then(function (clip: any) {
           // Attach labels from the popup input (comma-separated names).
           if (labelsInput && labelsInput.value) {
             var names = labelsInput.value.split(",");
