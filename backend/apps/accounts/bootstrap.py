@@ -4,12 +4,10 @@ from django.contrib.auth import get_user_model
 
 
 def _is_production_environment() -> bool:
-    declared_env = (os.environ.get("DJANGO_ENV") or os.environ.get("ENVIRONMENT") or "").strip().lower()
-    if declared_env in {"prod", "production"}:
-        return True
-
-    if declared_env in {"dev", "development", "local", "test", "staging"}:
-        return False
+    for env_name in ("DJANGO_ENV", "ENVIRONMENT"):
+        declared_env = os.environ.get(env_name, "").strip().lower()
+        if declared_env in {"prod", "production"}:
+            return True
 
     return False
 

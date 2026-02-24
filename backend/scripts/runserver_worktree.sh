@@ -4,7 +4,14 @@ set -euo pipefail
 BACKEND_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 WORKTREE_ROOT="$(cd "${BACKEND_DIR}/.." && git rev-parse --show-toplevel)"
 WORKTREE_BASENAME="$(basename "${WORKTREE_ROOT}")"
-WORKTREE_HASH="$(printf '%s' "${WORKTREE_ROOT}" | sha1sum | cut -c1-6)"
+if command -v sha1sum >/dev/null 2>&1; then
+  WORKTREE_HASH="$(printf '%s' "${WORKTREE_ROOT}" | sha1sum | cut -c1-6)"
+elif command -v shasum >/dev/null 2>&1; then
+  WORKTREE_HASH="$(printf '%s' "${WORKTREE_ROOT}" | shasum -a 1 | cut -c1-6)"
+else
+  echo "[clippy] error: neither sha1sum nor shasum is available" >&2
+  exit 1
+fi
 WORKTREE_ID="${WORKTREE_BASENAME}-${WORKTREE_HASH}"
 
 # Keep each worktree's default sqlite DB isolated from sibling worktrees.

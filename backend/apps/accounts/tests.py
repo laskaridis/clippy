@@ -97,3 +97,25 @@ class EnsureAdminUserBootstrapTests(TestCase):
 
         self.assertEqual(result, "skipped:production")
         self.assertFalse(User.objects.filter(username="admin").exists())
+
+    def test_ensure_admin_user_skips_when_environment_is_production(self) -> None:
+        User = get_user_model()
+
+        with patch.dict("os.environ", {"ENVIRONMENT": "production"}, clear=False):
+            result = ensure_admin_user_from_env()
+
+        self.assertEqual(result, "skipped:production")
+        self.assertFalse(User.objects.filter(username="admin").exists())
+
+    def test_ensure_admin_user_skips_if_either_production_marker_is_set(self) -> None:
+        User = get_user_model()
+
+        with patch.dict(
+            "os.environ",
+            {"DJANGO_ENV": "development", "ENVIRONMENT": "production"},
+            clear=False,
+        ):
+            result = ensure_admin_user_from_env()
+
+        self.assertEqual(result, "skipped:production")
+        self.assertFalse(User.objects.filter(username="admin").exists())
