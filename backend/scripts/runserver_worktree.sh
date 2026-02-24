@@ -21,5 +21,5 @@ echo "[clippy] port=${PORT}"
 
 cd "${BACKEND_DIR}"
 python manage.py migrate
-python manage.py ensure_admin_user
+python manage.py shell -c "from apps.accounts.bootstrap import ensure_admin_user_from_env; print(ensure_admin_user_from_env())"
 python manage.py runserver "0.0.0.0:${PORT}"
