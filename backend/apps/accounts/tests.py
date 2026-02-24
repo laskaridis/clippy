@@ -1,5 +1,7 @@
 from django.contrib.auth import get_user_model
+from django.core.management import call_command
 from django.test import TestCase
+from unittest.mock import patch
 
 
 class AccountsAuthTests(TestCase):
@@ -50,3 +52,36 @@ class AccountsAuthTests(TestCase):
         response = self.client.get("/clips/", follow=False)
         self.assertEqual(response.status_code, 302)
         self.assertIn("/accounts/login/", response["Location"])
+
+
+class EnsureAdminUserCommandTests(TestCase):
+    def test_ensure_admin_user_creates_default_admin(self) -> None:
+        User = get_user_model()
+
+        self.assertFalse(User.objects.filter(username="admin").exists())
+        call_command("ensure_admin_user")
+
+        admin_user = User.objects.get(username="admin")
+        self.assertTrue(admin_user.is_staff)
+        self.assertTrue(admin_user.is_superuser)
+        self.assertTrue(admin_user.check_password("admin"))
+
+    def test_ensure_admin_user_honors_env_overrides(self) -> None:
+        User = get_user_model()
+
+        with patch.dict(
+            "os.environ",
+            {
+                "DJANGO_ADMIN_USERNAME": "root-admin",
+                "DJANGO_ADMIN_EMAIL": "root@example.com",
+                "DJANGO_ADMIN_PASSWORD": "secret123",
+            },
+            clear=False,
+        ):
+            call_command("ensure_admin_user")
+
+        admin_user = User.objects.get(username="root-admin")
+        self.assertEqual(admin_user.email, "root@example.com")
+        self.assertTrue(admin_user.is_staff)
+        self.assertTrue(admin_user.is_superuser)
+        self.assertTrue(admin_user.check_password("secret123"))

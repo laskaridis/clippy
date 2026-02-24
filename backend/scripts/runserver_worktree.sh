@@ -21,4 +21,5 @@ echo "[clippy] port=${PORT}"
 
 cd "${BACKEND_DIR}"
 python manage.py migrate
+python manage.py ensure_admin_user
 python manage.py runserver "0.0.0.0:${PORT}"
