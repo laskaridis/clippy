@@ -1,7 +1,8 @@
 from django.contrib.auth import get_user_model
-from django.core.management import call_command
 from django.test import TestCase
 from unittest.mock import patch
+
+from apps.accounts.bootstrap import ensure_admin_user_from_env
 
 
 class AccountsAuthTests(TestCase):
@@ -54,13 +55,14 @@ class AccountsAuthTests(TestCase):
         self.assertIn("/accounts/login/", response["Location"])
 
 
-class EnsureAdminUserCommandTests(TestCase):
+class EnsureAdminUserBootstrapTests(TestCase):
     def test_ensure_admin_user_creates_default_admin(self) -> None:
         User = get_user_model()
 
         self.assertFalse(User.objects.filter(username="admin").exists())
-        call_command("ensure_admin_user")
+        result = ensure_admin_user_from_env()
 
+        self.assertEqual(result, "created:admin")
         admin_user = User.objects.get(username="admin")
         self.assertTrue(admin_user.is_staff)
         self.assertTrue(admin_user.is_superuser)
@@ -78,8 +80,9 @@ class EnsureAdminUserCommandTests(TestCase):
             },
             clear=False,
         ):
-            call_command("ensure_admin_user")
+            result = ensure_admin_user_from_env()
 
+        self.assertEqual(result, "created:root-admin")
         admin_user = User.objects.get(username="root-admin")
         self.assertEqual(admin_user.email, "root@example.com")
         self.assertTrue(admin_user.is_staff)
