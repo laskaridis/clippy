@@ -61,6 +61,13 @@ TEMPLATES = [
 WSGI_APPLICATION = "webclippings.wsgi.application"
 
 
+def _default_sqlite_path() -> Path:
+    sqlite_path = os.environ.get("DJANGO_SQLITE_PATH")
+    if sqlite_path:
+        return Path(sqlite_path)
+    return BASE_DIR / "db.sqlite3"
+
+
 def _database_from_env() -> dict:
     """Build DATABASES["default"] from DATABASE_URL if present, else sqlite.
 
@@ -72,7 +79,7 @@ def _database_from_env() -> dict:
     if not database_url:
         return {
             "ENGINE": "django.db.backends.sqlite3",
-            "NAME": BASE_DIR / "db.sqlite3",
+            "NAME": _default_sqlite_path(),
         }
 
     parsed = urlparse(database_url)
@@ -80,7 +87,7 @@ def _database_from_env() -> dict:
         # Fallback to sqlite if the URL is not a Postgres URL we recognize
         return {
             "ENGINE": "django.db.backends.sqlite3",
-            "NAME": BASE_DIR / "db.sqlite3",
+            "NAME": _default_sqlite_path(),
         }
 
     return {
