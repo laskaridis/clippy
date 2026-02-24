@@ -88,3 +88,12 @@ class EnsureAdminUserBootstrapTests(TestCase):
         self.assertTrue(admin_user.is_staff)
         self.assertTrue(admin_user.is_superuser)
         self.assertTrue(admin_user.check_password("secret123"))
+
+    def test_ensure_admin_user_skips_in_production_environment(self) -> None:
+        User = get_user_model()
+
+        with patch.dict("os.environ", {"DJANGO_ENV": "production"}, clear=False):
+            result = ensure_admin_user_from_env()
+
+        self.assertEqual(result, "skipped:production")
+        self.assertFalse(User.objects.filter(username="admin").exists())

@@ -3,8 +3,22 @@ import os
 from django.contrib.auth import get_user_model
 
 
+def _is_production_environment() -> bool:
+    declared_env = (os.environ.get("DJANGO_ENV") or os.environ.get("ENVIRONMENT") or "").strip().lower()
+    if declared_env in {"prod", "production"}:
+        return True
+
+    if declared_env in {"dev", "development", "local", "test", "staging"}:
+        return False
+
+    return False
+
+
 def ensure_admin_user_from_env() -> str:
     """Ensure a local superuser exists using env var overrides."""
+    if _is_production_environment():
+        return "skipped:production"
+
     username = os.environ.get("DJANGO_ADMIN_USERNAME", "admin")
     email = os.environ.get("DJANGO_ADMIN_EMAIL", "admin@clippy.local")
     password = os.environ.get("DJANGO_ADMIN_PASSWORD", "admin")
