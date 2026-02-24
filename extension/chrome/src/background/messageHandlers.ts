@@ -28,3 +28,7 @@ function registerMessageHandlers() {
     return true;
   });
 }
+
+if (typeof module !== "undefined" && module.exports) {
+  module.exports = { registerMessageHandlers };
+}
