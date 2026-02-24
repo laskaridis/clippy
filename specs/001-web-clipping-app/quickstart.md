@@ -49,15 +49,20 @@ docker run --name webclippings-postgres -e POSTGRES_USER=webclippings \
 
 ## 3. Run Django Backend Locally
 
-Apply migrations and start the development server:
+Start the backend with the worktree-aware helper script:
 
 ```bash
-python manage.py migrate
-python manage.py createsuperuser  # optional, for admin access
-python manage.py runserver 0.0.0.0:8000
+./backend/scripts/runserver_worktree.sh
 ```
 
-The web application will be available at `http://localhost:8000`.
+The script automatically runs migrations, selects a deterministic per-worktree SQLite file, and picks a deterministic per-worktree port so multiple worktrees can run in parallel without collisions.
+
+Optional overrides:
+
+```bash
+DJANGO_DEV_PORT=8010 ./backend/scripts/runserver_worktree.sh
+DJANGO_SQLITE_PATH=/tmp/clippy-dev.sqlite3 ./backend/scripts/runserver_worktree.sh
+```
 
 ---
 
