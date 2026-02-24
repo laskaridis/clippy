@@ -57,7 +57,7 @@ Start the backend with the worktree-aware helper script:
 
 The script automatically runs migrations, ensures an admin user exists, selects a deterministic per-worktree SQLite file, and picks a deterministic per-worktree port so multiple worktrees can run in parallel without collisions.
 
-By default it provisions local credentials `admin` / `admin`. Override admin credentials with `DJANGO_ADMIN_USERNAME`, `DJANGO_ADMIN_EMAIL`, and `DJANGO_ADMIN_PASSWORD`.
+By default it provisions local credentials `admin` / `admin`. Override admin credentials with `DJANGO_ADMIN_USERNAME`, `DJANGO_ADMIN_EMAIL`, and `DJANGO_ADMIN_PASSWORD`. Set `DJANGO_ENV=production` (or `ENVIRONMENT=production`) to disable this auto-bootstrap.
 
 Optional overrides:
 
