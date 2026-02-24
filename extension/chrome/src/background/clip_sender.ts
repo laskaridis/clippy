@@ -1,3 +1,4 @@
+declare function importScripts(...paths: string[]): void;
 // Background service worker for sending clips to the WebClippings backend.
 //
 // Responsibilities (T017):
