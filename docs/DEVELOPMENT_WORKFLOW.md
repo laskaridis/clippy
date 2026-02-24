@@ -26,3 +26,14 @@ This repository follows a branch-based workflow to keep `master` always releasab
 - `master` must remain in a releasable state at all times.
 - Create release tags from `master` only.
 - Do not tag releases from non-`master` branches.
+
+# Delivery Checklist
+
+Before handing work back ensure all the following is ture:
+[ ] Code compiles/runs.
+[ ] Relevant tests pass locally.
+[ ] Edge cases for auth and ownership are covered.
+[ ] Migrations are included if needed.
+[ ] Docs/specs are updated for behavior changes.
+[ ] No unrelated files were changed.
+
