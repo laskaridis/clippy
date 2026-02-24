@@ -4,6 +4,7 @@ set -euo pipefail
 BACKEND_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 WORKTREE_ROOT="$(cd "${BACKEND_DIR}/.." && git rev-parse --show-toplevel)"
 WORKTREE_BASENAME="$(basename "${WORKTREE_ROOT}")"
+# Prefer GNU sha1sum but fall back to the macOS-default shasum implementation.
 if command -v sha1sum >/dev/null 2>&1; then
   WORKTREE_HASH="$(printf '%s' "${WORKTREE_ROOT}" | sha1sum | cut -c1-6)"
 elif command -v shasum >/dev/null 2>&1; then
