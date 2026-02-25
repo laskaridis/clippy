@@ -45,11 +45,19 @@ function getClipsEndpoint() {
   return getApiBaseUrl() + "/api/clips/";
 }
 
+/**
+ * Convenience helper for the login page URL.
+ */
+function getLoginPageUrl() {
+  return getApiBaseUrl() + "/accounts/login/";
+}
+
 // Export helpers for unit testing and Node environments while
 // remaining compatible with the extension runtime.
 if (typeof module !== "undefined" && module.exports) {
   module.exports = {
     getApiBaseUrl: getApiBaseUrl,
     getClipsEndpoint: getClipsEndpoint,
+    getLoginPageUrl: getLoginPageUrl,
   };
 }

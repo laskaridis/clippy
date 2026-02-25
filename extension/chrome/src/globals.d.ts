@@ -5,7 +5,9 @@ declare function registerContentMessageHandlers(): void;
 declare function mapChromeRuntimeErrorToMessage(lastError?: unknown, fallback?: string): string;
 declare function getApiBaseUrl(): string;
 declare function getClipsEndpoint(): string;
+declare function getLoginPageUrl(): string;
 declare function createClip(clip: Record<string, unknown>): Promise<unknown>;
+declare function isUserAuthenticated(): Promise<boolean>;
 declare function registerContextMenuHandlers(): void;
 declare function registerMessageHandlers(): void;
 

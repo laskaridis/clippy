@@ -10,6 +10,7 @@ const { MESSAGE_TYPES, successResponse, errorResponse } = require('./messages');
 test('MESSAGE_TYPES contains expected message identifiers', () => {
   assert.equal(MESSAGE_TYPES.GET_CLIP_DATA, 'GET_CLIP_DATA');
   assert.equal(MESSAGE_TYPES.SAVE_CLIP, 'SAVE_CLIP');
+  assert.equal(MESSAGE_TYPES.GET_AUTH_STATUS, 'GET_AUTH_STATUS');
 });
 
 // successResponse tests

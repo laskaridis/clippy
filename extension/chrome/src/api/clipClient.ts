@@ -84,11 +84,30 @@ async function createClip(clip) {
   }
 }
 
+
+/**
+ * Check whether the user is currently authenticated.
+ * Returns true when the backend accepts an authenticated request.
+ */
+async function isUserAuthenticated() {
+  var endpoint = typeof getClipsEndpoint === "function"
+    ? getClipsEndpoint()
+    : "http://localhost:8000/api/clips/";
+
+  var response = await fetch(endpoint, {
+    method: "GET",
+    credentials: "include",
+  });
+
+  return response.ok;
+}
+
 // Export for use in tests and Node environments while remaining
 // compatible with the browser extension runtime.
 if (typeof module !== "undefined" && module.exports) {
   module.exports = {
     buildClipCreatePayload: buildClipCreatePayload,
     createClip: createClip,
+    isUserAuthenticated: isUserAuthenticated,
   };
 }

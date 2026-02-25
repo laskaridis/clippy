@@ -3,7 +3,7 @@ export {}
 const test = require('node:test');
 const assert = require('node:assert/strict');
 
-const { buildClipCreatePayload, createClip } = require('./clipClient');
+const { buildClipCreatePayload, createClip, isUserAuthenticated } = require('./clipClient');
 
 // Helpers
 function makeClip(overrides = {}) {
@@ -183,4 +183,23 @@ test('createClip returns null when response.json throws', async () => {
 
   const result = await createClip(clip);
   assert.equal(result, null);
+});
+
+
+// isUserAuthenticated tests
+
+test('isUserAuthenticated returns true on successful authenticated response', async () => {
+  global.getClipsEndpoint = () => 'https://api.example.com/clips/';
+  global.fetch = async () => makeResponse({ ok: true, status: 200, jsonValue: [] });
+
+  const isAuthenticated = await isUserAuthenticated();
+  assert.equal(isAuthenticated, true);
+});
+
+test('isUserAuthenticated returns false on unauthorized response', async () => {
+  global.getClipsEndpoint = () => 'https://api.example.com/clips/';
+  global.fetch = async () => makeResponse({ ok: false, status: 403, textValue: 'Forbidden' });
+
+  const isAuthenticated = await isUserAuthenticated();
+  assert.equal(isAuthenticated, false);
 });

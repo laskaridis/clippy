@@ -55,20 +55,29 @@
   </head>
   <body>
     <h1>WebClippings</h1>
-    <label for="labels-input" style="display:block; margin: 6px 0 4px; font-size:12px;">
-      Labels (optional, comma-separated)
-    </label>
-    <input
-      type="text"
-      id="labels-input"
-      placeholder="e.g. research, work"
-      style="width:100%; box-sizing:border-box; padding:4px; margin-bottom:8px; font-size:12px;"
-    />
+    <div id="save-controls">
+      <label for="labels-input" style="display:block; margin: 6px 0 4px; font-size:12px;">
+        Labels (optional, comma-separated)
+      </label>
+      <input
+        type="text"
+        id="labels-input"
+        placeholder="e.g. research, work"
+        style="width:100%; box-sizing:border-box; padding:4px; margin-bottom:8px; font-size:12px;"
+      />
 
-    <button id="save-clip">Save selected text</button>
+      <button id="save-clip">Save selected text</button>
+    </div>
+
+    <div id="auth-controls" style="display:none; margin-top:8px;">
+      <p style="margin:0 0 8px; font-size:12px;">You need to sign in to save clips.</p>
+      <button id="open-login">Sign in to WebClippings</button>
+    </div>
+
     <div id="status" aria-live="polite"></div>
     <script src="../../dist/shared/messages.js"></script>
     <script src="../../dist/shared/errors.js"></script>
+    <script src="../../dist/shared/config.js"></script>
     <script src="../../dist/popup/popup.js"></script>
   </body>
 </html>
