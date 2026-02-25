@@ -88,6 +88,8 @@ async function createClip(clip) {
 /**
  * Check whether the user is currently authenticated.
  * Returns true when the backend accepts an authenticated request.
+ *
+ * Uses HEAD to avoid downloading clip payloads on popup open.
  */
 async function isUserAuthenticated() {
   var endpoint = typeof getClipsEndpoint === "function"
@@ -95,7 +97,7 @@ async function isUserAuthenticated() {
     : "http://localhost:8000/api/clips/";
 
   var response = await fetch(endpoint, {
-    method: "GET",
+    method: "HEAD",
     credentials: "include",
   });
 
