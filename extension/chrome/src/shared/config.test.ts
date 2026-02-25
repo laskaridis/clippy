@@ -39,7 +39,7 @@ test('getApiBaseUrl uses first host_permission when localhost is not present', (
   assert.equal(baseUrl, 'https://api.example.com');
 });
 
-test('getApiBaseUrl prefers localhost host_permission when available', () => {
+test('getApiBaseUrl uses manifest order when multiple host_permissions exist', () => {
   resetChrome();
 
   setManifest({
@@ -50,7 +50,7 @@ test('getApiBaseUrl prefers localhost host_permission when available', () => {
   });
 
   const baseUrl = getApiBaseUrl();
-  assert.equal(baseUrl, 'http://localhost:8000');
+  assert.equal(baseUrl, 'https://api.example.com');
 });
 
 test('getApiBaseUrl returns localhost when host_permissions are missing or empty', () => {
@@ -70,6 +70,15 @@ test('getApiBaseUrl falls back to localhost on invalid URL entries', () => {
 
   const baseUrl = getApiBaseUrl();
   assert.equal(baseUrl, 'http://localhost:8000');
+});
+
+test('getApiBaseUrl skips invalid host entries and uses the first valid one', () => {
+  resetChrome();
+
+  setManifest({ host_permissions: ['not-a-valid-url', 'https://api.example.com/*'] });
+
+  const baseUrl = getApiBaseUrl();
+  assert.equal(baseUrl, 'https://api.example.com');
 });
 
 // getClipsEndpoint tests

@@ -6,7 +6,7 @@
  * Derive the API base URL from the extension manifest.
  *
  * Preference order:
- * - The first suitable host in host_permissions (preferring localhost).
+ * - The first valid host in host_permissions (manifest order).
  * - Fallback to http://localhost:8000.
  */
 function getApiBaseUrl() {
@@ -19,19 +19,21 @@ function getApiBaseUrl() {
       ? manifest.host_permissions
       : [];
 
-    // Prefer localhost for local dev, otherwise first host permission.
-    let candidate = hosts.find(function (h) { return h && h.indexOf("localhost") !== -1; });
-    if (!candidate && hosts.length > 0) {
-      candidate = hosts[0];
-    }
-
-    if (!candidate) {
-      return "http://localhost:8000";
-    }
-
     // host_permissions are like "http://localhost:8000/*"; strip the path.
-    const url = new URL(candidate.replace(/\*$/, ""));
-    return url.origin;
+    for (let i = 0; i < hosts.length; i += 1) {
+      const candidate = hosts[i];
+      if (!candidate || typeof candidate !== "string") {
+        continue;
+      }
+      try {
+        const url = new URL(candidate.replace(/\*$/, ""));
+        return url.origin;
+      } catch (_e) {
+        // Try the next host permission.
+      }
+    }
+
+    return "http://localhost:8000";
   } catch (e) {
     // Fallback for any parsing error.
     return "http://localhost:8000";
