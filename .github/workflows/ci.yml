@@ -58,6 +58,7 @@ jobs:
     name: Extension e2e tests
     runs-on: ubuntu-latest
     needs:
+      - backend-tests
       - extension-unit-tests
 
     steps:
