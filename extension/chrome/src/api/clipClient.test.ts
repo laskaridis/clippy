@@ -199,11 +199,19 @@ test('createClip returns null when response.json throws', async () => {
 // isUserAuthenticated tests
 
 test('isUserAuthenticated returns true on successful authenticated response', async () => {
+  const calls = [];
   global.getClipsEndpoint = () => 'https://api.example.com/clips/';
-  global.fetch = async () => makeResponse({ ok: true, status: 200, jsonValue: [] });
+  global.fetch = async (url, options) => {
+    calls.push({ url, options });
+    return makeResponse({ ok: true, status: 200, jsonValue: [] });
+  };
 
   const isAuthenticated = await isUserAuthenticated();
   assert.equal(isAuthenticated, true);
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0].url, 'https://api.example.com/clips/');
+  assert.equal(calls[0].options.method, 'HEAD');
+  assert.equal(calls[0].options.credentials, 'include');
 });
 
 test('isUserAuthenticated returns false on unauthorized response', async () => {
