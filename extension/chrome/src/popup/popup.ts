@@ -9,11 +9,13 @@
     if (!el) return;
 
     el.textContent = message || "";
-    el.className = "";
+    el.className = "small mt-3";
     if (kind === "success") {
-      el.classList.add("success");
+      el.classList.add("text-success");
     } else if (kind === "error") {
-      el.classList.add("error");
+      el.classList.add("text-danger");
+    } else {
+      el.classList.add("text-secondary");
     }
   }
 
@@ -28,24 +30,29 @@
     var saveButton = document.getElementById("save-clip");
     if (saveControls) {
       saveControls.style.display = isAuthenticated ? "block" : "none";
+      saveControls.classList.toggle("d-none", !isAuthenticated);
     }
 
     if (authControls) {
       authControls.style.display = isAuthenticated ? "none" : "block";
+      authControls.classList.toggle("d-none", isAuthenticated);
     }
 
     // Defensive fallback: if older popup HTML is loaded without wrappers,
     // still enforce signed-in/signed-out control visibility.
     if (labelsInput) {
       (labelsInput as HTMLElement).style.display = isAuthenticated ? "block" : "none";
+      (labelsInput as HTMLElement).classList.toggle("d-none", !isAuthenticated);
     }
 
     if (labelsLabel) {
       labelsLabel.style.display = isAuthenticated ? "block" : "none";
+      labelsLabel.classList.toggle("d-none", !isAuthenticated);
     }
 
     if (saveButton) {
       (saveButton as HTMLElement).style.display = isAuthenticated ? "inline-flex" : "none";
+      (saveButton as HTMLElement).classList.toggle("d-none", !isAuthenticated);
     }
 
     if (!isAuthenticated) {
@@ -214,12 +221,12 @@
     if (!authControls) {
       authControls = document.createElement("div");
       authControls.id = "auth-controls";
-      authControls.style.display = "block";
-      authControls.style.marginTop = "8px";
+      authControls.className = "mt-2";
 
       var fallbackLoginButton = document.createElement("button");
       fallbackLoginButton.id = "open-login";
       fallbackLoginButton.textContent = "Log in";
+      fallbackLoginButton.className = "btn btn-outline-light btn-sm w-100";
       authControls.appendChild(fallbackLoginButton);
 
       var statusEl = document.getElementById("status");

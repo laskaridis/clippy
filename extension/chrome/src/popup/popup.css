@@ -1,0 +1,51 @@
+.popup-body {
+  margin: 0;
+  min-width: 280px;
+  max-width: 340px;
+  background: var(--bs-body-bg);
+  color: var(--bs-body-color);
+}
+
+.popup-shell {
+  padding: 0.75rem;
+  background: var(--bs-secondary-bg);
+  border: 1px solid var(--bs-border-color);
+}
+
+.brand-dot {
+  width: 0.9rem;
+  height: 0.9rem;
+}
+
+/* Mirrors backend/static/css/base.css so popup matches app colors. */
+:root,
+[data-bs-theme="dark"] {
+  --bs-body-bg: #0b0e14;
+  --bs-body-color: #f8fafc;
+  --bs-secondary-bg: #121826;
+  --bs-secondary-color: #cbd5e1;
+  --bs-border-color: rgba(255, 255, 255, 0.08);
+  --bs-primary: #8b5cf6;
+  --bs-link-color: #8b5cf6;
+  --bs-link-hover-color: #a78bfa;
+}
+
+[data-bs-theme="light"] {
+  --bs-body-bg: #f8fafc;
+  --bs-body-color: #0b0e14;
+  --bs-secondary-bg: #ffffff;
+  --bs-secondary-color: #334155;
+  --bs-border-color: rgba(15, 23, 42, 0.12);
+  --bs-primary: #7c3aed;
+  --bs-link-color: #7c3aed;
+  --bs-link-hover-color: #6d28d9;
+}
+
+.bg-brand-gradient {
+  background: linear-gradient(135deg, #8b5cf6 0%, #ec4899 45%, #3b82f6 100%);
+}
+
+.btn-primary {
+  border-color: var(--bs-primary);
+  box-shadow: 0 0 0 1px rgba(139, 92, 246, 0.4), 0 0 18px rgba(236, 72, 153, 0.25);
+}
