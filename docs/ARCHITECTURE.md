@@ -102,3 +102,4 @@ ADR policy:
 - Create one ADR per significant decision using the standard sections: **Context**, **Decision**, and **Consequences**.
 - Keep ADRs immutable once accepted; when a decision changes, add a new ADR that supersedes the previous one.
 - Reference related ADRs in implementation PRs when changes affect architecture boundaries or invariants.
+- **NEVER** include more than one un-related decisions in the same ADR, instead use separate ADRs.

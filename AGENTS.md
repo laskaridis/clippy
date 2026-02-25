@@ -7,7 +7,7 @@ Use this file as the entry point, then follow the topic-specific guidance below.
 ## Context-Specific Guides
 
 - Product and repository context: [docs/PRODUCT_CONTEXT.md](docs/PRODUCT_CONTEXT.md)
-- Architecture and domain invariants: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
+- Application architecture: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
 - Testing and verification: [docs/TESTING.md](docs/TESTING.md)
 - Security and privacy: [docs/SECURITY.md](docs/SECURITY.md)
 - Code quality standards: [docs/CODE_QUALITY.md](docs/CODE_QUALITY.md)
