@@ -57,7 +57,22 @@ mkdir -p "$(dirname "${DJANGO_SQLITE_PATH}")"
 # Pick a deterministic port per worktree, while still allowing overrides.
 DEFAULT_PORT="$((8000 + (0x${WORKTREE_HASH} % 200)))"
 PORT="${DJANGO_DEV_PORT:-${PORT:-${1:-${DEFAULT_PORT}}}}"
-HOST="${DJANGO_DEV_HOST:-clippy-${WORKTREE_HASH}.localhost}"
+DEFAULT_HOST="clippy-${WORKTREE_HASH}.localhost"
+
+if [[ -n "${DJANGO_DEV_HOST:-}" ]]; then
+  HOST="${DJANGO_DEV_HOST}"
+elif [[ -n "${DJANGO_DEV_BASE_URL:-}" ]]; then
+  HOST="$(DJANGO_DEV_BASE_URL="${DJANGO_DEV_BASE_URL}" python -c 'import os
+from urllib.parse import urlsplit
+
+host = urlsplit(os.environ["DJANGO_DEV_BASE_URL"]).hostname
+if not host:
+    raise SystemExit("[clippy] error: DJANGO_DEV_BASE_URL must include a hostname")
+print(host)')"
+else
+  HOST="${DEFAULT_HOST}"
+fi
+
 BASE_URL="${DJANGO_DEV_BASE_URL:-http://${HOST}:${PORT}}"
 export DJANGO_DEV_PORT="${PORT}"
 export DJANGO_DEV_HOST="${HOST}"
