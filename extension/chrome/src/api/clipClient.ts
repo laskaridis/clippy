@@ -39,9 +39,10 @@ function buildClipCreatePayload(clip) {
  * Expects that getClipsEndpoint() is available globally (from shared/config.js).
  */
 async function createClip(clip) {
-  var endpoint = typeof getClipsEndpoint === "function"
-    ? getClipsEndpoint()
-    : "http://localhost:8000/api/clips/";
+  if (typeof getClipsEndpoint !== "function") {
+    throw new Error("Missing extension runtime configuration");
+  }
+  var endpoint = getClipsEndpoint();
 
   var payload = buildClipCreatePayload(clip);
 
@@ -92,9 +93,10 @@ async function createClip(clip) {
  * Uses HEAD to avoid downloading clip payloads on popup open.
  */
 async function isUserAuthenticated() {
-  var endpoint = typeof getClipsEndpoint === "function"
-    ? getClipsEndpoint()
-    : "http://localhost:8000/api/clips/";
+  if (typeof getClipsEndpoint !== "function") {
+    throw new Error("Missing extension runtime configuration");
+  }
+  var endpoint = getClipsEndpoint();
 
   var response = await fetch(endpoint, {
     method: "HEAD",

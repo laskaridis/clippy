@@ -4,13 +4,52 @@ import os from "node:os";
 import path from "node:path";
 import { spawn, spawnSync, ChildProcess } from "node:child_process";
 
-const EXTENSION_DIR = path.resolve(process.cwd(), "chrome");
+/**
+ * Popup authentication E2E tests.
+ *
+ * This suite runs against a real Chromium extension runtime and Django backend.
+ *
+ * Worktree/runtime assumptions:
+ * - `npm run build:worktree` has prepared `extension/.local/worktree-runtime.json`.
+ * - The runtime file provides:
+ *   - backendBaseUrl (browser-facing host/origin used for auth/cookies)
+ *   - backendPort (local port used for health checks and backend startup)
+ *   - djangoSqlitePath (worktree-scoped test database path)
+ *   - extensionDir (generated unpacked extension directory to load in Chromium)
+ *
+ * Coverage:
+ * - Signed-out popup shows login controls and hides save controls.
+ * - Signed-in popup shows save controls and hides login controls.
+ */
 const REPO_ROOT = path.resolve(process.cwd(), "..");
 const BACKEND_DIR = path.join(REPO_ROOT, "backend");
-const BACKEND_BASE_URL = "http://localhost:8000";
-const LOGIN_URL = `${BACKEND_BASE_URL}/accounts/login/`;
+const WORKTREE_RUNTIME_FILE = path.resolve(process.cwd(), ".local", "worktree-runtime.json");
 const E2E_EMAIL = "extension-e2e-user@example.com";
 const E2E_PASSWORD = "Password123!";
+
+type WorktreeRuntime = {
+  backendBaseUrl: string;
+  backendHost: string;
+  backendPort: number;
+  djangoSqlitePath: string;
+  extensionDir: string;
+};
+
+function loadWorktreeRuntime(): WorktreeRuntime {
+  if (!fs.existsSync(WORKTREE_RUNTIME_FILE)) {
+    throw new Error(
+      "Missing extension/.local/worktree-runtime.json. Run `npm run prepare:worktree` in extension/ first."
+    );
+  }
+  const raw = fs.readFileSync(WORKTREE_RUNTIME_FILE, "utf8");
+  return JSON.parse(raw) as WorktreeRuntime;
+}
+
+const RUNTIME = loadWorktreeRuntime();
+const EXTENSION_DIR = RUNTIME.extensionDir;
+const BACKEND_BASE_URL = RUNTIME.backendBaseUrl;
+const LOGIN_URL = `${BACKEND_BASE_URL}/accounts/login/`;
+const BACKEND_HEALTHCHECK_URL = `http://127.0.0.1:${RUNTIME.backendPort}/accounts/login/`;
 
 let backendProcess: ChildProcess | null = null;
 
@@ -18,6 +57,11 @@ function runBackendCommand(args: string[]): void {
   const result = spawnSync("python", ["manage.py", ...args], {
     cwd: BACKEND_DIR,
     encoding: "utf8",
+    env: {
+      ...process.env,
+      DJANGO_SQLITE_PATH: RUNTIME.djangoSqlitePath,
+      ALLOWED_HOSTS: `${RUNTIME.backendHost},localhost,127.0.0.1,[::1]`,
+    },
   });
 
   if (result.status !== 0) {
@@ -29,7 +73,7 @@ function runBackendCommand(args: string[]): void {
 
 async function isBackendReachable(): Promise<boolean> {
   try {
-    const response = await fetch(LOGIN_URL, { method: "GET" });
+    const response = await fetch(BACKEND_HEALTHCHECK_URL, { method: "GET" });
     return response.ok;
   } catch {
     return false;
@@ -46,7 +90,7 @@ async function waitForBackend(timeoutMs = 20_000): Promise<void> {
     await new Promise((resolve) => setTimeout(resolve, 250));
   }
 
-  throw new Error("Timed out waiting for backend at http://localhost:8000.");
+  throw new Error(`Timed out waiting for backend at ${BACKEND_BASE_URL}.`);
 }
 
 async function ensureBackendRunning(): Promise<void> {
@@ -54,10 +98,19 @@ async function ensureBackendRunning(): Promise<void> {
     return;
   }
 
-  backendProcess = spawn("python", ["manage.py", "runserver", "127.0.0.1:8000", "--noreload"], {
-    cwd: BACKEND_DIR,
-    stdio: "pipe",
-  });
+  backendProcess = spawn(
+    "python",
+    ["manage.py", "runserver", `0.0.0.0:${RUNTIME.backendPort}`, "--noreload"],
+    {
+      cwd: BACKEND_DIR,
+      stdio: "pipe",
+      env: {
+        ...process.env,
+        DJANGO_SQLITE_PATH: RUNTIME.djangoSqlitePath,
+        ALLOWED_HOSTS: `${RUNTIME.backendHost},localhost,127.0.0.1,[::1]`,
+      },
+    },
+  );
 
   backendProcess.on("error", (error) => {
     // Surface startup errors if readiness check fails.

@@ -7,6 +7,7 @@ const { getApiBaseUrl, getClipsEndpoint, getLoginPageUrl } = require('./config')
 
 function resetChrome() {
   global.chrome = undefined;
+  global.WEBCLIPPINGS_RUNTIME_CONFIG = undefined;
 }
 
 function setManifest(manifest) {
@@ -26,6 +27,26 @@ test('getApiBaseUrl falls back to localhost when chrome is missing', () => {
 
   const baseUrl = getApiBaseUrl();
   assert.equal(baseUrl, 'http://localhost:8000');
+});
+
+test('getApiBaseUrl prefers runtime config over manifest host_permissions', () => {
+  resetChrome();
+
+  global.WEBCLIPPINGS_RUNTIME_CONFIG = { apiBaseUrl: 'http://clippy-123abc.localhost:8123' };
+  setManifest({ host_permissions: ['https://api.example.com/*'] });
+
+  const baseUrl = getApiBaseUrl();
+  assert.equal(baseUrl, 'http://clippy-123abc.localhost:8123');
+});
+
+test('getApiBaseUrl ignores invalid runtime config and falls back to manifest host_permissions', () => {
+  resetChrome();
+
+  global.WEBCLIPPINGS_RUNTIME_CONFIG = { apiBaseUrl: 'invalid-url' };
+  setManifest({ host_permissions: ['https://api.example.com/*'] });
+
+  const baseUrl = getApiBaseUrl();
+  assert.equal(baseUrl, 'https://api.example.com');
 });
 
 test('getApiBaseUrl uses first host_permission when localhost is not present', () => {
