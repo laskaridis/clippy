@@ -39,6 +39,11 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
@@ -46,10 +51,22 @@ jobs:
           cache: npm
           cache-dependency-path: extension/package-lock.json
 
+      - name: Install backend dependencies
+        run: pip install -r requirements.txt
+        working-directory: backend
+
       - name: Install extension dependencies
         run: npm ci
         working-directory: extension
 
       - name: Run extension test suite
         run: npm test
+        working-directory: extension
+
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+        working-directory: extension
+
+      - name: Run extension e2e suite
+        run: npm run test:e2e
         working-directory: extension
