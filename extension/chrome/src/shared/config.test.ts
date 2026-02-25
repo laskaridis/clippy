@@ -3,7 +3,7 @@ export {}
 const test = require('node:test');
 const assert = require('node:assert/strict');
 
-const { getApiBaseUrl, getClipsEndpoint } = require('./config');
+const { getApiBaseUrl, getClipsEndpoint, getLoginPageUrl } = require('./config');
 
 function resetChrome() {
   global.chrome = undefined;
@@ -88,4 +88,14 @@ test('getClipsEndpoint uses localhost base URL when chrome is missing', () => {
 
   const endpoint = getClipsEndpoint();
   assert.equal(endpoint, 'http://localhost:8000/api/clips/');
+});
+
+
+test('getLoginPageUrl appends /accounts/login/ to base URL', () => {
+  resetChrome();
+
+  setManifest({ host_permissions: ['https://api.example.com/*'] });
+
+  const endpoint = getLoginPageUrl();
+  assert.equal(endpoint, 'https://api.example.com/accounts/login/');
 });

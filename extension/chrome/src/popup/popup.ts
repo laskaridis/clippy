@@ -1,4 +1,3 @@
-
 (function () {
   /**
    * Update the popup status message and styling.
@@ -17,6 +16,19 @@
       el.classList.add("error");
     }
   }
+
+  /**
+   * Toggle the UI that allows saving clips based on authentication state.
+   */
+  function setAuthenticatedUi(isAuthenticated) {
+    var saveControls = document.getElementById("save-controls");
+    var authControls = document.getElementById("auth-controls");
+    if (!saveControls || !authControls) return;
+
+    saveControls.style.display = isAuthenticated ? "block" : "none";
+    authControls.style.display = isAuthenticated ? "none" : "block";
+  }
+
   /**
    * Toggle the saving state of the save button in the popup.
    * @param {boolean} isSaving - Whether a clip save operation is in progress.
@@ -31,6 +43,44 @@
     } else {
       button.textContent = "Save selected text";
     }
+  }
+
+  /**
+   * Ask background service worker whether the user is authenticated.
+   */
+  function requestAuthStatus() {
+    return new Promise(function (resolve, reject) {
+      chrome.runtime.sendMessage({ type: MESSAGE_TYPES.GET_AUTH_STATUS }, function (response) {
+        if (chrome.runtime && chrome.runtime.lastError) {
+          var sendMsg = mapChromeRuntimeErrorToMessage(
+            chrome.runtime.lastError,
+            "Failed to check sign-in status"
+          );
+          reject(new Error(sendMsg));
+          return;
+        }
+
+        if (!response || !response.success) {
+          reject(new Error((response && response.error) || "Failed to check sign-in status"));
+          return;
+        }
+
+        resolve(Boolean(response.isAuthenticated));
+      });
+    });
+  }
+
+  function openLoginPage() {
+    var loginUrl = typeof getLoginPageUrl === "function"
+      ? getLoginPageUrl()
+      : "http://localhost:8000/accounts/login/";
+
+    if (chrome.tabs && chrome.tabs.create) {
+      chrome.tabs.create({ url: loginUrl });
+      return;
+    }
+
+    window.open(loginUrl, "_blank", "noopener,noreferrer");
   }
 
   /**
@@ -117,13 +167,34 @@
       });
     });
   }
+
   /**
-   * Initialize the popup once the DOM is ready by wiring up the save button 
-   * click handler.
+   * Initialize the popup once the DOM is ready by wiring up handlers.
    */
   document.addEventListener("DOMContentLoaded", function () {
     var button = document.getElementById("save-clip") as HTMLButtonElement | null;
     var labelsInput = document.getElementById("labels-input") as HTMLInputElement | null;
+    var loginButton = document.getElementById("open-login") as HTMLButtonElement | null;
+
+    if (loginButton) {
+      loginButton.addEventListener("click", openLoginPage);
+    }
+
+    requestAuthStatus()
+      .then(function (isAuthenticated) {
+        setAuthenticatedUi(Boolean(isAuthenticated));
+        if (!isAuthenticated) {
+          setStatus("Sign in to WebClippings to save this clip.", "");
+        }
+      })
+      .catch(function (error) {
+        setAuthenticatedUi(false);
+        setStatus(
+          error && error.message ? error.message : "Unable to check sign-in status.",
+          "error"
+        );
+      });
+
     if (!button) return;
 
     button.addEventListener("click", function () {

@@ -10,6 +10,10 @@ const MESSAGE_TYPES = {
   // Request from the popup (or other parts) to the background service worker
   // to save a clip via the backend API.
   SAVE_CLIP: "SAVE_CLIP",
+
+  // Request from the popup to the background service worker to check whether
+  // the user is currently authenticated in the WebClippings app.
+  GET_AUTH_STATUS: "GET_AUTH_STATUS",
 };
 
 // Helper to build a standard "success" response envelope.
