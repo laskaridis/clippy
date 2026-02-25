@@ -75,14 +75,18 @@
   /**
    * Toggle the saving state of the save button in the popup.
    * @param {boolean} isSaving - Whether a clip save operation is in progress.
+   * @param {boolean} hasSelection - Whether there is selected text to save.
+   * @param {boolean} alreadySaved - Whether the current selection was already saved.
    */
-  function setSaving(isSaving) {
+  function setSaving(isSaving, hasSelection, alreadySaved) {
     var button = document.getElementById("save-clip") as HTMLButtonElement | null;
     if (!button) return;
 
-    button.disabled = isSaving;
+    button.disabled = isSaving || !hasSelection || alreadySaved;
     if (isSaving) {
       button.textContent = "Saving...";
+    } else if (alreadySaved) {
+      button.textContent = "Already saved";
     } else {
       button.textContent = "Save selected text";
     }
@@ -184,6 +188,45 @@
   }
 
   /**
+   * Build a compact fragment to preview the selected text in the popup.
+   * @param {string} rawContent - Full selected text from the page.
+   * @returns {string}
+   */
+  function buildSelectionPreview(rawContent) {
+    var normalized = (rawContent || "").replace(/\s+/g, " ").trim();
+    if (!normalized) {
+      return "No text selected on active page.";
+    }
+
+    var maxLength = 120;
+    if (normalized.length <= maxLength) {
+      return normalized;
+    }
+
+    return normalized.slice(0, maxLength) + "...";
+  }
+
+  /**
+   * Build a normalized key used for duplicate-submission checks.
+   * @param {string} rawContent - Full selected text from the page.
+   * @returns {string}
+   */
+  function buildSelectionKey(rawContent) {
+    return (rawContent || "").replace(/\s+/g, " ").trim();
+  }
+
+  /**
+   * Update the selected text preview in the popup.
+   * @param {string} text - Preview text to render.
+   */
+  function setSelectionPreview(text) {
+    var previewEl = document.getElementById("selection-preview-text");
+    if (!previewEl) return;
+
+    previewEl.textContent = text;
+  }
+
+  /**
    * Send the clip to the background service worker to POST /api/clips/.
    */
   function saveClip(clip) {
@@ -217,6 +260,10 @@
   document.addEventListener("DOMContentLoaded", function () {
     var button = document.getElementById("save-clip") as HTMLButtonElement | null;
     var labelsInput = document.getElementById("labels-input") as HTMLInputElement | null;
+    var hasSelection = false;
+    var currentSelectionKey = "";
+    var lastSavedSelectionKey = "";
+    var hasSavedCurrentSelection = false;
     var authControls = document.getElementById("auth-controls");
     if (!authControls) {
       authControls = document.createElement("div");
@@ -258,14 +305,50 @@
         );
       });
 
+    requestClipFromActiveTab()
+      .then(function (clip: any) {
+        currentSelectionKey = buildSelectionKey(clip.raw_content || "");
+        hasSelection = currentSelectionKey.length > 0;
+        hasSavedCurrentSelection = hasSelection && currentSelectionKey === lastSavedSelectionKey;
+        setSelectionPreview(buildSelectionPreview(clip.raw_content || ""));
+        setSaving(false, hasSelection, hasSavedCurrentSelection);
+      })
+      .catch(function () {
+        currentSelectionKey = "";
+        hasSelection = false;
+        hasSavedCurrentSelection = false;
+        setSelectionPreview("No text selected on active page.");
+        setSaving(false, hasSelection, hasSavedCurrentSelection);
+      });
+
     if (!button) return;
+    setSaving(false, hasSelection, hasSavedCurrentSelection);
 
     button.addEventListener("click", function () {
+      if (!hasSelection) {
+        setStatus("No text selected. Select text on the page and try again.", "error");
+        return;
+      }
+      if (hasSavedCurrentSelection) {
+        setStatus("This selected text was already saved.", "");
+        setSaving(false, hasSelection, hasSavedCurrentSelection);
+        return;
+      }
+
       setStatus("Capturing selection...", "");
-      setSaving(true);
+      setSaving(true, hasSelection, hasSavedCurrentSelection);
 
       requestClipFromActiveTab()
         .then(function (clip: any) {
+          currentSelectionKey = buildSelectionKey(clip.raw_content || "");
+          hasSelection = currentSelectionKey.length > 0;
+          hasSavedCurrentSelection = hasSelection && currentSelectionKey === lastSavedSelectionKey;
+          setSelectionPreview(buildSelectionPreview(clip.raw_content || ""));
+          if (hasSavedCurrentSelection) {
+            setStatus("This selected text was already saved.", "");
+            return null;
+          }
+
           // Attach labels from the popup input (comma-separated names).
           if (labelsInput && labelsInput.value) {
             var names = labelsInput.value.split(",");
@@ -284,14 +367,24 @@
           setStatus("Sending to WebClippings...", "");
           return saveClip(clip);
         })
-        .then(function () {
+        .then(function (savedClip) {
+          if (!savedClip) return;
+          lastSavedSelectionKey = currentSelectionKey;
+          hasSavedCurrentSelection = true;
           setStatus("Clip saved successfully.", "success");
         })
         .catch(function (error) {
-          setStatus(error && error.message ? error.message : "Failed to save clip.", "error");
+          var message = error && error.message ? error.message : "Failed to save clip.";
+          if (message.toLowerCase().indexOf("no text selected") !== -1) {
+            currentSelectionKey = "";
+            hasSelection = false;
+            hasSavedCurrentSelection = false;
+            setSelectionPreview("No text selected on active page.");
+          }
+          setStatus(message, "error");
         })
         .finally(function () {
-          setSaving(false);
+          setSaving(false, hasSelection, hasSavedCurrentSelection);
         });
     });
   });
