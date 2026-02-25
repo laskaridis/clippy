@@ -99,6 +99,21 @@ async function isUserAuthenticated() {
     credentials: "include",
   });
 
+  if (response.status >= 300 && response.status < 400) {
+    return false;
+  }
+
+  if (response.redirected && response.url) {
+    try {
+      var redirectedUrl = new URL(response.url);
+      if (redirectedUrl.pathname.indexOf("/accounts/login/") !== -1) {
+        return false;
+      }
+    } catch (e) {
+      // Ignore URL parsing errors and fall back to response.ok.
+    }
+  }
+
   return response.ok;
 }
 

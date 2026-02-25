@@ -23,10 +23,46 @@
   function setAuthenticatedUi(isAuthenticated) {
     var saveControls = document.getElementById("save-controls");
     var authControls = document.getElementById("auth-controls");
-    if (!saveControls || !authControls) return;
+    var labelsInput = document.getElementById("labels-input");
+    var labelsLabel = document.querySelector('label[for="labels-input"]') as HTMLElement | null;
+    var saveButton = document.getElementById("save-clip");
+    if (saveControls) {
+      saveControls.style.display = isAuthenticated ? "block" : "none";
+    }
 
-    saveControls.style.display = isAuthenticated ? "block" : "none";
-    authControls.style.display = isAuthenticated ? "none" : "block";
+    if (authControls) {
+      authControls.style.display = isAuthenticated ? "none" : "block";
+    }
+
+    // Defensive fallback: if older popup HTML is loaded without wrappers,
+    // still enforce signed-in/signed-out control visibility.
+    if (labelsInput) {
+      (labelsInput as HTMLElement).style.display = isAuthenticated ? "block" : "none";
+    }
+
+    if (labelsLabel) {
+      labelsLabel.style.display = isAuthenticated ? "block" : "none";
+    }
+
+    if (saveButton) {
+      (saveButton as HTMLElement).style.display = isAuthenticated ? "inline-flex" : "none";
+    }
+
+    if (!isAuthenticated) {
+      var allButtons = document.querySelectorAll("button");
+      for (var i = 0; i < allButtons.length; i += 1) {
+        var currentButton = allButtons[i] as HTMLButtonElement;
+        var text = (currentButton.textContent || "").toLowerCase();
+        if (currentButton.id !== "open-login" && text.indexOf("save") !== -1) {
+          currentButton.style.display = "none";
+        }
+      }
+
+      var textInputs = document.querySelectorAll('input[type="text"]');
+      for (var j = 0; j < textInputs.length; j += 1) {
+        (textInputs[j] as HTMLElement).style.display = "none";
+      }
+    }
   }
 
   /**
@@ -174,6 +210,26 @@
   document.addEventListener("DOMContentLoaded", function () {
     var button = document.getElementById("save-clip") as HTMLButtonElement | null;
     var labelsInput = document.getElementById("labels-input") as HTMLInputElement | null;
+    var authControls = document.getElementById("auth-controls");
+    if (!authControls) {
+      authControls = document.createElement("div");
+      authControls.id = "auth-controls";
+      authControls.style.display = "block";
+      authControls.style.marginTop = "8px";
+
+      var fallbackLoginButton = document.createElement("button");
+      fallbackLoginButton.id = "open-login";
+      fallbackLoginButton.textContent = "Log in";
+      authControls.appendChild(fallbackLoginButton);
+
+      var statusEl = document.getElementById("status");
+      if (statusEl && statusEl.parentNode) {
+        statusEl.parentNode.insertBefore(authControls, statusEl);
+      } else {
+        document.body.appendChild(authControls);
+      }
+    }
+
     var loginButton = document.getElementById("open-login") as HTMLButtonElement | null;
 
     if (loginButton) {

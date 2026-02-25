@@ -55,7 +55,7 @@
   </head>
   <body>
     <h1>WebClippings</h1>
-    <div id="save-controls">
+    <div id="save-controls" style="display:none;">
       <label for="labels-input" style="display:block; margin: 6px 0 4px; font-size:12px;">
         Labels (optional, comma-separated)
       </label>
@@ -65,13 +65,11 @@
         placeholder="e.g. research, work"
         style="width:100%; box-sizing:border-box; padding:4px; margin-bottom:8px; font-size:12px;"
       />
-
       <button id="save-clip">Save selected text</button>
     </div>
 
-    <div id="auth-controls" style="display:none; margin-top:8px;">
-      <p style="margin:0 0 8px; font-size:12px;">You need to sign in to save clips.</p>
-      <button id="open-login">Sign in to WebClippings</button>
+    <div id="auth-controls" style="display:block; margin-top:8px;">
+      <button id="open-login">Log in</button>
     </div>
 
     <div id="status" aria-live="polite"></div>
