@@ -118,9 +118,10 @@
   }
 
   function openLoginPage() {
-    var loginUrl = typeof getLoginPageUrl === "function"
-      ? getLoginPageUrl()
-      : "http://localhost:8000/accounts/login/";
+    if (typeof getLoginPageUrl !== "function") {
+      return;
+    }
+    var loginUrl = getLoginPageUrl();
 
     if (chrome.tabs && chrome.tabs.create) {
       chrome.tabs.create({ url: loginUrl });

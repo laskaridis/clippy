@@ -16,6 +16,7 @@ if (typeof importScripts === "function") {
   try {
     importScripts(
       "../shared/messages.js",
+      "../../runtime-config.js",
       "../shared/config.js",
       "../api/clipClient.js",
       "./contextMenuHandlers.js",
@@ -38,4 +39,3 @@ if (typeof chrome !== "undefined" && chrome.runtime) {
     registerMessageHandlers();
   }
 }
-

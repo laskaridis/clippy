@@ -111,21 +111,15 @@ test('createClip uses getClipsEndpoint when provided', async () => {
   assert.equal(body.raw_content, clip.raw_content);
 });
 
-test('createClip falls back to default endpoint when getClipsEndpoint is not a function', async () => {
+test('createClip throws when getClipsEndpoint is not available', async () => {
   const clip = makeClip();
-  let usedUrl;
 
   // Ensure getClipsEndpoint is not a function
   global.getClipsEndpoint = 'not-a-function';
-
-  global.fetch = async (url, options) => {
-    usedUrl = url;
-    return makeResponse({ ok: true, status: 201, jsonValue: { id: 1 } });
-  };
-
-  const result = await createClip(clip);
-  assert.equal(result.id, 1);
-  assert.equal(usedUrl, 'http://localhost:8000/api/clips/');
+  await assert.rejects(
+    () => createClip(clip),
+    /Missing extension runtime configuration/,
+  );
 });
 
 test('createClip throws friendly error for 401/403 responses', async () => {
@@ -177,7 +171,7 @@ test('createClip returns parsed JSON on success', async () => {
   const clip = makeClip();
   const responseBody = { id: 42, title: 'Saved clip' };
 
-  delete global.getClipsEndpoint;
+  global.getClipsEndpoint = () => 'https://api.example.com/clips/';
 
   global.fetch = async () => makeResponse({ ok: true, status: 201, jsonValue: responseBody });
 
@@ -258,4 +252,13 @@ test('isUserAuthenticated returns false for redirect status responses', async ()
 
   const isAuthenticated = await isUserAuthenticated();
   assert.equal(isAuthenticated, false);
+});
+
+test('isUserAuthenticated throws when getClipsEndpoint is not available', async () => {
+  global.getClipsEndpoint = null;
+
+  await assert.rejects(
+    () => isUserAuthenticated(),
+    /Missing extension runtime configuration/,
+  );
 });

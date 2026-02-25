@@ -24,6 +24,19 @@ cd extension
 npm run build
 ```
 
+## Build for git worktree development
+
+Prepare a worktree-scoped unpacked extension directory (manifest + runtime backend URL):
+
+```bash
+cd extension
+npm run build:worktree
+```
+
+This writes:
+- `extension/.local/worktree-runtime.json` (resolved backend/runtime metadata)
+- `extension/.local/worktrees/<worktree-id>/chrome` (load this in Chrome)
+
 ## Unit tests
 
 Run the extension test suite (build + Node test runner):
@@ -50,17 +63,17 @@ the save controls are shown while login controls are hidden.
 
 ## Load in Chrome (unpacked)
 
-1. Build the extension first (`npm run build`).
+1. Build the extension for this worktree first (`npm run build:worktree`).
 2. Open Chrome and go to `chrome://extensions`.
 3. Enable **Developer mode** (top-right).
 4. Click **Load unpacked**.
-5. Select the folder: `extension/chrome`.
+5. Select the folder: `extension/.local/worktrees/<worktree-id>/chrome`.
 
-Chrome reads `manifest.json` in `extension/chrome`, which references compiled scripts in `chrome/dist`.
+Chrome reads the generated `manifest.json`, which is scoped to this worktree backend origin.
 
 ## Iterate during development
 
 After changing `.ts` files:
 
-1. Run `npm run build` again.
+1. Run `npm run build:worktree` again.
 2. In `chrome://extensions`, click the **Reload** button on the WebClippings extension.

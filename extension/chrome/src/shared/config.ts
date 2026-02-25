@@ -3,13 +3,24 @@
 // are derived from the extension manifest.
 
 /**
- * Derive the API base URL from the extension manifest.
+ * Derive the API base URL from runtime configuration or manifest.
  *
  * Preference order:
+ * - globalThis.WEBCLIPPINGS_RUNTIME_CONFIG.apiBaseUrl when present.
  * - The first valid host in host_permissions (manifest order).
  * - Fallback to http://localhost:8000.
  */
 function getApiBaseUrl() {
+  const runtimeConfig = (globalThis as { WEBCLIPPINGS_RUNTIME_CONFIG?: { apiBaseUrl?: unknown } })
+    .WEBCLIPPINGS_RUNTIME_CONFIG;
+  if (runtimeConfig && typeof runtimeConfig.apiBaseUrl === "string") {
+    try {
+      return new URL(runtimeConfig.apiBaseUrl).origin;
+    } catch (_e) {
+      // Ignore invalid runtime override and continue with manifest fallback.
+    }
+  }
+
   try {
     const manifest = chrome && chrome.runtime && chrome.runtime.getManifest
       ? chrome.runtime.getManifest()

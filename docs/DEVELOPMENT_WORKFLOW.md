@@ -19,14 +19,21 @@ This repository follows a branch-based workflow to keep `master` always releasab
 
 ## Git Worktree Development
 
-When working on multiple features in parallel with `git worktree`, each worktree must be able to boot the backend independently.
+When working on multiple features in parallel with `git worktree`, each worktree must be able to boot the backend and extension independently.
 
 - Use `backend/scripts/runserver_worktree.sh` to start Django in local development.
 - The script derives a deterministic per-worktree default port and SQLite path.
+- The script also derives a deterministic per-worktree host/base URL and supports `--print-json` for tooling integration.
 - The script ensures an admin user exists before startup (defaults: `admin` / `admin`; override with `DJANGO_ADMIN_USERNAME`, `DJANGO_ADMIN_EMAIL`, `DJANGO_ADMIN_PASSWORD`) using Django auth APIs. It is disabled when `DJANGO_ENV=production` (or `ENVIRONMENT=production`) to avoid accidental production bootstrap.
 - You can still override defaults with environment variables:
   - `DJANGO_DEV_PORT` (or `PORT`) for runserver port
+  - `DJANGO_DEV_HOST` for runserver host identity (used for extension auth/session isolation)
+  - `DJANGO_DEV_BASE_URL` for explicit backend origin
   - `DJANGO_SQLITE_PATH` for sqlite file location
+- For the extension in each worktree:
+  - Run `cd extension && npm run build:worktree`.
+  - Load the generated unpacked extension from `extension/.local/worktrees/<worktree-id>/chrome`.
+  - E2E uses this runtime automatically via `extension/.local/worktree-runtime.json`.
 - Keep local environment values worktree-scoped where possible (for example, avoid sharing one mutable sqlite file across worktrees).
 
 ## Merge Strategy
@@ -49,4 +56,3 @@ Before handing work back ensure all the following is ture:
 [ ] Migrations are included if needed.
 [ ] Docs/specs are updated for behavior changes.
 [ ] No unrelated files were changed.
-

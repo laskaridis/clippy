@@ -5,8 +5,11 @@
   "description": "WebClippings browser extension scripts and tests",
   "scripts": {
     "build": "rm -rf chrome/dist && tsc -p chrome/tsconfig.json",
+    "prepare:worktree": "node scripts/prepare-worktree-extension.mjs",
+    "build:worktree": "npm run build && npm run prepare:worktree",
     "test": "npm run build && node --test chrome/dist/**/*.test.js",
-    "test:e2e": "npm run build && playwright test -c playwright.config.ts"
+    "test:e2e": "npm run build:worktree && playwright test -c playwright.config.ts",
+    "test:e2e:worktree": "npm run test:e2e"
   },
   "devDependencies": {
     "@playwright/test": "^1.58.2",
