@@ -19,10 +19,20 @@ function makeClip(overrides = {}) {
   );
 }
 
-function makeResponse({ ok, status, jsonValue = {}, textValue = '', jsonThrows = false }) {
+function makeResponse({
+  ok,
+  status,
+  jsonValue = {},
+  textValue = '',
+  jsonThrows = false,
+  redirected = false,
+  url = '',
+}) {
   return {
     ok,
     status,
+    redirected,
+    url,
     json: jsonThrows
       ? async () => {
           throw new Error('bad json');
@@ -199,6 +209,44 @@ test('isUserAuthenticated returns true on successful authenticated response', as
 test('isUserAuthenticated returns false on unauthorized response', async () => {
   global.getClipsEndpoint = () => 'https://api.example.com/clips/';
   global.fetch = async () => makeResponse({ ok: false, status: 403, textValue: 'Forbidden' });
+
+  const isAuthenticated = await isUserAuthenticated();
+  assert.equal(isAuthenticated, false);
+});
+
+test('isUserAuthenticated returns false when request was redirected to login', async () => {
+  global.getClipsEndpoint = () => 'https://api.example.com/clips/';
+  global.fetch = async () => makeResponse({
+    ok: true,
+    status: 200,
+    redirected: true,
+    url: 'https://api.example.com/accounts/login/?next=/api/clips/',
+  });
+
+  const isAuthenticated = await isUserAuthenticated();
+  assert.equal(isAuthenticated, false);
+});
+
+test('isUserAuthenticated returns true when redirected to a non-login resource and response is ok', async () => {
+  global.getClipsEndpoint = () => 'https://api.example.com/clips/';
+  global.fetch = async () => makeResponse({
+    ok: true,
+    status: 200,
+    redirected: true,
+    url: 'https://api.example.com/api/clips/?page=1',
+  });
+
+  const isAuthenticated = await isUserAuthenticated();
+  assert.equal(isAuthenticated, true);
+});
+
+test('isUserAuthenticated returns false for redirect status responses', async () => {
+  global.getClipsEndpoint = () => 'https://api.example.com/clips/';
+  global.fetch = async () => makeResponse({
+    ok: false,
+    status: 302,
+    textValue: '',
+  });
 
   const isAuthenticated = await isUserAuthenticated();
   assert.equal(isAuthenticated, false);

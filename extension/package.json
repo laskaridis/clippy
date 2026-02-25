@@ -5,9 +5,11 @@
   "description": "WebClippings browser extension scripts and tests",
   "scripts": {
     "build": "rm -rf chrome/dist && tsc -p chrome/tsconfig.json",
-    "test": "npm run build && node --test chrome/dist/**/*.test.js"
+    "test": "npm run build && node --test chrome/dist/**/*.test.js",
+    "test:e2e": "npm run build && playwright test -c playwright.config.ts"
   },
   "devDependencies": {
+    "@playwright/test": "^1.58.2",
     "@types/chrome": "^0.1.24",
     "@types/node": "^24.0.0",
     "typescript": "^5.8.3"

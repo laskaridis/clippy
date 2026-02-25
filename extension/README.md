@@ -24,7 +24,7 @@ cd extension
 npm run build
 ```
 
-## Test
+## Unit tests
 
 Run the extension test suite (build + Node test runner):
 
@@ -32,6 +32,21 @@ Run the extension test suite (build + Node test runner):
 cd extension
 npm test
 ```
+
+## E2E tests (Playwright)
+
+Run popup integration tests against a real Chromium extension runtime and backend:
+
+```bash
+cd extension
+npm install
+npx playwright install chromium
+npm run test:e2e
+```
+
+This validates the signed-out popup experience end-to-end (status message, login button, and hidden save/label controls).
+It also validates signed-in state by logging in through `/accounts/login/` and confirming
+the save controls are shown while login controls are hidden.
 
 ## Load in Chrome (unpacked)
 
