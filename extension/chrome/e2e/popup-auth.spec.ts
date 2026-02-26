@@ -50,8 +50,59 @@ const EXTENSION_DIR = RUNTIME.extensionDir;
 const BACKEND_BASE_URL = RUNTIME.backendBaseUrl;
 const LOGIN_URL = `${BACKEND_BASE_URL}/accounts/login/`;
 const BACKEND_HEALTHCHECK_URL = `http://127.0.0.1:${RUNTIME.backendPort}/accounts/login/`;
+const BACKEND_LOG_LINE_LIMIT = 80;
 
 let backendProcess: ChildProcess | null = null;
+let backendStartupError: Error | null = null;
+const backendStdoutBuffer: string[] = [];
+const backendStderrBuffer: string[] = [];
+
+function appendLogLines(buffer: string[], chunk: string): void {
+  const lines = chunk
+    .replace(/\r/g, "")
+    .split("\n")
+    .map((line) => line.trimEnd())
+    .filter((line) => line.length > 0);
+
+  if (lines.length === 0) {
+    return;
+  }
+
+  buffer.push(...lines);
+  if (buffer.length > BACKEND_LOG_LINE_LIMIT) {
+    buffer.splice(0, buffer.length - BACKEND_LOG_LINE_LIMIT);
+  }
+}
+
+function formatRecentBackendLogs(): string {
+  const sections: string[] = [];
+
+  if (backendStdoutBuffer.length > 0) {
+    sections.push(`stdout:\n${backendStdoutBuffer.join("\n")}`);
+  }
+
+  if (backendStderrBuffer.length > 0) {
+    sections.push(`stderr:\n${backendStderrBuffer.join("\n")}`);
+  }
+
+  return sections.length > 0 ? sections.join("\n\n") : "(no backend output captured)";
+}
+
+function resetBackendStartupLogs(): void {
+  backendStartupError = null;
+  backendStdoutBuffer.length = 0;
+  backendStderrBuffer.length = 0;
+}
+
+function collectBackendStartupLogs(process: ChildProcess): void {
+  process.stdout?.on("data", (chunk: Buffer | string) => {
+    appendLogLines(backendStdoutBuffer, String(chunk));
+  });
+
+  process.stderr?.on("data", (chunk: Buffer | string) => {
+    appendLogLines(backendStderrBuffer, String(chunk));
+  });
+}
 
 function runBackendCommand(args: string[]): void {
   const result = spawnSync("python", ["manage.py", ...args], {
@@ -84,13 +135,21 @@ async function waitForBackend(timeoutMs = 20_000): Promise<void> {
   const deadline = Date.now() + timeoutMs;
 
   while (Date.now() < deadline) {
+    if (backendStartupError) {
+      throw new Error(
+        `Backend process failed to start: ${backendStartupError.message}\nRecent backend logs:\n${formatRecentBackendLogs()}`
+      );
+    }
+
     if (await isBackendReachable()) {
       return;
     }
     await new Promise((resolve) => setTimeout(resolve, 250));
   }
 
-  throw new Error(`Timed out waiting for backend at ${BACKEND_BASE_URL}.`);
+  throw new Error(
+    `Timed out waiting for backend at ${BACKEND_BASE_URL}.\nRecent backend logs:\n${formatRecentBackendLogs()}`
+  );
 }
 
 async function ensureBackendRunning(): Promise<void> {
@@ -98,6 +157,7 @@ async function ensureBackendRunning(): Promise<void> {
     return;
   }
 
+  resetBackendStartupLogs();
   backendProcess = spawn(
     "python",
     ["manage.py", "runserver", `0.0.0.0:${RUNTIME.backendPort}`, "--noreload"],
@@ -112,10 +172,10 @@ async function ensureBackendRunning(): Promise<void> {
     },
   );
 
+  collectBackendStartupLogs(backendProcess);
+
   backendProcess.on("error", (error) => {
-    // Surface startup errors if readiness check fails.
-    // eslint-disable-next-line no-console
-    console.error("Failed to start backend:", error);
+    backendStartupError = error;
   });
 
   await waitForBackend();
