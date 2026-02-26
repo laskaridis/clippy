@@ -31,7 +31,7 @@ When working on multiple features in parallel with `git worktree`, each worktree
   - `DJANGO_DEV_BASE_URL` for explicit backend origin
   - `DJANGO_SQLITE_PATH` for sqlite file location
 - For the extension in each worktree:
-  - Run `cd extension && npm run build:worktree`.
+  - Run `cd extension && pnpm run build:worktree`.
   - Load the generated unpacked extension from `extension/.local/worktrees/<worktree-id>/chrome`.
   - E2E uses this runtime automatically via `extension/.local/worktree-runtime.json`.
 - Keep local environment values worktree-scoped where possible (for example, avoid sharing one mutable sqlite file across worktrees).

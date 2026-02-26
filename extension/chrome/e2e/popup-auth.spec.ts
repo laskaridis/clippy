@@ -10,7 +10,7 @@ import { spawn, spawnSync, ChildProcess } from "node:child_process";
  * This suite runs against a real Chromium extension runtime and Django backend.
  *
  * Worktree/runtime assumptions:
- * - `npm run build:worktree` has prepared `extension/.local/worktree-runtime.json`.
+ * - `pnpm run build:worktree` has prepared `extension/.local/worktree-runtime.json`.
  * - The runtime file provides:
  *   - backendBaseUrl (browser-facing host/origin used for auth/cookies)
  *   - backendPort (local port used for health checks and backend startup)
@@ -38,7 +38,7 @@ type WorktreeRuntime = {
 function loadWorktreeRuntime(): WorktreeRuntime {
   if (!fs.existsSync(WORKTREE_RUNTIME_FILE)) {
     throw new Error(
-      "Missing extension/.local/worktree-runtime.json. Run `npm run prepare:worktree` in extension/ first."
+      "Missing extension/.local/worktree-runtime.json. Run `pnpm run prepare:worktree` in extension/ first."
     );
   }
   const raw = fs.readFileSync(WORKTREE_RUNTIME_FILE, "utf8");
