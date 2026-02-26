@@ -43,7 +43,7 @@ cd backend
 
 This script resolves deterministic per-worktree defaults for:
 - SQLite DB path
-- backend port
+- backend port (with automatic fallback to the next free port in range)
 - backend host/base URL
 
 You can inspect resolved runtime values without starting Django:

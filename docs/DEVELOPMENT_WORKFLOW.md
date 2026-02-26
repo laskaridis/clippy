@@ -22,7 +22,7 @@ This repository follows a branch-based workflow to keep `master` always releasab
 When working on multiple features in parallel with `git worktree`, each worktree must be able to boot the backend and extension independently.
 
 - Use `backend/scripts/runserver_worktree.sh` to start Django in local development.
-- The script derives a deterministic per-worktree default port and SQLite path.
+- The script derives a deterministic per-worktree default port and SQLite path, then automatically falls forward to the next free port in range when needed.
 - The script also derives a deterministic per-worktree host/base URL and supports `--print-json` for tooling integration.
 - The script ensures an admin user exists before startup (defaults: `admin` / `admin`; override with `DJANGO_ADMIN_USERNAME`, `DJANGO_ADMIN_EMAIL`, `DJANGO_ADMIN_PASSWORD`) using Django auth APIs. It is disabled when `DJANGO_ENV=production` (or `ENVIRONMENT=production`) to avoid accidental production bootstrap.
 - You can still override defaults with environment variables:

@@ -1,23 +1,39 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-BACKEND_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-WORKTREE_ROOT="$(cd "${BACKEND_DIR}/.." && git rev-parse --show-toplevel)"
-WORKTREE_BASENAME="$(basename "${WORKTREE_ROOT}")"
-PRINT_JSON=0
+if [[ -t 1 && -z "${NO_COLOR:-}" ]]; then
+  COLOR_INFO=$'\033[0;32m'
+  COLOR_WARN=$'\033[0;33m'
+  COLOR_ERROR=$'\033[0;31m'
+  COLOR_RESET=$'\033[0m'
+else
+  COLOR_INFO=""
+  COLOR_WARN=""
+  COLOR_ERROR=""
+  COLOR_RESET=""
+fi
 
-if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then
+info() {
+  printf '%b\n' "${COLOR_INFO}[clippy] ${*}${COLOR_RESET}"
+}
+
+warn() {
+  printf '%b\n' "${COLOR_WARN}[clippy] warning: ${*}${COLOR_RESET}"
+}
+
+error() {
+  printf '%b\n' "${COLOR_ERROR}[clippy] error: ${*}${COLOR_RESET}" >&2
+}
+
+help() {
   cat <<'EOF'
+Starts Django for the current git worktree with deterministic defaults:
+  - per-worktree SQLite DB path
+  - per-worktree development port (with automatic fallback if busy)
+  - per-worktree host/base URL
+
 Usage:
   backend/scripts/runserver_worktree.sh [PORT]
-  backend/scripts/runserver_worktree.sh --print-json
-  backend/scripts/runserver_worktree.sh --help
-
-Description:
-  Starts Django for the current git worktree with deterministic defaults:
-  - per-worktree SQLite DB path
-  - per-worktree development port
-  - per-worktree host/base URL
 
 Options:
   PORT          Optional positional override for the runserver port.
@@ -31,6 +47,10 @@ Environment overrides:
   DJANGO_SQLITE_PATH       Override default per-worktree sqlite path.
   ALLOWED_HOSTS            Override allowed hosts (defaults include worktree host + localhost).
 EOF
+}
+
+if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then
+  help
   exit 0
 fi
 
@@ -39,13 +59,18 @@ if [[ "${1:-}" == "--print-json" ]]; then
   shift
 fi
 
+BACKEND_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+WORKTREE_ROOT="$(cd "${BACKEND_DIR}/.." && git rev-parse --show-toplevel)"
+WORKTREE_BASENAME="$(basename "${WORKTREE_ROOT}")"
+PRINT_JSON=0
+
 # Prefer GNU sha1sum but fall back to the macOS-default shasum implementation.
 if command -v sha1sum >/dev/null 2>&1; then
   WORKTREE_HASH="$(printf '%s' "${WORKTREE_ROOT}" | sha1sum | cut -c1-6)"
 elif command -v shasum >/dev/null 2>&1; then
   WORKTREE_HASH="$(printf '%s' "${WORKTREE_ROOT}" | shasum -a 1 | cut -c1-6)"
 else
-  echo "[clippy] error: neither sha1sum nor shasum is available" >&2
+  error "neither sha1sum nor shasum is available"
   exit 1
 fi
 WORKTREE_ID="${WORKTREE_BASENAME}-${WORKTREE_HASH}"
@@ -54,9 +79,61 @@ WORKTREE_ID="${WORKTREE_BASENAME}-${WORKTREE_HASH}"
 export DJANGO_SQLITE_PATH="${DJANGO_SQLITE_PATH:-${BACKEND_DIR}/.local/db-${WORKTREE_ID}.sqlite3}"
 mkdir -p "$(dirname "${DJANGO_SQLITE_PATH}")"
 
-# Pick a deterministic port per worktree, while still allowing overrides.
-DEFAULT_PORT="$((8000 + (0x${WORKTREE_HASH} % 200)))"
-PORT="${DJANGO_DEV_PORT:-${PORT:-${1:-${DEFAULT_PORT}}}}"
+# Pick a deterministic port window per worktree and resolve to a free port.
+PORT_RANGE_START=8000
+PORT_RANGE_SIZE=1000
+DEFAULT_PORT="$((PORT_RANGE_START + (0x${WORKTREE_HASH} % PORT_RANGE_SIZE)))"
+PORT_OVERRIDE="${DJANGO_DEV_PORT:-${PORT:-${1:-}}}"
+PORT="${PORT_OVERRIDE:-${DEFAULT_PORT}}"
+
+port_is_free() {
+  local candidate_port="$1"
+  if command -v lsof >/dev/null 2>&1; then
+    if lsof -nP -iTCP:"${candidate_port}" -sTCP:LISTEN >/dev/null 2>&1; then
+      return 1
+    fi
+    return 0
+  fi
+
+  # Fallback for environments without lsof.
+  CANDIDATE_PORT="${candidate_port}" python -c 'import os, socket, sys
+port = int(os.environ["CANDIDATE_PORT"])
+s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+try:
+    # Match Django runserver bind target (0.0.0.0) to avoid false "free" ports.
+    s.bind(("0.0.0.0", port))
+except OSError:
+    sys.exit(1)
+finally:
+    s.close()'
+}
+
+resolve_default_port() {
+  local candidate="$1"
+  local range_start="$2"
+  local range_size="$3"
+  local attempts=0
+
+  while (( attempts < range_size )); do
+    if port_is_free "${candidate}"; then
+      printf '%s\n' "${candidate}"
+      return 0
+    fi
+    candidate="$((range_start + ((candidate - range_start + 1) % range_size)))"
+    attempts=$((attempts + 1))
+  done
+
+  error "no free ports available in range ${range_start}-$((range_start + range_size - 1))"
+  return 1
+}
+
+if [[ -z "${PORT_OVERRIDE}" ]]; then
+  requested_port="${PORT}"
+  PORT="$(resolve_default_port "${PORT}" "${PORT_RANGE_START}" "${PORT_RANGE_SIZE}")"
+  if [[ "${PORT}" != "${requested_port}" && "${PRINT_JSON}" != "1" ]]; then
+    warn "default port ${requested_port} is busy; using ${PORT} instead"
+  fi
+fi
 DEFAULT_HOST="clippy-${WORKTREE_HASH}.localhost"
 
 if [[ -n "${DJANGO_DEV_HOST:-}" ]]; then
@@ -99,11 +176,11 @@ if [[ "${PRINT_JSON}" == "1" ]]; then
   exit 0
 fi
 
-echo "[clippy] worktree=${WORKTREE_ROOT}"
-echo "[clippy] host=${HOST}"
-echo "[clippy] sqlite=${DJANGO_SQLITE_PATH}"
-echo "[clippy] port=${PORT}"
-echo "[clippy] base_url=${BASE_URL}"
+info "worktree=${WORKTREE_ROOT}"
+info "host=${HOST}"
+info "sqlite=${DJANGO_SQLITE_PATH}"
+info "port=${PORT}"
+info "base_url=${BASE_URL}"
 
 cd "${BACKEND_DIR}"
 python manage.py migrate
