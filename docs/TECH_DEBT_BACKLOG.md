@@ -12,12 +12,14 @@ Keep entries actionable and current.
 
 ## Entry Template
 
-| ID | Title | Area | Impact | Status | Created | Updated | Owner | Related | Next Step |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| TD-000 | Short description | backend/extension/docs/infra | Why it matters | Open | YYYY-MM-DD | YYYY-MM-DD | @github-user | #issue, #pr | Concrete next action |
+### TD-000: Short description
+- Area: backend/extension/docs/infra
+- Impact: Why it matters
+- Status: Open
+- Created: YYYY-MM-DD
+- Updated: YYYY-MM-DD
+- Owner: @github-user
+- Related: #issue, #pr
+- Next Step: Concrete next action
 
 ## Backlog
-
-| ID | Title | Area | Impact | Status | Created | Updated | Owner | Related | Next Step |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| TD-001 | Fill AGENTS.md links for missing docs | docs | AGENTS references `docs/DELIVERY_CHECKLIST.md`, which does not exist in this branch and weakens guidance discoverability. | Open | 2026-02-26 | 2026-02-26 | @laskaridis | #10 | Add missing checklist doc or update AGENTS links to match current repository docs. |
