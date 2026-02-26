@@ -13,13 +13,11 @@ Keep entries actionable and current.
 ## Entry Template
 
 ### TD-000: Short description
-- Area: backend/extension/docs/infra
+- Scope: backend|extension|docs|infra|process|etc
 - Impact: Why it matters
 - Status: Open
 - Created: YYYY-MM-DD
-- Updated: YYYY-MM-DD
-- Owner: @github-user
 - Related: #issue, #pr
-- Next Step: Concrete next action
+- Next actions: Concrete next action
 
 ## Backlog
