@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+PRINT_JSON=0
+
 if [[ -t 1 && -z "${NO_COLOR:-}" ]]; then
   COLOR_INFO=$'\033[0;32m'
   COLOR_WARN=$'\033[0;33m'
@@ -62,7 +64,6 @@ fi
 BACKEND_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 WORKTREE_ROOT="$(cd "${BACKEND_DIR}/.." && git rev-parse --show-toplevel)"
 WORKTREE_BASENAME="$(basename "${WORKTREE_ROOT}")"
-PRINT_JSON=0
 
 # Prefer GNU sha1sum but fall back to the macOS-default shasum implementation.
 if command -v sha1sum >/dev/null 2>&1; then
