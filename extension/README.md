@@ -5,14 +5,14 @@ Quick guide to build, test, and load the extension locally.
 ## Prerequisites
 
 - Node.js 18+
-- npm
+- pnpm
 - Google Chrome
 
 ## Install dependencies
 
 ```bash
 cd extension
-npm install
+pnpm install
 ```
 
 ## Build
@@ -21,7 +21,7 @@ Compile TypeScript source from `chrome/src` to runtime JavaScript in `chrome/dis
 
 ```bash
 cd extension
-npm run build
+pnpm run build
 ```
 
 ## Build for git worktree development
@@ -30,7 +30,7 @@ Prepare a worktree-scoped unpacked extension directory (manifest + runtime backe
 
 ```bash
 cd extension
-npm run build:worktree
+pnpm run build:worktree
 ```
 
 This writes:
@@ -43,7 +43,7 @@ Run the extension test suite (build + Node test runner):
 
 ```bash
 cd extension
-npm test
+pnpm test
 ```
 
 ## E2E tests (Playwright)
@@ -52,9 +52,9 @@ Run popup integration tests against a real Chromium extension runtime and backen
 
 ```bash
 cd extension
-npm install
-npx playwright install chromium
-npm run test:e2e
+pnpm install
+pnpm exec playwright install chromium
+pnpm run test:e2e
 ```
 
 This validates the signed-out popup experience end-to-end (status message, login button, and hidden save/label controls).
@@ -63,7 +63,7 @@ the save controls are shown while login controls are hidden.
 
 ## Load in Chrome (unpacked)
 
-1. Build the extension for this worktree first (`npm run build:worktree`).
+1. Build the extension for this worktree first (`pnpm run build:worktree`).
 2. Open Chrome and go to `chrome://extensions`.
 3. Enable **Developer mode** (top-right).
 4. Click **Load unpacked**.
@@ -75,5 +75,5 @@ Chrome reads the generated `manifest.json`, which is scoped to this worktree bac
 
 After changing `.ts` files:
 
-1. Run `npm run build:worktree` again.
+1. Run `pnpm run build:worktree` again.
 2. In `chrome://extensions`, click the **Reload** button on the WebClippings extension.

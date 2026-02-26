@@ -3,13 +3,14 @@
   "private": true,
   "version": "0.0.1",
   "description": "WebClippings browser extension scripts and tests",
+  "packageManager": "pnpm@9.15.1",
   "scripts": {
     "build": "rm -rf chrome/dist && tsc -p chrome/tsconfig.json",
+    "test": "pnpm run build && node --test chrome/dist/**/*.test.js",
     "prepare:worktree": "node scripts/prepare-worktree-extension.mjs",
-    "build:worktree": "npm run build && npm run prepare:worktree",
-    "test": "npm run build && node --test chrome/dist/**/*.test.js",
-    "test:e2e": "npm run build:worktree && playwright test -c playwright.config.ts",
-    "test:e2e:worktree": "npm run test:e2e"
+    "build:worktree": "pnpm run build && pnpm run prepare:worktree",
+    "test:e2e": "pnpm run build:worktree && playwright test -c playwright.config.ts",
+    "test:e2e:worktree": "pnpm run test:e2e"
   },
   "devDependencies": {
     "@playwright/test": "^1.58.2",

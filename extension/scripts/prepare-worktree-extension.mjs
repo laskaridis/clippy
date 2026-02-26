@@ -18,8 +18,8 @@ import { spawnSync } from "node:child_process";
  *   - copied src/ and dist/ runtime assets
  *
  * This script is intended to run via:
- * - npm run prepare:worktree
- * - npm run build:worktree
+ * - pnpm run prepare:worktree
+ * - pnpm run build:worktree
  */
 const extensionDir = path.resolve(import.meta.dirname, "..");
 const repoRoot = path.resolve(extensionDir, "..");
@@ -29,7 +29,7 @@ const sourceDistDir = path.join(sourceChromeDir, "dist");
 
 if (!fs.existsSync(sourceDistDir)) {
   console.error(
-    "[extension] Missing chrome/dist. Run `npm run build` in extension/ before prepare-worktree-extension."
+    "[extension] Missing chrome/dist. Run `pnpm run build` in extension/ before prepare-worktree-extension."
   );
   process.exit(1);
 }
