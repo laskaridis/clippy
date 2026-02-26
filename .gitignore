@@ -60,3 +60,7 @@ extension/.local/
 
 # Docker
 *.pid
+
+# git
+.worktrees
+.local/
