@@ -33,7 +33,7 @@ When working on multiple features in parallel with `git worktree`, each worktree
 - For the extension in each worktree:
   - Run `cd extension && pnpm run build:worktree`.
   - Load the generated unpacked extension from `extension/.local/worktrees/<worktree-id>/chrome`.
-  - E2E uses this runtime automatically via `extension/.local/worktree-runtime.json`.
+  - E2E uses the generated runtime metadata `extension/.local/worktree-runtime-<worktree-id>.json`.
 - Keep local environment values worktree-scoped where possible (for example, avoid sharing one mutable sqlite file across worktrees).
 
 ## Merge Strategy

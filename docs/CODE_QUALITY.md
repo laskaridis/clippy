@@ -8,3 +8,4 @@
 - Keep user-facing error messages actionable.
 - Remove dead code introduced during refactors.
 - Do not introduce new dependencies without strong justification.
+- Always document scripts to clarify usage, pre-requisite, outcomes, etc
