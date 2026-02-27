@@ -1,5 +1,5 @@
 ---
-name: worktree-cleanup
+name: git-worktree-cleanup
 description: Safely remove a completed git worktree with strict verification gates. Use when asked to clean up, remove, tear down, or delete a worktree after work is done. Require that the worktree is clean and branch commits are pushed to origin before removal.
 ---
 
