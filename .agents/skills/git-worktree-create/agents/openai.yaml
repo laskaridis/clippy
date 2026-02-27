@@ -1,0 +1,4 @@
+interface:
+  display_name: "Create git worktree"
+  short_description: "Create worktree from an existing branch"
+  default_prompt: "Use $worktree-create to create a new worktree under <project-root>/.worktrees from an existing branch."

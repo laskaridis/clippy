@@ -1,5 +1,5 @@
 ---
-name: worktree-bootstrap 
+name: git-worktree-bootstrap 
 description: Bootstrap and verify per-worktree backend and extension runtime for local development in this repository. Use when asked to set up or run a worktree environment, prepare backend+extension local testing, or debug worktree runtime mismatch issues (port/host/base URL/sqlite path/runtime metadata/output extension directory).
 ---
 
