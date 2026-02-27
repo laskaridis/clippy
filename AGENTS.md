@@ -23,7 +23,6 @@ Use this file as the entry point, then follow the topic-specific guidance below.
 - Code quality standards: [docs/CODE_QUALITY.md](docs/CODE_QUALITY.md)
 - Tech debt backlog: [docs/TECH_DEBT_BACKLOG.md](docs/TECH_DEBT_BACKLOG.md)
 - Documentation/spec sync rules: [docs/DOCUMENTATION.md](docs/DOCUMENTATION.md)
-- Definition of done: [docs/DELIVERY_CHECKLIST.md](docs/DELIVERY_CHECKLIST.md)
 - Development workflow: [docs/DEVELOPMENT_WORKFLOW.md](docs/DEVELOPMENT_WORKFLOW.md)
 
 ## Priority Rules
