@@ -75,6 +75,7 @@ else
   exit 1
 fi
 WORKTREE_ID="${WORKTREE_BASENAME}-${WORKTREE_HASH}"
+RUNTIME_STATE_PATH="${BACKEND_DIR}/.local/worktree-runtime-${WORKTREE_ID}.json"
 
 # Keep each worktree's default sqlite DB isolated from sibling worktrees.
 export DJANGO_SQLITE_PATH="${DJANGO_SQLITE_PATH:-${BACKEND_DIR}/.local/db-${WORKTREE_ID}.sqlite3}"
@@ -157,7 +158,7 @@ export DJANGO_DEV_HOST="${HOST}"
 export DJANGO_DEV_BASE_URL="${BASE_URL}"
 export ALLOWED_HOSTS="${ALLOWED_HOSTS:-${HOST},localhost,127.0.0.1,[::1]}"
 
-if [[ "${PRINT_JSON}" == "1" ]]; then
+emit_runtime_json() {
   WORKTREE_ROOT="${WORKTREE_ROOT}" \
   WORKTREE_ID="${WORKTREE_ID}" \
   WORKTREE_HASH="${WORKTREE_HASH}" \
@@ -174,8 +175,14 @@ if [[ "${PRINT_JSON}" == "1" ]]; then
 "backendHost": os.environ["HOST"],
 "backendBaseUrl": os.environ["BASE_URL"],
 }))'
+}
+
+if [[ "${PRINT_JSON}" == "1" ]]; then
+  emit_runtime_json
   exit 0
 fi
+
+emit_runtime_json > "${RUNTIME_STATE_PATH}"
 
 info "worktree=${WORKTREE_ROOT}"
 info "host=${HOST}"

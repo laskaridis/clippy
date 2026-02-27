@@ -34,7 +34,7 @@ pnpm run build:worktree
 ```
 
 This writes:
-- `extension/.local/worktree-runtime.json` (resolved backend/runtime metadata)
+- `extension/.local/worktree-runtime-<worktree-id>.json` (resolved backend/runtime metadata)
 - `extension/.local/worktrees/<worktree-id>/chrome` (load this in Chrome)
 
 ## Unit tests

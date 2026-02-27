@@ -64,3 +64,4 @@ extension/.local/
 # git
 .worktrees
 .local/
+**/.local/

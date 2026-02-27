@@ -2,6 +2,7 @@ import { expect, test, chromium, BrowserContext, Page } from "@playwright/test";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { createHash } from "node:crypto";
 import { spawn, spawnSync, ChildProcess } from "node:child_process";
 
 /**
@@ -10,7 +11,8 @@ import { spawn, spawnSync, ChildProcess } from "node:child_process";
  * This suite runs against a real Chromium extension runtime and Django backend.
  *
  * Worktree/runtime assumptions:
- * - `pnpm run build:worktree` has prepared `extension/.local/worktree-runtime.json`.
+ * - `pnpm run build:worktree` has prepared
+ *   `extension/.local/worktree-runtime-<worktree-id>.json`.
  * - The runtime file provides:
  *   - backendBaseUrl (browser-facing host/origin used for auth/cookies)
  *   - backendPort (local port used for health checks and backend startup)
@@ -21,11 +23,25 @@ import { spawn, spawnSync, ChildProcess } from "node:child_process";
  * - Signed-out popup shows login controls and hides save controls.
  * - Signed-in popup shows save controls and hides login controls.
  */
-const REPO_ROOT = path.resolve(process.cwd(), "..");
-const BACKEND_DIR = path.join(REPO_ROOT, "backend");
-const WORKTREE_RUNTIME_FILE = path.resolve(process.cwd(), ".local", "worktree-runtime.json");
+
+// Test user credentials used for creating a test user (see #ensureActiveE2EUser):
 const E2E_EMAIL = "extension-e2e-user@example.com";
 const E2E_PASSWORD = "Password123!";
+
+const REPO_ROOT = path.resolve(process.cwd(), "..");
+const BACKEND_DIR = path.join(REPO_ROOT, "backend");
+
+ // Calculate a short worktree ID based on the worktree root path. This 
+ // allows multiple worktrees to coexist without conflicts:
+function calculateWorktreeId(worktreeRoot: string): string {
+  return createHash("sha1").update(worktreeRoot).digest("hex").slice(0, 6);
+}
+
+const WORKTREE_RUNTIME_FILE = path.resolve(
+  process.cwd(),
+  ".local",
+  `worktree-runtime-${path.basename(REPO_ROOT)}-${calculateWorktreeId(REPO_ROOT)}.json`
+);
 
 type WorktreeRuntime = {
   backendBaseUrl: string;
@@ -38,7 +54,7 @@ type WorktreeRuntime = {
 function loadWorktreeRuntime(): WorktreeRuntime {
   if (!fs.existsSync(WORKTREE_RUNTIME_FILE)) {
     throw new Error(
-      "Missing extension/.local/worktree-runtime.json. Run `pnpm run prepare:worktree` in extension/ first."
+      "Missing extension/.local/worktree-runtime-<worktree-id>.json. Run `pnpm run prepare:worktree` in extension/ first."
     );
   }
   const raw = fs.readFileSync(WORKTREE_RUNTIME_FILE, "utf8");
