@@ -1,5 +1,5 @@
 ---
-name: cleanup-worktree
+name: worktree-cleanup
 description: Safely remove a completed git worktree with strict verification gates. Use when asked to clean up, remove, tear down, or delete a worktree after work is done. Require that the worktree is clean and branch commits are pushed to origin before removal.
 ---
 
@@ -17,13 +17,14 @@ Use this skill when asked to:
 ## Tooling
 
 Use this helper as the default path:
-- `<path-to-skill>/scripts/cleanup_worktree.sh`
+- `<path-to-skill>/scripts/cleanup.sh`
 
 ## Execution
 
-1. Enter the linked worktree to be removed.
-2. Run `<path-to-skill>/scripts/cleanup_worktree.sh`.
-3. Report the removed path.
+1. `cd` to the linked worktree to be removed.
+2. Run `<path-to-skill>/scripts/cleanup.sh`.
+3. `cd` to project root after cleanup.
+4. Report the removed path.
 
 ## Hard Constraints
 

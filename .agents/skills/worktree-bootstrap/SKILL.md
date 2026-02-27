@@ -1,5 +1,5 @@
 ---
-name: worktree-runtime-bootstrap
+name: worktree-bootstrap 
 description: Bootstrap and verify per-worktree backend and extension runtime for local development in this repository. Use when asked to set up or run a worktree environment, prepare backend+extension local testing, or debug worktree runtime mismatch issues (port/host/base URL/sqlite path/runtime metadata/output extension directory).
 ---
 
@@ -12,13 +12,13 @@ Bootstrap and validate a deterministic runtime for the current git worktree.
 Use this skill when the user asks things like:
 - "bootstrap this worktree"
 - "set up backend and extension for this worktree"
-- "prepare local testing runtime"
+- "Bootstrap worktree runtime"
 - "fix worktree runtime mismatch"
 - "verify worktree port/base URL/sqlite path"
 
 ## Workflow
 
-1. Run `./scripts/bootstrap_worktree_runtime.sh` from this skill directory.
+1. Run `<path-to-skill>/scripts/bootstrap.sh` from this skill directory.
 2. Read the summary output and report:
 - worktree id
 - backend host/port/base URL
@@ -45,4 +45,4 @@ Return:
 ## Resources
 
 ### scripts/
-- `bootstrap_worktree_runtime.sh`: executes runtime bootstrap and verification end-to-end.
+- `<path-to-skill>/bootstrap.sh`: executes runtime bootstrap and verification end-to-end.

@@ -1,5 +1,5 @@
 ---
-name: resolve-github-issue
+name: github-issue-resolve
 description: Resolve a specific GitHub issue by implementing its scope and creating a PR.
 ---
 
