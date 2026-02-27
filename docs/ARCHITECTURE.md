@@ -7,6 +7,19 @@ The backend uses a modular monolith:
 - strongly separated feature modules under `backend/apps/`
 - explicit dependency direction to keep low coupling and high cohesion
 
+## Tech stack
+
+- Backend (`backend/`):
+  * Django 5.2
+  * Django REST Framework 
+- Web app (`backend/`):
+  * boostrap css
+- Extensions (`extension/`)
+  * Chrome Manifest V3
+  * typescript
+  * playwrtight
+  * pnpm
+
 ## Main Architectural Components
 
 ### Backend Components

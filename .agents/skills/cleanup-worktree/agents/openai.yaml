@@ -1,0 +1,4 @@
+interface:
+  display_name: "Cleanup git worktree"
+  short_description: "Safely cleans up the current git worktree"
+  default_prompt: "Make sure that all work has been committed and pushed. Then remove the current git worktree to clean up the local environment."

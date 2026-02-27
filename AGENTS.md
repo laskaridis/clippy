@@ -4,6 +4,16 @@ Guidelines for coding agents working in this repository.
 
 Use this file as the entry point, then follow the topic-specific guidance below.
 
+## Directory outline
+- .codex # codex agent specific configuration (i.e. skills, etc)
+- .local # artifacts specific to the local environment
+- .specify # spec-kit specific files 
+- backend # backend api application
+- docs # project documentation artifacts
+- extension # browser extensions (currently only chrome)
+- infra # application infrastructure
+- specs # feature specifications and plans (created by spec-kit)
+
 ## Context-Specific Guides
 
 - Product and repository context: [docs/PRODUCT_CONTEXT.md](docs/PRODUCT_CONTEXT.md)

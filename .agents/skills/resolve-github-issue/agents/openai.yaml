@@ -1,0 +1,4 @@
+interface:
+  display_name: "Resolve GitHub issue"
+  short_description: "Pick up and resolve a GitHub issue"
+  default_prompt: "Pick up the following GitHub issue and resolve it: <issue number>"

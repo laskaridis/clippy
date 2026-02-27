@@ -1,6 +1,12 @@
 # WebClippings Backend
 
-Quick guide to install, run, and test the Django backend locally.
+Backend application publishing an API and a web application to manage clippings.
+
+## Directory
+
+- `backend/apps/clips/` models, HTML views, API serializers/views, tests
+- `backend/apps/accounts/` auth views/templates/tests
+- `backend/webclippings/` settings, URL routing, auth class
 
 ## Prerequisites
 
@@ -52,6 +58,15 @@ You can inspect resolved runtime values without starting Django:
 cd backend
 ./scripts/runserver_worktree.sh --print-json
 ```
+
+Alternatively, you can resolve runtime values by inspecting the runtime
+metadata for the worktree environment:
+```bash
+cd backend
+cat ./local/worktree-runtime-<worktree-id>.json
+```
+Here, <worktree-id> is the SHA1 hash of the worktree root directory
+(also emitted by `--print-json` option)
 
 For full options:
 

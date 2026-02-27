@@ -5,17 +5,24 @@ description: Safely remove a completed git worktree with strict verification gat
 
 # Cleanup Worktree
 
-Run this workflow when worktree implementation is complete and local work is already pushed.
+## When to use
 
-## Script
+Use this skill when asked to:
+- clean up current worktree 
+- remove worktree 
+- tear down worktree 
+- delete worktree 
+- any similar request referencing a specific worktree path either directly or indirectly.
+
+## Tooling
 
 Use this helper as the default path:
-- `.codex/skills/cleanup-worktree/scripts/cleanup_worktree.sh`
+- `<path-to-skill>/scripts/cleanup_worktree.sh`
 
 ## Execution
 
 1. Enter the linked worktree to be removed.
-2. Run `.codex/skills/cleanup-worktree/scripts/cleanup_worktree.sh`.
+2. Run `<path-to-skill>/scripts/cleanup_worktree.sh`.
 3. Report the removed path.
 
 ## Hard Constraints

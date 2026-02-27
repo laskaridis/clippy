@@ -4,7 +4,7 @@ set -euo pipefail
 usage() {
   cat <<'USAGE'
 Usage:
-  create_gh_pull_request.sh <issue-number> --body-file <path> [--title <title>]
+  gh_create_pr.sh <issue-number> --body-file <path> [--title <title>]
 
 Requirements:
   - Tests must have been run with scripts/run_required_tests.sh
@@ -97,8 +97,9 @@ PR_URL="$(gh pr create --base master --head "$CURRENT_BRANCH" --title "$TITLE" -
 
 echo "Created PR: $PR_URL"
 
-python3 .codex/skills/resolve-github-issue/scripts/set_project_status.py \
+python3 .agents/skills/resolve-github-issue/scripts/gh_update_issue.py \
   --issue "$ISSUE_NUMBER" \
-  --status "In review"
+  --status "In review" \
+  --skip-assign
 
 echo "[delivery] issue #$ISSUE_NUMBER moved to In review"
