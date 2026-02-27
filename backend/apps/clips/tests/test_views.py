@@ -62,6 +62,25 @@ class ClipHtmlViewsTests(TestCase):
         self.assertEqual(len(clips), 2)
         self.assertTrue(all(clip.user == self.user for clip in clips))
 
+    def test_list_renders_raw_content_and_labels_without_domain(self) -> None:
+        clip = Clip.objects.create(
+            user=self.user,
+            title="First",
+            url="https://example.com/one",
+            domain="example.com",
+            raw_content="First clip content shown on list page",
+            normalized_text="first clip content shown on list page",
+        )
+        clip.labels.add(Label.objects.create(user=self.user, name="research"))
+
+        self.client.force_login(self.user)
+        response = self.client.get(reverse("clips_web:list"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "First clip content shown on list page")
+        self.assertContains(response, "research")
+        self.assertNotContains(response, "<th scope=\"col\" class=\"d-none d-md-table-cell\">Domain</th>", html=False)
+
     def test_detail_view_scoped_to_current_user(self) -> None:
         clip = Clip.objects.create(
             user=self.user,
