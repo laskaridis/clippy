@@ -25,6 +25,10 @@ Use this file as the entry point, then follow the topic-specific guidance below.
 - Documentation/spec sync rules: [docs/DOCUMENTATION.md](docs/DOCUMENTATION.md)
 - Development workflow: [docs/DEVELOPMENT_WORKFLOW.md](docs/DEVELOPMENT_WORKFLOW.md)
 
+# ExecPlans
+
+When writing complex features or significant refactors, use an ExecPlan (as described in .agent/PLANS.md) from design to implementation.
+
 ## Priority Rules
 
 If guidance conflicts:
