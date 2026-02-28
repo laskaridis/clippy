@@ -16,18 +16,17 @@ Use this file as the entry point, then follow the topic-specific guidance below.
 
 ## Context-Specific Guides
 
-- Product and repository context: [docs/PRODUCT_CONTEXT.md](docs/PRODUCT_CONTEXT.md)
-- Application architecture: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
+- Product principles context: [docs/PRODUCT_SENSE.md](docs/PRODUCT_SENSE.md)
+- Application architecture context: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
 - Testing and verification: [docs/TESTING.md](docs/TESTING.md)
-- Security and privacy: [docs/SECURITY.md](docs/SECURITY.md)
+- Security and privacy context: [docs/SECURITY.md](docs/SECURITY.md)
 - Code quality standards: [docs/CODE_QUALITY.md](docs/CODE_QUALITY.md)
 - Tech debt backlog: [docs/TECH_DEBT_BACKLOG.md](docs/TECH_DEBT_BACKLOG.md)
-- Documentation/spec sync rules: [docs/DOCUMENTATION.md](docs/DOCUMENTATION.md)
 - Development workflow: [docs/DEVELOPMENT_WORKFLOW.md](docs/DEVELOPMENT_WORKFLOW.md)
 
 # ExecPlans
 
-When writing complex features or significant refactors, use an ExecPlan (as described in .agent/PLANS.md) from design to implementation.
+When writing complex features or significant refactors, use an ExecPlan (as described in `docs/PLANS.md`) from design to implementation.
 
 ## Priority Rules
 

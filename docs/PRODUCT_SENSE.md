@@ -11,6 +11,14 @@ Speed of capture and retrieval.
 - Show content before metadata.
 - Avoid modal overload.
 - Favor inline editing.
+- Favour simple, unclutter UX over flexibility.
+- Accessibility is a first-class requirement for every new feature.
+
+## Accessibility Baseline
+- Every new user-facing flow must be keyboard navigable.
+- Use semantic labels/roles so assistive technologies can interpret UI state and actions.
+- Do not rely on color alone to communicate status or meaning.
+- Validate contrast and focus visibility for all interactive elements.
 
 ## Scope Discipline
 - No advanced configuration unless >30% of users benefit.
