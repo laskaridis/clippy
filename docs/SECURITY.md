@@ -1,9 +1,13 @@
 # Security Guidelines
 
-- Treat clip text as user data; avoid logging raw clip content.
 - Keep cross-user access impossible by construction (queryset scoping + constraints + tests).
 - `CsrfExemptSessionAuthentication` exists for first-party extension compatibility. Do not expand CSRF exemptions casually.
 - New endpoints must require authentication unless a public endpoint is explicitly required.
+
+## Input Validation
+- Never trust user input.
+- Validate at API boundary.
+- Treat clip text as user data; avoid logging raw clip content.
 
 ## Security Review Checklist
 
