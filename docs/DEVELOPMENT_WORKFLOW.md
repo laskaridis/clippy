@@ -14,6 +14,27 @@ in-order:
 6. Open a pull request into `master`.
 7. Move the task issue to "In review".
 
+### Enforced preflight gate
+
+Before editing code, run:
+
+```bash
+scripts/agent-preflight.sh --issue <issue-number> --require-issue
+```
+
+This command fails unless all hard gates are met:
+- branch is `feature/<slug>`
+- current working directory is under `.worktrees/<name>`
+- issue is accessible (when provided)
+
+For a one-command compliant task bootstrap, use:
+
+```bash
+scripts/start-task.sh <issue-number> <task-slug> [base-branch]
+```
+
+This creates a compliant worktree/branch and marks the issue `in progress`.
+
 ## Git branch policy
 
 Treat all the following as **hard gates**:
@@ -24,6 +45,8 @@ Treat all the following as **hard gates**:
   (example: `feature/add-clipping-tags`).
 - Run `./scripts/setup-git-hooks.sh` once per clone to enforce this rule via git
   hooks.
+- The pre-commit hook now runs `scripts/agent-preflight.sh` to enforce branch +
+  worktree hard gates before any commit.
 
 ## Git worktree development
 
