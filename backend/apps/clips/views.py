@@ -1,3 +1,5 @@
+from uuid import UUID
+
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect
@@ -12,11 +14,42 @@ class ClipListView(LoginRequiredMixin, ListView):
     context_object_name = "clips"
 
     def get_queryset(self):
-        return (
+        queryset = (
             Clip.objects.filter(user=self.request.user)
             .select_related("user")
             .prefetch_related("labels")
         )
+        label_uuid_raw = (self.request.GET.get("label") or "").strip()
+        if label_uuid_raw:
+            try:
+                label_uuid = UUID(label_uuid_raw)
+            except ValueError:
+                return queryset.none()
+            queryset = queryset.filter(labels__uuid=label_uuid).distinct()
+
+        url_filter = self.request.GET.get("url")
+        if url_filter:
+            queryset = queryset.filter(url=url_filter)
+
+        return queryset
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        label_uuid_raw = (self.request.GET.get("label") or "").strip()
+        context["active_url_filter"] = self.request.GET.get("url") or ""
+        context["active_label_uuid"] = label_uuid_raw
+        context["active_label_name"] = ""
+        if label_uuid_raw:
+            try:
+                label_uuid = UUID(label_uuid_raw)
+            except ValueError:
+                return context
+            label = Label.objects.filter(
+                user=self.request.user, uuid=label_uuid
+            ).first()
+            if label is not None:
+                context["active_label_name"] = label.name
+        return context
 
 
 class ClipDetailView(LoginRequiredMixin, DetailView):

@@ -85,6 +85,99 @@ class ClipHtmlViewsTests(TestCase):
             html=False,
         )
 
+    def test_list_filters_by_label_uuid_for_current_user(self) -> None:
+        matching_clip = Clip.objects.create(
+            user=self.user,
+            title="Matches label",
+            url="https://example.com/label-match",
+            domain="example.com",
+            raw_content="Matches label",
+            normalized_text="matches label",
+        )
+        non_matching_clip = Clip.objects.create(
+            user=self.user,
+            title="No match",
+            url="https://example.com/no-match",
+            domain="example.com",
+            raw_content="No match",
+            normalized_text="no match",
+        )
+        matching_label = Label.objects.create(user=self.user, name="research")
+        other_label = Label.objects.create(user=self.user, name="personal")
+        matching_clip.labels.add(matching_label)
+        non_matching_clip.labels.add(other_label)
+
+        self.client.force_login(self.user)
+        response = self.client.get(
+            f"{reverse('clips_web:list')}?label={matching_label.uuid}"
+        )
+
+        self.assertEqual(response.status_code, 200)
+        clips = list(response.context["clips"])
+        self.assertEqual([clip.id for clip in clips], [matching_clip.id])
+
+    def test_list_label_filter_rejects_invalid_uuid(self) -> None:
+        Clip.objects.create(
+            user=self.user,
+            title="First",
+            url="https://example.com/one",
+            domain="example.com",
+            raw_content="First clip",
+            normalized_text="first clip",
+        )
+
+        self.client.force_login(self.user)
+        response = self.client.get(f"{reverse('clips_web:list')}?label=not-a-uuid")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(list(response.context["clips"]), [])
+
+    def test_list_filters_by_exact_url_for_current_user(self) -> None:
+        matching_url = "https://example.com/path"
+        matching_clip = Clip.objects.create(
+            user=self.user,
+            title="Exact URL 1",
+            url=matching_url,
+            domain="example.com",
+            raw_content="Exact URL clip 1",
+            normalized_text="exact url clip 1",
+        )
+        Clip.objects.create(
+            user=self.user,
+            title="Different URL",
+            url="https://example.com/other",
+            domain="example.com",
+            raw_content="Different URL",
+            normalized_text="different url",
+        )
+        Clip.objects.create(
+            user=self.user,
+            title="Exact URL 2",
+            url=matching_url,
+            domain="example.com",
+            raw_content="Exact URL clip 2",
+            normalized_text="exact url clip 2",
+        )
+        Clip.objects.create(
+            user=self.other_user,
+            title="Other user URL",
+            url=matching_url,
+            domain="example.com",
+            raw_content="Other user clip",
+            normalized_text="other user clip",
+        )
+
+        self.client.force_login(self.user)
+        response = self.client.get(
+            f"{reverse('clips_web:list')}?url=https%3A%2F%2Fexample.com%2Fpath"
+        )
+
+        self.assertEqual(response.status_code, 200)
+        clips = list(response.context["clips"])
+        self.assertEqual(len(clips), 2)
+        self.assertTrue(all(clip.user == self.user for clip in clips))
+        self.assertIn(matching_clip.id, [clip.id for clip in clips])
+
     def test_detail_view_scoped_to_current_user(self) -> None:
         clip = Clip.objects.create(
             user=self.user,
