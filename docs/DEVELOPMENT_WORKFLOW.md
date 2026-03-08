@@ -21,6 +21,10 @@ This repository follows a branch-based workflow to keep `master` always releasab
 
 When working on multiple features in parallel with `git worktree`, each worktree must be able to boot the backend and extension independently.
 
+- Worktrees for this repository must be created under the repository-local `.worktrees/` directory (for example, `<repo>/.worktrees/<worktree-name>`).
+- Do not create project worktrees outside `.worktrees/`.
+- Do not delete any worktree unless the task is explicitly confirmed complete by the user and the user explicitly asks for worktree deletion.
+
 - Use `backend/scripts/bootsrap.sh` to start Django in local development.
 - Treat `backend/scripts/bootsrap.sh` as the single backend lifecycle contract for local tooling/tests (bootstrap, migrations/admin setup, runtime metadata, and runserver).
 - If `DATABASE_URL` is not set, the script bootstraps a deterministic per-worktree PostgreSQL container via `infra/docker/docker-compose.yml` (isolated compose project, db name, and db port).

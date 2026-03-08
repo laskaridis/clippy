@@ -8,6 +8,7 @@ Use this file as the entry point, then follow the topic-specific guidance below.
 - .codex # codex agent specific configuration (i.e. skills, etc)
 - .local # artifacts specific to the local environment
 - .specify # spec-kit specific files 
+- .worktrees # required location for all project git worktrees
 - backend # backend api application
 - docs # project documentation artifacts
 - extension # browser extensions (currently only chrome)
@@ -22,7 +23,7 @@ Use this file as the entry point, then follow the topic-specific guidance below.
 - Security and privacy context: [docs/SECURITY.md](docs/SECURITY.md)
 - Code quality standards: [docs/CODE_QUALITY.md](docs/CODE_QUALITY.md)
 - Tech debt backlog: [docs/TECH_DEBT_BACKLOG.md](docs/TECH_DEBT_BACKLOG.md)
-- Development workflow: [docs/DEVELOPMENT_WORKFLOW.md](docs/DEVELOPMENT_WORKFLOW.md)
+- Development workflow (including worktree location/deletion policy): [docs/DEVELOPMENT_WORKFLOW.md](docs/DEVELOPMENT_WORKFLOW.md)
 
 # ExecPlans
 
