@@ -1,0 +1,4 @@
+interface:
+  display_name: "Feature delivery gate"
+  short_description: "Run pre-handoff workflow and validation gates"
+  default_prompt: "Run the feature delivery gate for this issue and report any blocking failures."

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Safe emergency bypass"
+  short_description: "Log and constrain emergency workflow bypass usage"
+  default_prompt: "Prepare a controlled emergency bypass flow and log required context before any bypass commit."
