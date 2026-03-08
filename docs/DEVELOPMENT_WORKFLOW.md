@@ -6,15 +6,22 @@ This repository follows a branch-based workflow to keep `master` always releasab
 
 - New feature work must be done on a dedicated non-`master` branch.
 - Do not implement features directly on `master`.
-- Branch naming should follow repository tooling conventions (Speckit-compatible naming).
+- Feature branch names must follow: `feature/<short-description-of-feature>`.
+- Use lowercase letters, numbers, and hyphens in the short description (example: `feature/add-clipping-tags`).
+- Run `./scripts/setup-git-hooks.sh` once per clone to enforce this rule via git hooks.
 
 ## Day-to-Day Flow
 
 1. Branch from the latest `master`.
+   - For feature work, create branches with: `git checkout -b feature/<short-description-of-feature>`.
 2. Implement changes and run relevant tests.
 3. Open a pull request into `master`.
 4. Merge only after review and passing checks.
 5. Use squash merge for pull requests into `master`.
+
+If you need to commit non-feature maintenance work (for example, emergency fix branches), bypass once with:
+
+`SKIP_FEATURE_BRANCH_CHECK=1 git commit ...`
 
 
 ## Git Worktree Development
