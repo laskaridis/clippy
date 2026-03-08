@@ -1,49 +1,76 @@
 # Development Workflow
 
-This repository follows a branch-based workflow to keep `master` always releasable.
+## Development workflow
 
-## Branching Rules
+Upon a request form the user the coding agent ALWAYS follows the following steps
+in-order:
 
-- New feature work must be done on a dedicated non-`master` branch.
-- Do not implement features directly on `master`.
-- Feature branch names must follow: `feature/<short-description-of-feature>`.
-- Use lowercase letters, numbers, and hyphens in the short description (example: `feature/add-clipping-tags`).
-- Run `./scripts/setup-git-hooks.sh` once per clone to enforce this rule via git hooks.
-- **Hard gate (agents):** every task assigned to an agent must be executed in a dedicated git worktree under `.worktrees/` on a non-`master` branch.
-- **Hard gate (agents):** every agent task must be handed off via a pull request; direct branch handoff without a PR is not allowed.
-- If an agent is not operating in a dedicated worktree and preparing a PR, it must stop and fail the task as non-compliant with workflow policy.
+0. Make sure there is a github issue for this task; if need to create one
+1. Assign the issue to @me and move it to "In progress"
+2. Create a feature branch from latest `master`.
+3. Create a got worktree for that branch under `.worktrees`.
+4. Implement changes and run relevant tests.
+5. Review your code locally and fix any issues (make sure all test pass).
+6. Open a pull request into `master`.
+7. Move the task issue to "In review".
 
-## Day-to-Day Flow
+## Git branch policy
 
-1. Branch from the latest `master`.
-   - For feature work, create branches with: `git checkout -b feature/<short-description-of-feature>`.
-2. Implement changes and run relevant tests.
-3. Open a pull request into `master`.
-4. Merge only after review and passing checks.
-5. Use squash merge for pull requests into `master`.
+Treat all the following as **hard gates**:
+- All work must be done on a dedicated feature branch, NEVER directly on the
+  mainline (i.e. `master`).
+- Feature branch naming MUST follow `feature/<short-description-of-feature>`
+- Use lowercase letters, numbers, and hyphens in the short description 
+  (example: `feature/add-clipping-tags`).
+- Run `./scripts/setup-git-hooks.sh` once per clone to enforce this rule via git
+  hooks.
 
+## Git worktree development
 
-## Git Worktree Development
+We use a multi-agent development workflow based on git worktrees to isolate 
+work across agents working in parallel. When working on multiple features in
+parallel with `git worktree`, each worktree must be able to boot the backend
+and extension independently.
 
-When working on multiple features in parallel with `git worktree`, each worktree must be able to boot the backend and extension independently.
+Consider all the following as **hard gates**:
+- Every task assigned to an agent MUST be executed in a dedicated git worktree
+  under `.worktrees/` on a non-`master` branch.
+- If an agent is not operating in a dedicated worktree and preparing a PR, it 
+  MUST stop and fail the task as non-compliant with workflow policy.
+- Git worktrees for this repository MUST be created under the repository-local
+  `.worktrees/` directory (for example, `<repo>/.worktrees/<worktree-name>`).
+- Do NOT create project worktrees outside `.worktrees/`.
+- Do NOt delete any worktree unless the task is explicitly confirmed complete
+  by the user and the user explicitly asks for worktree deletion.
 
-- Worktrees for this repository must be created under the repository-local `.worktrees/` directory (for example, `<repo>/.worktrees/<worktree-name>`).
-- Do not create project worktrees outside `.worktrees/`.
-- Agent work must always run in parallel with user work by using a separate worktree from the user's active working directory.
-- Do not delete any worktree unless the task is explicitly confirmed complete by the user and the user explicitly asks for worktree deletion.
-
+Guidelines to work with the codebase effectively in a worktreee: 
 - Use `backend/scripts/bootsrap.sh` to start Django in local development.
-- Treat `backend/scripts/bootsrap.sh` as the single backend lifecycle contract for local tooling/tests (bootstrap, migrations/admin setup, runtime metadata, and runserver).
-- If `DATABASE_URL` is not set, the script bootstraps a deterministic per-worktree PostgreSQL container via `infra/docker/docker-compose.yml` (isolated compose project, db name, and db port).
-- The script derives a deterministic per-worktree default backend port and automatically falls forward to the next free backend port in range when needed.
-- The script also derives a deterministic per-worktree host/base URL and writes a per-worktree env file (`backend/.local/worktree-env-<worktree-id>.env`) plus runtime JSON metadata (`--print-json`) for tooling integration.
-- If Docker daemon is unavailable, set `DATABASE_URL` to a reachable PostgreSQL instance explicitly.
-- The script ensures an admin user exists before startup (defaults: `admin` / `admin`; override with `DJANGO_ADMIN_USERNAME`, `DJANGO_ADMIN_EMAIL`, `DJANGO_ADMIN_PASSWORD`) using Django auth APIs. It is disabled when `DJANGO_ENV=production` (or `ENVIRONMENT=production`) to avoid accidental production bootstrap.
+- Treat `backend/scripts/bootsrap.sh` as the single backend lifecycle contract 
+  for local tooling/tests (bootstrap, migrations/admin setup, runtime metadata,
+  and runserver).
+- If `DATABASE_URL` is not set, the script bootstraps a deterministic
+  per-worktree PostgreSQL container via `infra/docker/docker-compose.yml`
+  (isolated compose project, db name, and db port).
+- The script derives a deterministic per-worktree default backend port and
+  automatically falls forward to the next free backend port in range when
+  needed.
+- The script also derives a deterministic per-worktree host/base URL and writes
+  a per-worktree env file (`backend/.local/worktree-env-<worktree-id>.env`) plus
+  runtime JSON metadata (`--print-json`) for tooling integration.
+- If Docker daemon is unavailable, set `DATABASE_URL` to a reachable PostgreSQL
+  instance explicitly.
+- The script ensures an admin user exists before startup (defaults: `admin` / 
+  `admin`; override with `DJANGO_ADMIN_USERNAME`, `DJANGO_ADMIN_EMAIL`, 
+  `DJANGO_ADMIN_PASSWORD`) using Django auth APIs. It is disabled when 
+  `DJANGO_ENV=production` (or `ENVIRONMENT=production`) to avoid accidental 
+  production bootstrap.
 - You can still override defaults with environment variables:
   - `DJANGO_DEV_PORT` (or `PORT`) for runserver port
-  - `DJANGO_DEV_HOST` for runserver host identity (used for extension auth/session isolation)
+  - `DJANGO_DEV_HOST` for runserver host identity (used for extension 
+     auth/session isolation)
   - `DJANGO_DEV_BASE_URL` for explicit backend origin
-  - `DJANGO_DEV_DB_PORT`/`POSTGRES_PORT`, `DJANGO_DEV_DB_NAME`/`POSTGRES_DB`, `DJANGO_DEV_DB_USER`/`POSTGRES_USER`, `DJANGO_DEV_DB_PASSWORD`/`POSTGRES_PASSWORD` for per-worktree postgres values
+  - `DJANGO_DEV_DB_PORT`/`POSTGRES_PORT`, `DJANGO_DEV_DB_NAME`/`POSTGRES_DB`, 
+    `DJANGO_DEV_DB_USER`/`POSTGRES_USER`, `DJANGO_DEV_DB_PASSWORD`/`POSTGRES_PASSWORD` for per-worktree postgres values
 - For the extension in each worktree:
   - Run `cd extension && pnpm run build:worktree`.
   - Load the generated unpacked extension from `extension/.local/worktrees/<worktree-id>/chrome`.
@@ -53,18 +80,21 @@ When working on multiple features in parallel with `git worktree`, each worktree
   - Full test run (backend + extension unit + extension e2e): `./scripts/test_worktree.sh`
 - Keep local environment values worktree-scoped where possible (for example, avoid sharing one mutable database across worktrees).
 
-## Merge Strategy
+## Work hand-off
 
-- Fast-forward-only merges are not required.
-- Prefer squash merges to keep `master` history concise and releasable.
+Treat the following as **hard gates**:
 
-## Release Policy
+- Every coding agent's task must be handed off via a pull request; direct branch
+  hand-off without a PR is NOT allowed.
 
+## Release policy
+
+- Releases are 
 - `master` must remain in a releasable state at all times.
 - Create release tags from `master` only.
 - Do not tag releases from non-`master` branches.
 
-# Delivery Checklist
+# Definition of done checklist 
 
 Before handing work back ensure all the following is ture:
 [ ] Code compiles/runs.
