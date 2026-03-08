@@ -1,6 +1,8 @@
 from pathlib import Path
 import os
-from urllib.parse import urlparse
+from urllib.parse import unquote, urlparse
+
+from django.core.exceptions import ImproperlyConfigured
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -61,15 +63,8 @@ TEMPLATES = [
 WSGI_APPLICATION = "webclippings.wsgi.application"
 
 
-def _default_sqlite_path() -> Path:
-    sqlite_path = os.environ.get("DJANGO_SQLITE_PATH")
-    if sqlite_path:
-        return Path(sqlite_path)
-    return BASE_DIR / "db.sqlite3"
-
-
 def _database_from_env() -> dict:
-    """Build DATABASES["default"] from DATABASE_URL if present, else sqlite.
+    """Build DATABASES["default"] from required PostgreSQL DATABASE_URL.
 
     Supports URLs like:
       postgres://user:password@host:port/dbname
@@ -77,26 +72,34 @@ def _database_from_env() -> dict:
 
     database_url = os.environ.get("DATABASE_URL")
     if not database_url:
-        return {
-            "ENGINE": "django.db.backends.sqlite3",
-            "NAME": _default_sqlite_path(),
-        }
+        raise ImproperlyConfigured(
+            "DATABASE_URL is required and must point to a PostgreSQL database."
+        )
 
     parsed = urlparse(database_url)
     if parsed.scheme not in {"postgres", "postgresql"}:
-        # Fallback to sqlite if the URL is not a Postgres URL we recognize
-        return {
-            "ENGINE": "django.db.backends.sqlite3",
-            "NAME": _default_sqlite_path(),
-        }
+        raise ImproperlyConfigured(
+            "DATABASE_URL must use postgres:// or postgresql:// scheme."
+        )
+
+    database_name = parsed.path.lstrip("/")
+    if not database_name:
+        raise ImproperlyConfigured("DATABASE_URL must include a database name.")
+    if not parsed.hostname:
+        raise ImproperlyConfigured("DATABASE_URL must include a hostname.")
+
+    try:
+        parsed_port = str(parsed.port) if parsed.port else ""
+    except ValueError as exc:
+        raise ImproperlyConfigured(f"DATABASE_URL has invalid port: {exc}") from exc
 
     return {
         "ENGINE": "django.db.backends.postgresql",
-        "NAME": parsed.path.lstrip("/"),
-        "USER": parsed.username or "",
-        "PASSWORD": parsed.password or "",
+        "NAME": database_name,
+        "USER": unquote(parsed.username or ""),
+        "PASSWORD": unquote(parsed.password or ""),
         "HOST": parsed.hostname or "",
-        "PORT": str(parsed.port) if parsed.port else "",
+        "PORT": parsed_port,
     }
 
 
@@ -158,4 +161,3 @@ REST_FRAMEWORK = {
 # Email (development defaults)
 EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL", "no-reply@clippy.local")
-

@@ -43,6 +43,8 @@ This writes:
 - `extension/.local/worktree-runtime-<worktree-id>.json` (resolved backend/runtime metadata)
 - `extension/.local/worktrees/<worktree-id>/chrome` (load this in Chrome)
 
+`build:worktree` resolves backend runtime through `backend/scripts/bootsrap.sh --print-json` and consumes the generated backend env/runtime artifacts.
+
 ## Unit tests
 
 Run the extension test suite (build + Node test runner):
@@ -62,6 +64,8 @@ pnpm install
 pnpm exec playwright install chromium
 pnpm run test:e2e
 ```
+
+E2E backend startup/bootstrap is delegated to `backend/scripts/bootsrap.sh` to keep backend lifecycle logic centralized.
 
 This validates the signed-out popup experience end-to-end (status message, login button, and hidden save/label controls).
 It also validates signed-in state by logging in through `/accounts/login/` and confirming

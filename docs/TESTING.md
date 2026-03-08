@@ -3,8 +3,20 @@
 Run relevant tests after changes. Minimum commands:
 
 ```bash
-(cd backend && python manage.py test)
-(cd extension && pnpm test && pnpm test:e2e)
+./scripts/test_worktree.sh
+```
+
+Equivalent manual commands:
+
+```bash
+cd backend
+./scripts/bootsrap.sh --bootstrap-only
+ENV_FILE="$(./scripts/bootsrap.sh --print-env-path)"
+set -a && source "${ENV_FILE}" && set +a
+python manage.py test
+cd ../extension
+pnpm test
+pnpm run test:e2e
 ```
 
 ## Expectations

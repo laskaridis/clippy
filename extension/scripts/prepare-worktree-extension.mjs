@@ -11,7 +11,7 @@ import crypto from "node:crypto";
  * - Backend worktree runtime metadata, resolved in this order:
  *   1) backend/.local/worktree-runtime-<worktree-id>.json (only when it matches this
  *      worktree and its backendPort is actively listening)
- *   2) backend/scripts/runserver_worktree.sh --print-json (fallback)
+ *   2) backend/scripts/bootsrap.sh --print-json (fallback)
  *
  * Outputs:
  * - extension/.local/worktree-runtime-<worktree-id>.json
@@ -26,7 +26,7 @@ import crypto from "node:crypto";
  */
 const extensionDir = path.resolve(import.meta.dirname, "..");
 const repoRoot = path.resolve(extensionDir, "..");
-const backendScript = path.join(repoRoot, "backend", "scripts", "runserver_worktree.sh");
+const backendScript = path.join(repoRoot, "backend", "scripts", "bootsrap.sh");
 const worktreeHash = crypto.createHash("sha1").update(repoRoot).digest("hex").slice(0, 6);
 const worktreeId = `${path.basename(repoRoot)}-${worktreeHash}`;
 const backendRuntimeStatePath = path.join(
@@ -54,7 +54,7 @@ function readBackendRuntimeFromScript() {
   if (runtimeResult.status !== 0) {
     console.error(runtimeResult.stdout);
     console.error(runtimeResult.stderr);
-    throw new Error("Failed to read backend worktree runtime from runserver_worktree.sh --print-json");
+    throw new Error("Failed to read backend worktree runtime from bootsrap.sh --print-json");
   }
 
   try {
@@ -72,10 +72,11 @@ function isBackendRuntimeShape(value) {
     typeof value.worktreeRoot === "string" &&
     typeof value.worktreeId === "string" &&
     typeof value.worktreeHash === "string" &&
-    typeof value.djangoSqlitePath === "string" &&
     Number.isInteger(value.backendPort) &&
     typeof value.backendHost === "string" &&
-    typeof value.backendBaseUrl === "string"
+    typeof value.backendBaseUrl === "string" &&
+    typeof value.databaseUrl === "string" &&
+    typeof value.envFile === "string"
   );
 }
 

@@ -16,7 +16,7 @@ import { spawn, spawnSync, ChildProcess } from "node:child_process";
  * - The runtime file provides:
  *   - backendBaseUrl (browser-facing host/origin used for auth/cookies)
  *   - backendPort (local port used for health checks and backend startup)
- *   - djangoSqlitePath (worktree-scoped test database path)
+ *   - envFile (worktree-scoped backend env file consumed by test helpers)
  *   - extensionDir (generated unpacked extension directory to load in Chromium)
  *
  * Coverage:
@@ -30,6 +30,7 @@ const E2E_PASSWORD = "Password123!";
 
 const REPO_ROOT = path.resolve(process.cwd(), "..");
 const BACKEND_DIR = path.join(REPO_ROOT, "backend");
+const BACKEND_WORKTREE_SCRIPT = path.join(BACKEND_DIR, "scripts", "bootsrap.sh");
 
  // Calculate a short worktree ID based on the worktree root path. This 
  // allows multiple worktrees to coexist without conflicts:
@@ -47,7 +48,8 @@ type WorktreeRuntime = {
   backendBaseUrl: string;
   backendHost: string;
   backendPort: number;
-  djangoSqlitePath: string;
+  databaseUrl: string;
+  envFile: string;
   extensionDir: string;
 };
 
@@ -67,6 +69,7 @@ const BACKEND_BASE_URL = RUNTIME.backendBaseUrl;
 const LOGIN_URL = `${BACKEND_BASE_URL}/accounts/login/`;
 const BACKEND_HEALTHCHECK_URL = `http://127.0.0.1:${RUNTIME.backendPort}/accounts/login/`;
 const BACKEND_LOG_LINE_LIMIT = 80;
+const BACKEND_ENV = loadBackendEnv();
 
 let backendProcess: ChildProcess | null = null;
 let backendStartupError: Error | null = null;
@@ -120,15 +123,41 @@ function collectBackendStartupLogs(process: ChildProcess): void {
   });
 }
 
+function loadBackendEnv(): NodeJS.ProcessEnv {
+  const command = `set -a; source "${RUNTIME.envFile}"; set +a; env -0`;
+  const result = spawnSync("bash", ["-lc", command], {
+    encoding: "utf8",
+    cwd: BACKEND_DIR,
+    env: process.env,
+    maxBuffer: 1024 * 1024 * 8,
+  });
+  if (result.status !== 0) {
+    throw new Error(
+      `Failed to load backend env file ${RUNTIME.envFile}\n${result.stdout}\n${result.stderr}`
+    );
+  }
+
+  const merged: NodeJS.ProcessEnv = { ...process.env };
+  for (const entry of result.stdout.split("\0")) {
+    if (!entry) {
+      continue;
+    }
+    const separator = entry.indexOf("=");
+    if (separator <= 0) {
+      continue;
+    }
+    const key = entry.slice(0, separator);
+    const value = entry.slice(separator + 1);
+    merged[key] = value;
+  }
+  return merged;
+}
+
 function runBackendCommand(args: string[]): void {
   const result = spawnSync("python", ["manage.py", ...args], {
     cwd: BACKEND_DIR,
     encoding: "utf8",
-    env: {
-      ...process.env,
-      DJANGO_SQLITE_PATH: RUNTIME.djangoSqlitePath,
-      ALLOWED_HOSTS: `${RUNTIME.backendHost},localhost,127.0.0.1,[::1]`,
-    },
+    env: BACKEND_ENV,
   });
 
   if (result.status !== 0) {
@@ -175,16 +204,12 @@ async function ensureBackendRunning(): Promise<void> {
 
   resetBackendStartupLogs();
   backendProcess = spawn(
-    "python",
-    ["manage.py", "runserver", `0.0.0.0:${RUNTIME.backendPort}`, "--noreload"],
+    BACKEND_WORKTREE_SCRIPT,
+    [String(RUNTIME.backendPort), "--no-reload"],
     {
       cwd: BACKEND_DIR,
       stdio: "pipe",
-      env: {
-        ...process.env,
-        DJANGO_SQLITE_PATH: RUNTIME.djangoSqlitePath,
-        ALLOWED_HOSTS: `${RUNTIME.backendHost},localhost,127.0.0.1,[::1]`,
-      },
+      env: BACKEND_ENV,
     },
   );
 
@@ -264,9 +289,8 @@ async function loginThroughBackend(context: BrowserContext): Promise<void> {
 }
 
 test.beforeAll(async () => {
-  runBackendCommand(["migrate", "--noinput"]);
-  ensureActiveE2EUser();
   await ensureBackendRunning();
+  ensureActiveE2EUser();
 });
 
 test.afterAll(async () => {

@@ -52,18 +52,18 @@ docker run --name webclippings-postgres -e POSTGRES_USER=webclippings \
 Start the backend with the worktree-aware helper script:
 
 ```bash
-./backend/scripts/runserver_worktree.sh
+./backend/scripts/bootsrap.sh
 ```
 
-The script automatically runs migrations, ensures an admin user exists, selects a deterministic per-worktree SQLite file, and picks a deterministic per-worktree port so multiple worktrees can run in parallel without collisions.
+The script automatically ensures database readiness, runs migrations, ensures an admin user exists, emits worktree runtime/env metadata, and picks deterministic per-worktree backend/database ports so multiple worktrees can run in parallel without collisions.
 
 By default it provisions local credentials `admin` / `admin`. Override admin credentials with `DJANGO_ADMIN_USERNAME`, `DJANGO_ADMIN_EMAIL`, and `DJANGO_ADMIN_PASSWORD`. Set `DJANGO_ENV=production` (or `ENVIRONMENT=production`) to disable this auto-bootstrap.
 
 Optional overrides:
 
 ```bash
-DJANGO_DEV_PORT=8010 ./backend/scripts/runserver_worktree.sh
-DJANGO_SQLITE_PATH=/tmp/clippy-dev.sqlite3 ./backend/scripts/runserver_worktree.sh
+DJANGO_DEV_PORT=8010 ./backend/scripts/bootsrap.sh
+DJANGO_DEV_DB_PORT=16432 ./backend/scripts/bootsrap.sh
 ```
 
 ---

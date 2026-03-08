@@ -3,7 +3,7 @@ set -euo pipefail
 
 # Bootstrap and verify worktree-scoped runtime artifacts for backend + extension.
 # This script:
-# 1) resolves backend runtime values from runserver_worktree.sh --print-json
+# 1) resolves backend runtime values from bootsrap.sh --print-json
 # 2) builds extension worktree artifacts
 # 3) validates runtime metadata and generated extension config alignment
 # 4) prints a deterministic summary for agent/user consumption
@@ -16,7 +16,8 @@ Usage:
 Bootstraps and verifies local worktree runtime for this repository.
 
 Checks performed:
-  - backend runtime resolution via backend/scripts/runserver_worktree.sh --print-json
+  - backend bootstrap via backend/scripts/bootsrap.sh --bootstrap-only
+  - backend runtime resolution via backend/scripts/bootsrap.sh --print-json
   - extension build via pnpm run build:worktree
   - generated extension directory exists:
       extension/.local/worktrees/<worktree-id>/chrome
@@ -50,7 +51,7 @@ err() { printf '%b\n' "${C_ERR}[worktree-bootstrap] error: $*${C_OFF}" >&2; }
 
 SKILL_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 REPO_ROOT="$(cd "${SKILL_DIR}/../../.." && pwd)"
-BACKEND_SCRIPT="${REPO_ROOT}/backend/scripts/runserver_worktree.sh"
+BACKEND_SCRIPT="${REPO_ROOT}/backend/scripts/bootsrap.sh"
 EXTENSION_DIR="${REPO_ROOT}/extension"
 
 if [[ ! -x "${BACKEND_SCRIPT}" ]]; then
@@ -68,7 +69,14 @@ if ! command -v python3 >/dev/null 2>&1; then
   exit 1
 fi
 
-info "resolving backend runtime via runserver_worktree.sh --print-json"
+info "bootstrapping backend runtime via bootsrap.sh --bootstrap-only"
+"${BACKEND_SCRIPT}" --bootstrap-only >/tmp/worktree-bootstrap-backend.log 2>&1 || {
+  cat /tmp/worktree-bootstrap-backend.log >&2
+  err "backend bootstrap failed"
+  exit 1
+}
+
+info "resolving backend runtime via bootsrap.sh --print-json"
 RUNTIME_JSON="$("${BACKEND_SCRIPT}" --print-json)"
 
 # Extract a single key from the backend runtime JSON payload.
@@ -88,11 +96,8 @@ WORKTREE_ID="$(read_field worktreeId)"
 BACKEND_HOST="$(read_field backendHost)"
 BACKEND_PORT="$(read_field backendPort)"
 BACKEND_BASE_URL="$(read_field backendBaseUrl)"
-SQLITE_PATH="$(read_field djangoSqlitePath)"
-
-if [[ "${SQLITE_PATH}" != *"${WORKTREE_ID}"* ]]; then
-  warn "sqlite path does not include worktree id (${WORKTREE_ID}); ensure this is intentional: ${SQLITE_PATH}"
-fi
+DATABASE_URL="$(read_field databaseUrl)"
+ENV_FILE="$(read_field envFile)"
 
 info "building extension runtime (pnpm run build:worktree)"
 (
@@ -143,7 +148,7 @@ if command -v lsof >/dev/null 2>&1; then
   if lsof -nP -iTCP:"${BACKEND_PORT}" -sTCP:LISTEN >/dev/null 2>&1; then
     info "backend health check: listening on port ${BACKEND_PORT}"
   else
-    warn "backend health check: no process listening on ${BACKEND_PORT}; run backend/scripts/runserver_worktree.sh to start Django"
+    warn "backend health check: no process listening on ${BACKEND_PORT}; run backend/scripts/bootsrap.sh to start Django"
   fi
 else
   warn "lsof not found; skipped backend listening-port health check"
@@ -155,6 +160,7 @@ echo "worktree_id=${WORKTREE_ID}"
 echo "backend_host=${BACKEND_HOST}"
 echo "backend_port=${BACKEND_PORT}"
 echo "backend_base_url=${BACKEND_BASE_URL}"
-echo "django_sqlite_path=${SQLITE_PATH}"
+echo "database_url=${DATABASE_URL}"
+echo "env_file=${ENV_FILE}"
 echo "extension_dir=${WORKTREE_EXTENSION_DIR}"
 echo "runtime_metadata_canonical=${CANONICAL_RUNTIME}"

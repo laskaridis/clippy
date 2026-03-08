@@ -5,6 +5,7 @@ from django.core.exceptions import ValidationError
 from django.db import models
 
 class Label(models.Model):
+    uuid = models.UUIDField(default=uuid.uuid4, unique=True, editable=False, db_index=True)
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="labels")
     name = models.CharField(max_length=100)
     description = models.TextField(blank=True, null=True)
@@ -35,6 +36,7 @@ class Clip(models.Model):
         indexes = [
             models.Index(fields=["user", "created_at"]),
             models.Index(fields=["user", "domain"]),
+            models.Index(fields=["user", "url"], name="clips_clip_user_id_3effdd_idx"),
         ]
         ordering = ["-created_at"]
 
