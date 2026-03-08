@@ -11,7 +11,16 @@ fi
 
 git -C "${ROOT_DIR}" config core.hooksPath .githooks
 chmod +x "${HOOKS_DIR}/"*
+if [[ -f "${ROOT_DIR}/scripts/agent-preflight.sh" ]]; then
+  chmod +x "${ROOT_DIR}/scripts/agent-preflight.sh"
+fi
+if [[ -f "${ROOT_DIR}/scripts/start-task.sh" ]]; then
+  chmod +x "${ROOT_DIR}/scripts/start-task.sh"
+fi
 
 echo "[setup-git-hooks] configured core.hooksPath=.githooks"
 echo "[setup-git-hooks] installed hooks:"
 ls -1 "${HOOKS_DIR}"
+echo "[setup-git-hooks] workflow helpers:"
+echo "  - scripts/agent-preflight.sh"
+echo "  - scripts/start-task.sh"
