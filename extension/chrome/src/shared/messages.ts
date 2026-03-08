@@ -56,7 +56,11 @@ function errorResponse(message, extra) {
   }
 
   for (const key in extra) {
-    if (Object.prototype.hasOwnProperty.call(extra, key) && key !== "success" && key !== "error") {
+    if (
+      Object.prototype.hasOwnProperty.call(extra, key) &&
+      key !== "success" &&
+      key !== "error"
+    ) {
       base[key] = extra[key];
     }
   }

@@ -12,10 +12,11 @@ DEBUG = os.environ.get("DJANGO_DEBUG", "true").lower() == "true"
 
 _allowed_hosts_env = os.environ.get("ALLOWED_HOSTS", "")
 if _allowed_hosts_env:
-    ALLOWED_HOSTS: list[str] = [h.strip() for h in _allowed_hosts_env.split(",") if h.strip()]
+    _allowed_hosts = [h.strip() for h in _allowed_hosts_env.split(",") if h.strip()]
 else:
     # Sensible defaults for local development
-    ALLOWED_HOSTS: list[str] = ["localhost", "127.0.0.1", "[::1]"]
+    _allowed_hosts = ["localhost", "127.0.0.1", "[::1]"]
+ALLOWED_HOSTS: list[str] = _allowed_hosts
 
 
 INSTALLED_APPS = [
@@ -126,9 +127,7 @@ USE_I18N = True
 USE_TZ = True
 
 STATIC_URL = "/static/"
-STATICFILES_DIRS = [
-    BASE_DIR / "static"
-]
+STATICFILES_DIRS = [BASE_DIR / "static"]
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 

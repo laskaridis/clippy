@@ -357,9 +357,13 @@ class QuickSearchApiTests(TestCase):
         self.assertEqual(has_whitespace.status_code, 400)
         self.assertEqual(has_whitespace.json(), {"q": ["Whitespace is not allowed."]})
 
-        encoded_whitespace = self.client.get(f"{self.quick_search_path}?q=python%20notes")
+        encoded_whitespace = self.client.get(
+            f"{self.quick_search_path}?q=python%20notes"
+        )
         self.assertEqual(encoded_whitespace.status_code, 400)
-        self.assertEqual(encoded_whitespace.json(), {"q": ["Whitespace is not allowed."]})
+        self.assertEqual(
+            encoded_whitespace.json(), {"q": ["Whitespace is not allowed."]}
+        )
 
         too_long = self.client.get(self.quick_search_path, {"q": "a" * 51})
         self.assertEqual(too_long.status_code, 400)
@@ -368,7 +372,9 @@ class QuickSearchApiTests(TestCase):
             {"q": ["Ensure this field has no more than 50 characters."]},
         )
 
-    def test_quick_search_returns_grouped_user_scoped_results_with_global_max_five(self) -> None:
+    def test_quick_search_returns_grouped_user_scoped_results_with_global_max_five(
+        self,
+    ) -> None:
         label = Label.objects.create(user=self.user, name="python")
         other_label = Label.objects.create(user=self.other_user, name="python")
 
@@ -399,7 +405,9 @@ class QuickSearchApiTests(TestCase):
         payload = response.json()
         self.assertEqual(set(payload["hits"].keys()), {"clips", "labels", "websites"})
         self.assertLessEqual(payload["total"], 5)
-        total_hits = sum(len(payload["hits"][group]) for group in ("clips", "labels", "websites"))
+        total_hits = sum(
+            len(payload["hits"][group]) for group in ("clips", "labels", "websites")
+        )
         self.assertEqual(payload["total"], total_hits)
 
         for clip_hit in payload["hits"]["clips"]:
@@ -430,4 +438,9 @@ class QuickSearchApiTests(TestCase):
         payload = response.json()
         self.assertEqual(payload["query"], "python%20notes")
         self.assertGreater(payload["total"], 0)
-        self.assertTrue(any(hit["title"] == "Escaped Python Notes" for hit in payload["hits"]["clips"]))
+        self.assertTrue(
+            any(
+                hit["title"] == "Escaped Python Notes"
+                for hit in payload["hits"]["clips"]
+            )
+        )

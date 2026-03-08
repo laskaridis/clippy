@@ -77,9 +77,9 @@ class QuickSearchServiceTests(TestCase):
 
         result = quick_search(user=self.user, query="python")
 
-        clip_ids: list[str] = {item["clip_id"] for item in result["hits"]["clips"]}
-        label_ids: list[str] = {item["label_uuid"] for item in result["hits"]["labels"]}
-        website_urls: list[str] = {item["url"] for item in result["hits"]["websites"]}
+        clip_ids: set[str] = {item["clip_id"] for item in result["hits"]["clips"]}
+        label_ids: set[str] = {item["label_uuid"] for item in result["hits"]["labels"]}
+        website_urls: set[str] = {item["url"] for item in result["hits"]["websites"]}
 
         self.assertNotIn(str(other_clip.id), clip_ids)
         self.assertNotIn(str(other_label.uuid), label_ids)
@@ -134,7 +134,9 @@ class QuickSearchServiceTests(TestCase):
 
         result = quick_search(user=self.user, query="example.com/articles/python")
 
-        website_hits = {item["url"]: item["clip_count"] for item in result["hits"]["websites"]}
+        website_hits = {
+            item["url"]: item["clip_count"] for item in result["hits"]["websites"]
+        }
         self.assertIn(exact_url, website_hits)
         self.assertEqual(website_hits[exact_url], 2)
         self.assertTrue(all(count >= 1 for count in website_hits.values()))
@@ -154,7 +156,9 @@ class QuickSearchServiceTests(TestCase):
             raw_content="alpha content",
             normalized_text="alpha content",
         )
-        Clip.objects.filter(pk=older.pk).update(created_at=timezone.now() - timedelta(days=1))
+        Clip.objects.filter(pk=older.pk).update(
+            created_at=timezone.now() - timedelta(days=1)
+        )
         Clip.objects.filter(pk=newer.pk).update(created_at=timezone.now())
 
         first = quick_search(user=self.user, query="alpha")

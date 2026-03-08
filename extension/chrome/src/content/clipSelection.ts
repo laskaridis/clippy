@@ -11,7 +11,10 @@ function getCurrentSelection() {
 function getPageMetadata() {
   return {
     title: document && document.title ? document.title : "",
-    url: window && window.location && window.location.href ? window.location.href : "",
+    url:
+      window && window.location && window.location.href
+        ? window.location.href
+        : "",
   };
 }
 

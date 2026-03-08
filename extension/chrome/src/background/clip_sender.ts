@@ -20,7 +20,7 @@ if (typeof importScripts === "function") {
       "../shared/config.js",
       "../api/clipClient.js",
       "./contextMenuHandlers.js",
-      "./messageHandlers.js"
+      "./messageHandlers.js",
     );
   } catch (e) {
     console.error("Failed to load background scripts:", e);

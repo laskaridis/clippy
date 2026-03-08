@@ -6,6 +6,11 @@
   "packageManager": "pnpm@9.15.1",
   "scripts": {
     "build": "rm -rf chrome/dist && tsc -p chrome/tsconfig.json",
+    "lint": "pnpm exec eslint \"chrome/src/**/*.ts\"",
+    "lint:fix": "pnpm exec eslint --fix \"chrome/src/**/*.ts\"",
+    "format": "pnpm exec prettier --write \"chrome/src/**/*.{ts,js,css,html,json}\" \"scripts/**/*.mjs\" \"*.json\"",
+    "format:check": "pnpm exec prettier --check \"chrome/src/**/*.{ts,js,css,html,json}\" \"scripts/**/*.mjs\" \"*.json\"",
+    "typecheck": "tsc -p chrome/tsconfig.json --noEmit",
     "test": "pnpm run build && node --test chrome/dist/**/*.test.js",
     "prepare:worktree": "node scripts/prepare-worktree-extension.mjs",
     "build:worktree": "pnpm run build && pnpm run prepare:worktree",
@@ -13,9 +18,16 @@
     "test:e2e:worktree": "pnpm run test:e2e"
   },
   "devDependencies": {
+    "@eslint/js": "^9.37.0",
     "@playwright/test": "^1.58.2",
+    "@typescript-eslint/eslint-plugin": "^8.46.1",
+    "@typescript-eslint/parser": "^8.46.1",
     "@types/chrome": "^0.1.24",
     "@types/node": "^24.0.0",
+    "eslint": "^9.37.0",
+    "eslint-config-prettier": "^10.1.8",
+    "globals": "^16.4.0",
+    "prettier": "^3.6.2",
     "typescript": "^5.8.3"
   },
   "engines": {

@@ -2,7 +2,11 @@
 // service worker.
 
 function registerContextMenuHandlers() {
-  if (typeof chrome === "undefined" || !chrome.runtime || !chrome.runtime.onInstalled) {
+  if (
+    typeof chrome === "undefined" ||
+    !chrome.runtime ||
+    !chrome.runtime.onInstalled
+  ) {
     return;
   }
 
@@ -28,18 +32,20 @@ function registerContextMenuHandlers() {
             if (chrome.runtime && chrome.runtime.lastError) {
               console.error(
                 "Failed to open WebClippings popup from context menu:",
-                chrome.runtime.lastError
+                chrome.runtime.lastError,
               );
             }
           });
         } catch (error) {
-          console.error("Unexpected error while opening WebClippings popup:", error);
+          console.error(
+            "Unexpected error while opening WebClippings popup:",
+            error,
+          );
         }
       }
     });
   }
 }
-
 
 if (typeof module !== "undefined" && module.exports) {
   module.exports = { registerContextMenuHandlers };
