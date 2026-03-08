@@ -1,0 +1,4 @@
+interface:
+  display_name: "Issue + Worktree Start"
+  short_description: "Create compliant issue/branch/worktree start state"
+  default_prompt: "Start this task in full workflow compliance: ensure issue assignment/state and create a feature branch worktree."
