@@ -4,11 +4,12 @@ from typing import Any, TypedDict
 from urllib.parse import quote
 
 from django.core.exceptions import ValidationError
-from django.db.models import Count, F, FloatField, Max, Q, Value
+from django.db.models import Count, F, FloatField, Max, Q, TextField, Value
 from django.db.models.expressions import ExpressionWrapper
-from django.db.models.functions import Coalesce, Greatest
+from django.db.models.functions import Coalesce, Greatest, Left, NullIf
 
 from django.contrib.postgres.search import (
+    SearchHeadline,
     SearchQuery,
     SearchRank,
     SearchVector,
@@ -84,13 +85,11 @@ def _empty_result(query: str) -> QuickSearchResult:
 
 
 def _validate_query(query: str) -> str:
-    normalized_query = query or ""
+    normalized_query = (query or "").strip()
     if len(normalized_query) < 3:
         raise ValidationError("Ensure this field has at least 3 characters.")
     if len(normalized_query) > 50:
         raise ValidationError("Ensure this field has no more than 50 characters.")
-    if any(char.isspace() for char in normalized_query):
-        raise ValidationError("Whitespace is not allowed.")
     return normalized_query
 
 
@@ -130,11 +129,27 @@ def _postgresql_candidates(*, user, query: str, limit: int) -> list[dict[str, An
                 (Coalesce(F("rank"), Value(0.0)) * Value(0.7))
                 + (Coalesce(F("similarity"), Value(0.0)) * Value(0.3)),
                 output_field=FloatField(),
-            )
+            ),
+            snippet=Coalesce(
+                NullIf(
+                    SearchHeadline(
+                        "raw_content",
+                        search_query,
+                        config="simple",
+                        max_words=20,
+                        min_words=8,
+                        max_fragments=2,
+                        fragment_delimiter=" … ",
+                    ),
+                    Value("", output_field=TextField()),
+                ),
+                Left("raw_content", 160),
+                output_field=TextField(),
+            ),
         )
         .filter(Q(rank__gt=0) | Q(similarity__gt=0))
         .order_by("-score", "-created_at", "id")
-        .values("id", "title", "raw_content", "url", "created_at", "score")[:limit]
+        .values("id", "title", "snippet", "url", "created_at", "score")[:limit]
     )
 
     label_qs = (
@@ -185,7 +200,7 @@ def _postgresql_candidates(*, user, query: str, limit: int) -> list[dict[str, An
                 "score": float(row["score"]),
                 "clip_id": str(row["id"]),
                 "title": row["title"],
-                "snippet": row["raw_content"][:160],
+                "snippet": row["snippet"] or "",
                 "url": row["url"],
                 "target_url": f"/clips/{row['id']}/",
                 "_recency": row["created_at"],

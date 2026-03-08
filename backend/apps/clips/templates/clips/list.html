@@ -49,6 +49,18 @@
       background: var(--bs-primary-bg-subtle);
       outline: none;
     }
+
+    .quick-search-clip-headline {
+      color: var(--bs-emphasis-color);
+      font-size: 0.95rem;
+      line-height: 1.35;
+    }
+
+    .quick-search-clip-meta {
+      color: var(--bs-secondary-color);
+      font-size: 0.78rem;
+      line-height: 1.3;
+    }
   </style>
 
   <div class="d-flex justify-content-between align-items-center mb-4">
@@ -217,18 +229,21 @@
       var activeIndex = -1;
       var requestTimer = null;
       var abortController = null;
+      var lastRenderedQuery = '';
+
+      function normalizeQuery(query) {
+        return String(query || '').trim();
+      }
 
       function validateQuery(query) {
-        if (query.length < 3) {
+        var normalizedQuery = normalizeQuery(query);
+        if (normalizedQuery.length < 3) {
           return { valid: false, message: 'Type at least 3 characters to search.' };
         }
-        if (query.length > 50) {
+        if (normalizedQuery.length > 50) {
           return { valid: false, message: 'Search must be 50 characters or less.' };
         }
-        if (/\s/.test(query)) {
-          return { valid: false, message: 'Whitespace is not allowed in quick search.' };
-        }
-        return { valid: true, message: '' };
+        return { valid: true, message: '', query: normalizedQuery };
       }
 
       function clearActiveState() {
@@ -283,6 +298,13 @@
           .replace(/'/g, '&#039;');
       }
 
+      function renderHighlightedSnippet(value) {
+        var escaped = escapeHtml(value || '');
+        return escaped
+          .replace(/&lt;b&gt;/g, '<b>')
+          .replace(/&lt;\/b&gt;/g, '</b>');
+      }
+
       function renderGroup(items, title) {
         if (!items || !items.length) {
           return '';
@@ -293,8 +315,10 @@
         for (var i = 0; i < items.length; i++) {
           var item = items[i];
           var secondaryText = '';
+          var tertiaryText = '';
           if (item.type === 'clip') {
-            secondaryText = item.url || '';
+            secondaryText = item.snippet || item.url || '';
+            tertiaryText = item.title || '';
           } else if (item.type === 'label') {
             secondaryText = item.clip_count + ' clips';
           } else {
@@ -303,13 +327,34 @@
 
           var label = item.title || item.name || item.url || 'Result';
           var safeLabel = escapeHtml(label);
-          var safeSecondaryText = escapeHtml(secondaryText);
+          var safeSecondaryText = item.type === 'clip'
+            ? renderHighlightedSnippet(secondaryText)
+            : escapeHtml(secondaryText);
+          var safeTertiaryText = escapeHtml(tertiaryText);
+          var safeUrl = escapeHtml(item.url || '');
           var safeTargetUrl = escapeHtml(item.target_url || '#');
           var optionId = 'quick-search-option-' + title + '-' + i + '-' + Math.abs(label.length + i);
           groupHtml += '<a href="' + safeTargetUrl + '" id="' + optionId + '" class="list-group-item list-group-item-action quick-search-item" role="option" aria-selected="false" data-result-item>';
-          groupHtml += '<div class="fw-semibold">' + safeLabel + '</div>';
-          if (secondaryText) {
-            groupHtml += '<div class="small text-secondary">' + safeSecondaryText + '</div>';
+          if (item.type === 'clip') {
+            groupHtml += '<div class="fw-semibold quick-search-clip-headline">' + safeSecondaryText + '</div>';
+            if (tertiaryText || item.url) {
+              var clipMeta = '';
+              if (tertiaryText) {
+                clipMeta += safeTertiaryText;
+              }
+              if (item.url) {
+                if (clipMeta) {
+                  clipMeta += ' · ';
+                }
+                clipMeta += safeUrl;
+              }
+              groupHtml += '<div class="quick-search-clip-meta">' + clipMeta + '</div>';
+            }
+          } else {
+            groupHtml += '<div class="fw-semibold">' + safeLabel + '</div>';
+            if (secondaryText) {
+              groupHtml += '<div class="small text-secondary">' + safeSecondaryText + '</div>';
+            }
           }
           groupHtml += '</a>';
         }
@@ -320,6 +365,7 @@
       function renderResults(payload) {
         var hits = payload && payload.hits ? payload.hits : { clips: [], labels: [], websites: [] };
         var total = payload && typeof payload.total === 'number' ? payload.total : 0;
+        lastRenderedQuery = payload && typeof payload.query === 'string' ? payload.query : '';
 
         searchResults.innerHTML = '';
 
@@ -402,8 +448,30 @@
         }
 
         requestTimer = setTimeout(function() {
-          fetchQuickSearch(query);
+          fetchQuickSearch(validation.query);
         }, 200);
+      });
+
+      searchInput.addEventListener('focus', function() {
+        var query = searchInput.value;
+        if (!query) {
+          return;
+        }
+
+        var validation = validateQuery(query);
+        if (!validation.valid) {
+          closePanel();
+          searchFeedback.textContent = validation.message;
+          return;
+        }
+
+        searchFeedback.textContent = '';
+        if (validation.query === lastRenderedQuery && searchResults.innerHTML.trim()) {
+          openPanel();
+          return;
+        }
+
+        fetchQuickSearch(validation.query);
       });
 
       searchInput.addEventListener('keydown', function(event) {

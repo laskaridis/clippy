@@ -353,23 +353,33 @@ class QuickSearchApiTests(TestCase):
             {"q": ["Ensure this field has at least 3 characters."]},
         )
 
-        has_whitespace = self.client.get(self.quick_search_path, {"q": "python notes"})
-        self.assertEqual(has_whitespace.status_code, 400)
-        self.assertEqual(has_whitespace.json(), {"q": ["Whitespace is not allowed."]})
-
-        encoded_whitespace = self.client.get(
-            f"{self.quick_search_path}?q=python%20notes"
-        )
-        self.assertEqual(encoded_whitespace.status_code, 400)
-        self.assertEqual(
-            encoded_whitespace.json(), {"q": ["Whitespace is not allowed."]}
-        )
-
         too_long = self.client.get(self.quick_search_path, {"q": "a" * 51})
         self.assertEqual(too_long.status_code, 400)
         self.assertEqual(
             too_long.json(),
             {"q": ["Ensure this field has no more than 50 characters."]},
+        )
+
+    def test_quick_search_accepts_phrase_queries_with_whitespace(self) -> None:
+        self._create_clip(
+            user=self.user,
+            title="Stealth ship profile",
+            url="https://example.com/stealth-ship",
+            content="A stealth ship design reduces radar visibility.",
+        )
+        self.client.force_login(self.user)
+
+        response = self.client.get(self.quick_search_path, {"q": "stealth ship"})
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.json()
+        self.assertEqual(payload["query"], "stealth ship")
+        self.assertGreater(payload["total"], 0)
+        self.assertTrue(
+            any(
+                hit["title"] == "Stealth ship profile"
+                for hit in payload["hits"]["clips"]
+            )
         )
 
     def test_quick_search_returns_grouped_user_scoped_results_with_global_max_five(
@@ -412,6 +422,8 @@ class QuickSearchApiTests(TestCase):
 
         for clip_hit in payload["hits"]["clips"]:
             self.assertIn("score", clip_hit)
+            self.assertTrue(clip_hit["snippet"])
+            self.assertIn("python", clip_hit["snippet"].lower())
             self.assertIn(clip_hit["clip_id"], {str(clip.id) for clip in owned})
             self.assertNotEqual(clip_hit["clip_id"], str(other_clip.id))
 
