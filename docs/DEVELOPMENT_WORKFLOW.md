@@ -65,4 +65,5 @@ Before handing work back ensure all the following is ture:
 [ ] Edge cases for auth and ownership are covered.
 [ ] Migrations are included if needed.
 [ ] Docs/specs are updated for behavior changes.
+[ ] If an existing ExecSpec plan exists under `docs/plans/` for this task, its progress/living sections are updated before handoff (do not create a new plan just for this checklist item).
 [ ] No unrelated files were changed.
