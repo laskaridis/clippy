@@ -27,20 +27,24 @@ import crypto from "node:crypto";
 const extensionDir = path.resolve(import.meta.dirname, "..");
 const repoRoot = path.resolve(extensionDir, "..");
 const backendScript = path.join(repoRoot, "backend", "scripts", "bootsrap.sh");
-const worktreeHash = crypto.createHash("sha1").update(repoRoot).digest("hex").slice(0, 6);
+const worktreeHash = crypto
+  .createHash("sha1")
+  .update(repoRoot)
+  .digest("hex")
+  .slice(0, 6);
 const worktreeId = `${path.basename(repoRoot)}-${worktreeHash}`;
 const backendRuntimeStatePath = path.join(
   repoRoot,
   "backend",
   ".local",
-  `worktree-runtime-${worktreeId}.json`
+  `worktree-runtime-${worktreeId}.json`,
 );
 const sourceChromeDir = path.join(extensionDir, "chrome");
 const sourceDistDir = path.join(sourceChromeDir, "dist");
 
 if (!fs.existsSync(sourceDistDir)) {
   console.error(
-    "[extension] Missing chrome/dist. Run `pnpm run build` in extension/ before prepare-worktree-extension."
+    "[extension] Missing chrome/dist. Run `pnpm run build` in extension/ before prepare-worktree-extension.",
   );
   process.exit(1);
 }
@@ -54,7 +58,9 @@ function readBackendRuntimeFromScript() {
   if (runtimeResult.status !== 0) {
     console.error(runtimeResult.stdout);
     console.error(runtimeResult.stderr);
-    throw new Error("Failed to read backend worktree runtime from bootsrap.sh --print-json");
+    throw new Error(
+      "Failed to read backend worktree runtime from bootsrap.sh --print-json",
+    );
   }
 
   try {
@@ -109,16 +115,26 @@ function readRunningBackendRuntime() {
   }
 }
 
-const backendRuntime = readRunningBackendRuntime() ?? readBackendRuntimeFromScript();
+const backendRuntime =
+  readRunningBackendRuntime() ?? readBackendRuntimeFromScript();
 
 const runtimeRoot = path.join(extensionDir, ".local");
-const worktreeOutputDir = path.join(runtimeRoot, "worktrees", backendRuntime.worktreeId, "chrome");
+const worktreeOutputDir = path.join(
+  runtimeRoot,
+  "worktrees",
+  backendRuntime.worktreeId,
+  "chrome",
+);
 fs.mkdirSync(worktreeOutputDir, { recursive: true });
 
-fs.cpSync(path.join(sourceChromeDir, "src"), path.join(worktreeOutputDir, "src"), {
-  recursive: true,
-  force: true,
-});
+fs.cpSync(
+  path.join(sourceChromeDir, "src"),
+  path.join(worktreeOutputDir, "src"),
+  {
+    recursive: true,
+    force: true,
+  },
+);
 fs.cpSync(sourceDistDir, path.join(worktreeOutputDir, "dist"), {
   recursive: true,
   force: true,
@@ -130,14 +146,18 @@ manifest.host_permissions = [`${backendRuntime.backendBaseUrl}/*`];
 fs.writeFileSync(
   path.join(worktreeOutputDir, "manifest.json"),
   JSON.stringify(manifest, null, 2) + "\n",
-  "utf8"
+  "utf8",
 );
 
 const runtimeConfigContent = `globalThis.WEBCLIPPINGS_RUNTIME_CONFIG = {
   apiBaseUrl: ${JSON.stringify(backendRuntime.backendBaseUrl)}
 };
 `;
-fs.writeFileSync(path.join(worktreeOutputDir, "runtime-config.js"), runtimeConfigContent, "utf8");
+fs.writeFileSync(
+  path.join(worktreeOutputDir, "runtime-config.js"),
+  runtimeConfigContent,
+  "utf8",
+);
 
 const extensionRuntime = {
   ...backendRuntime,
@@ -147,7 +167,7 @@ fs.mkdirSync(runtimeRoot, { recursive: true });
 fs.writeFileSync(
   path.join(runtimeRoot, `worktree-runtime-${backendRuntime.worktreeId}.json`),
   JSON.stringify(extensionRuntime, null, 2) + "\n",
-  "utf8"
+  "utf8",
 );
 
 console.log(`[extension] worktree=${backendRuntime.worktreeId}`);

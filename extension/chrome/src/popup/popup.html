@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en" data-bs-theme="dark">
   <head>
     <meta charset="UTF-8" />
@@ -13,13 +13,18 @@
   <body class="popup-body">
     <main class="popup-shell">
       <header class="d-flex align-items-center gap-2 mb-3">
-        <span class="brand-dot rounded-circle bg-brand-gradient d-inline-block"></span>
+        <span
+          class="brand-dot rounded-circle bg-brand-gradient d-inline-block"
+        ></span>
         <h1 class="h6 mb-0 fw-semibold">WebClippings</h1>
       </header>
 
       <section id="selection-preview" class="mb-3" aria-live="polite">
         <div class="preview-label small text-secondary mb-1">Selected text</div>
-        <p id="selection-preview-text" class="selection-preview-text mb-0 text-secondary">
+        <p
+          id="selection-preview-text"
+          class="selection-preview-text mb-0 text-secondary"
+        >
           No text selected on active page.
         </p>
       </section>
@@ -34,14 +39,22 @@
           placeholder="e.g. research, work"
           class="form-control form-control-sm mb-3"
         />
-        <button id="save-clip" class="btn btn-primary btn-sm w-100">Save selected text</button>
+        <button id="save-clip" class="btn btn-primary btn-sm w-100">
+          Save selected text
+        </button>
       </section>
 
       <section id="auth-controls" class="mt-2">
-        <button id="open-login" class="btn btn-outline-light btn-sm w-100">Log in</button>
+        <button id="open-login" class="btn btn-outline-light btn-sm w-100">
+          Log in
+        </button>
       </section>
 
-      <div id="status" class="small mt-3 text-secondary" aria-live="polite"></div>
+      <div
+        id="status"
+        class="small mt-3 text-secondary"
+        aria-live="polite"
+      ></div>
     </main>
     <script src="../../dist/shared/messages.js"></script>
     <script src="../../dist/shared/errors.js"></script>

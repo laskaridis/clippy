@@ -79,7 +79,11 @@ class ClipHtmlViewsTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "First clip content shown on list page")
         self.assertContains(response, "research")
-        self.assertNotContains(response, "<th scope=\"col\" class=\"d-none d-md-table-cell\">Domain</th>", html=False)
+        self.assertNotContains(
+            response,
+            '<th scope="col" class="d-none d-md-table-cell">Domain</th>',
+            html=False,
+        )
 
     def test_detail_view_scoped_to_current_user(self) -> None:
         clip = Clip.objects.create(
@@ -219,12 +223,15 @@ class LabelHtmlViewsTests(TestCase):
 
     def test_owner_can_create_label_via_post(self) -> None:
         self.client.force_login(self.user)
-        response = self.client.post(reverse("clips_web:labels"), {
-            "action": "create",
-            "name": "research",
-            "description": "Notes",
-            "color": "#ffffff",
-        })
+        response = self.client.post(
+            reverse("clips_web:labels"),
+            {
+                "action": "create",
+                "name": "research",
+                "description": "Notes",
+                "color": "#ffffff",
+            },
+        )
 
         self.assertEqual(response.status_code, 302)
         label = Label.objects.get(user=self.user, name="research")
@@ -235,13 +242,16 @@ class LabelHtmlViewsTests(TestCase):
         label = Label.objects.create(user=self.user, name="research", description="Old")
 
         self.client.force_login(self.user)
-        response = self.client.post(reverse("clips_web:labels"), {
-            "action": "update",
-            "id": str(label.id),
-            "name": "work",
-            "description": "New",
-            "color": "#000000",
-        })
+        response = self.client.post(
+            reverse("clips_web:labels"),
+            {
+                "action": "update",
+                "id": str(label.id),
+                "name": "work",
+                "description": "New",
+                "color": "#000000",
+            },
+        )
 
         self.assertEqual(response.status_code, 302)
         label.refresh_from_db()
@@ -253,10 +263,13 @@ class LabelHtmlViewsTests(TestCase):
         label = Label.objects.create(user=self.user, name="research")
 
         self.client.force_login(self.user)
-        response = self.client.post(reverse("clips_web:labels"), {
-            "action": "delete",
-            "id": str(label.id),
-        })
+        response = self.client.post(
+            reverse("clips_web:labels"),
+            {
+                "action": "delete",
+                "id": str(label.id),
+            },
+        )
 
         self.assertEqual(response.status_code, 302)
         self.assertFalse(Label.objects.filter(id=label.id).exists())
@@ -265,11 +278,14 @@ class LabelHtmlViewsTests(TestCase):
         label = Label.objects.create(user=self.user, name="research")
 
         self.client.force_login(self.other_user)
-        response = self.client.post(reverse("clips_web:labels"), {
-            "action": "update",
-            "id": str(label.id),
-            "name": "hijack",
-        })
+        response = self.client.post(
+            reverse("clips_web:labels"),
+            {
+                "action": "update",
+                "id": str(label.id),
+                "name": "hijack",
+            },
+        )
 
         # Label is not found for other user, so 404 and no change
         self.assertEqual(response.status_code, 404)

@@ -1,9 +1,9 @@
 // @ts-nocheck
-export {}
-const test = require('node:test');
-const assert = require('node:assert/strict');
+export {};
+const test = require("node:test");
+const assert = require("node:assert/strict");
 
-const { registerMessageHandlers } = require('./messageHandlers');
+const { registerMessageHandlers } = require("./messageHandlers");
 
 function setupChromeOnMessage() {
   let listener;
@@ -19,54 +19,75 @@ function setupChromeOnMessage() {
   return () => listener;
 }
 
-test('registerMessageHandlers ignores registration when chrome runtime API is unavailable', () => {
+test("registerMessageHandlers ignores registration when chrome runtime API is unavailable", () => {
   global.chrome = undefined;
   assert.doesNotThrow(() => registerMessageHandlers());
 });
 
-test('registerMessageHandlers ignores non SAVE_CLIP messages', () => {
+test("registerMessageHandlers ignores non SAVE_CLIP messages", () => {
   const getListener = setupChromeOnMessage();
-  global.MESSAGE_TYPES = { SAVE_CLIP: 'SAVE_CLIP', GET_AUTH_STATUS: 'GET_AUTH_STATUS' };
+  global.MESSAGE_TYPES = {
+    SAVE_CLIP: "SAVE_CLIP",
+    GET_AUTH_STATUS: "GET_AUTH_STATUS",
+  };
 
   registerMessageHandlers();
   const listener = getListener();
 
-  const result = listener({ type: 'OTHER' }, {}, () => {
-    throw new Error('should not send response');
+  const result = listener({ type: "OTHER" }, {}, () => {
+    throw new Error("should not send response");
   });
 
   assert.equal(result, undefined);
 });
 
-test('registerMessageHandlers returns async true and sends success response for SAVE_CLIP', async () => {
+test("registerMessageHandlers returns async true and sends success response for SAVE_CLIP", async () => {
   const getListener = setupChromeOnMessage();
-  global.MESSAGE_TYPES = { SAVE_CLIP: 'SAVE_CLIP', GET_AUTH_STATUS: 'GET_AUTH_STATUS' };
+  global.MESSAGE_TYPES = {
+    SAVE_CLIP: "SAVE_CLIP",
+    GET_AUTH_STATUS: "GET_AUTH_STATUS",
+  };
   global.successResponse = (payload) => ({ success: true, ...payload });
-  global.errorResponse = (message, extra) => ({ success: false, error: message, ...extra });
+  global.errorResponse = (message, extra) => ({
+    success: false,
+    error: message,
+    ...extra,
+  });
   global.createClip = async (clip) => ({ id: 99, ...clip });
 
   registerMessageHandlers();
   const listener = getListener();
 
   let sent;
-  const result = listener({ type: 'SAVE_CLIP', clip: { raw_content: 'x' } }, {}, (response) => {
-    sent = response;
-  });
+  const result = listener(
+    { type: "SAVE_CLIP", clip: { raw_content: "x" } },
+    {},
+    (response) => {
+      sent = response;
+    },
+  );
 
   assert.equal(result, true);
   await new Promise((resolve) => setImmediate(resolve));
-  assert.deepEqual(sent, { success: true, clip: { id: 99, raw_content: 'x' } });
+  assert.deepEqual(sent, { success: true, clip: { id: 99, raw_content: "x" } });
 });
 
-test('registerMessageHandlers maps createClip errors into structured error response', async () => {
+test("registerMessageHandlers maps createClip errors into structured error response", async () => {
   const getListener = setupChromeOnMessage();
-  global.MESSAGE_TYPES = { SAVE_CLIP: 'SAVE_CLIP', GET_AUTH_STATUS: 'GET_AUTH_STATUS' };
+  global.MESSAGE_TYPES = {
+    SAVE_CLIP: "SAVE_CLIP",
+    GET_AUTH_STATUS: "GET_AUTH_STATUS",
+  };
   global.successResponse = (payload) => ({ success: true, ...payload });
-  global.errorResponse = (message, extra) => ({ success: false, error: message, ...extra });
+  global.errorResponse = (message, extra) => ({
+    success: false,
+    error: message,
+    ...extra,
+  });
   global.createClip = async () => {
-    const err = new Error('boom');
+    const err = new Error("boom");
     err.status = 500;
-    err.body = 'bad';
+    err.body = "bad";
     throw err;
   };
 
@@ -74,32 +95,42 @@ test('registerMessageHandlers maps createClip errors into structured error respo
   const listener = getListener();
 
   let sent;
-  listener({ type: 'SAVE_CLIP', clip: { raw_content: 'x' } }, {}, (response) => {
-    sent = response;
-  });
+  listener(
+    { type: "SAVE_CLIP", clip: { raw_content: "x" } },
+    {},
+    (response) => {
+      sent = response;
+    },
+  );
 
   await new Promise((resolve) => setImmediate(resolve));
   assert.deepEqual(sent, {
     success: false,
-    error: 'boom',
+    error: "boom",
     status: 500,
-    body: 'bad',
+    body: "bad",
   });
 });
 
-
-test('registerMessageHandlers returns async true and sends auth status response', async () => {
+test("registerMessageHandlers returns async true and sends auth status response", async () => {
   const getListener = setupChromeOnMessage();
-  global.MESSAGE_TYPES = { SAVE_CLIP: 'SAVE_CLIP', GET_AUTH_STATUS: 'GET_AUTH_STATUS' };
+  global.MESSAGE_TYPES = {
+    SAVE_CLIP: "SAVE_CLIP",
+    GET_AUTH_STATUS: "GET_AUTH_STATUS",
+  };
   global.successResponse = (payload) => ({ success: true, ...payload });
-  global.errorResponse = (message, extra) => ({ success: false, error: message, ...extra });
+  global.errorResponse = (message, extra) => ({
+    success: false,
+    error: message,
+    ...extra,
+  });
   global.isUserAuthenticated = async () => true;
 
   registerMessageHandlers();
   const listener = getListener();
 
   let sent;
-  const result = listener({ type: 'GET_AUTH_STATUS' }, {}, (response) => {
+  const result = listener({ type: "GET_AUTH_STATUS" }, {}, (response) => {
     sent = response;
   });
 
@@ -108,26 +139,33 @@ test('registerMessageHandlers returns async true and sends auth status response'
   assert.deepEqual(sent, { success: true, isAuthenticated: true });
 });
 
-test('registerMessageHandlers maps auth status errors into structured error response', async () => {
+test("registerMessageHandlers maps auth status errors into structured error response", async () => {
   const getListener = setupChromeOnMessage();
-  global.MESSAGE_TYPES = { SAVE_CLIP: 'SAVE_CLIP', GET_AUTH_STATUS: 'GET_AUTH_STATUS' };
+  global.MESSAGE_TYPES = {
+    SAVE_CLIP: "SAVE_CLIP",
+    GET_AUTH_STATUS: "GET_AUTH_STATUS",
+  };
   global.successResponse = (payload) => ({ success: true, ...payload });
-  global.errorResponse = (message, extra) => ({ success: false, error: message, ...extra });
+  global.errorResponse = (message, extra) => ({
+    success: false,
+    error: message,
+    ...extra,
+  });
   global.isUserAuthenticated = async () => {
-    throw new Error('auth check failed');
+    throw new Error("auth check failed");
   };
 
   registerMessageHandlers();
   const listener = getListener();
 
   let sent;
-  listener({ type: 'GET_AUTH_STATUS' }, {}, (response) => {
+  listener({ type: "GET_AUTH_STATUS" }, {}, (response) => {
     sent = response;
   });
 
   await new Promise((resolve) => setImmediate(resolve));
   assert.deepEqual(sent, {
     success: false,
-    error: 'auth check failed',
+    error: "auth check failed",
   });
 });

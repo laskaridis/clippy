@@ -15,14 +15,66 @@ if ! branch_name="$(git symbolic-ref --quiet --short HEAD 2>/dev/null)"; then
 fi
 
 if [[ "${branch_name}" =~ ^feature/[a-z0-9-]+$ ]]; then
-  exit 0
-fi
-
-cat >&2 <<EOF
+  :
+else
+  cat >&2 <<EOF
 [pre-commit] Branch name '${branch_name}' is invalid for feature work.
 [pre-commit] Use: feature/<short-description-of-feature> (lowercase letters, numbers, hyphens).
 [pre-commit] Example: git checkout -b feature/improve-branch-policy
 [pre-commit] If this commit is intentionally not feature work, run with SKIP_FEATURE_BRANCH_CHECK=1.
 EOF
 
-exit 1
+  exit 1
+fi
+
+ROOT_DIR="$(git rev-parse --show-toplevel)"
+cd "${ROOT_DIR}"
+
+staged_files=()
+while IFS= read -r file; do
+  staged_files+=("${file}")
+done < <(git diff --cached --name-only --diff-filter=ACMR)
+if [[ "${#staged_files[@]}" -eq 0 ]]; then
+  exit 0
+fi
+
+backend_python_files=()
+extension_ts_files=()
+for file in "${staged_files[@]}"; do
+  if [[ "${file}" =~ ^backend/.*\.py$ ]]; then
+    backend_python_files+=("${file#backend/}")
+  fi
+  if [[ "${file}" =~ ^extension/chrome/src/.*\.ts$ ]]; then
+    extension_ts_files+=("${file#extension/}")
+  fi
+done
+
+if [[ "${#backend_python_files[@]}" -gt 0 ]]; then
+  echo "[pre-commit] formatting backend python files (black)"
+  (
+    cd backend
+    python -m black "${backend_python_files[@]}"
+    python -m ruff check --fix "${backend_python_files[@]}"
+  )
+  for file in "${staged_files[@]}"; do
+    if [[ "${file}" =~ ^backend/.*\.py$ ]]; then
+      git add "${file}"
+    fi
+  done
+fi
+
+if [[ "${#extension_ts_files[@]}" -gt 0 ]]; then
+  echo "[pre-commit] formatting extension files (prettier)"
+  (
+    cd extension
+    pnpm exec prettier --write "${extension_ts_files[@]}"
+    pnpm exec eslint --fix "${extension_ts_files[@]}"
+  )
+  for file in "${staged_files[@]}"; do
+    if [[ "${file}" =~ ^extension/chrome/src/.*\.ts$ ]]; then
+      git add "${file}"
+    fi
+  done
+fi
+
+echo "[pre-commit] checks complete"

@@ -66,7 +66,8 @@ async function createClip(clip) {
 
     var message = "Failed to create clip: HTTP " + response.status;
     if (response.status === 401 || response.status === 403) {
-      message = "Not signed in. Open the WebClippings site, sign in, and then try saving again.";
+      message =
+        "Not signed in. Open the WebClippings site, sign in, and then try saving again.";
     } else if (text) {
       message += " - " + text;
     }
@@ -84,7 +85,6 @@ async function createClip(clip) {
     return null;
   }
 }
-
 
 /**
  * Check whether the user is currently authenticated.

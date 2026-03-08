@@ -57,5 +57,7 @@
 
 .btn-primary {
   border-color: var(--bs-primary);
-  box-shadow: 0 0 0 1px rgba(139, 92, 246, 0.4), 0 0 18px rgba(236, 72, 153, 0.25);
+  box-shadow:
+    0 0 0 1px rgba(139, 92, 246, 0.4),
+    0 0 18px rgba(236, 72, 153, 0.25);
 }

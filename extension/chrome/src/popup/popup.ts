@@ -26,7 +26,9 @@
     var saveControls = document.getElementById("save-controls");
     var authControls = document.getElementById("auth-controls");
     var labelsInput = document.getElementById("labels-input");
-    var labelsLabel = document.querySelector('label[for="labels-input"]') as HTMLElement | null;
+    var labelsLabel = document.querySelector(
+      'label[for="labels-input"]',
+    ) as HTMLElement | null;
     var saveButton = document.getElementById("save-clip");
     if (saveControls) {
       saveControls.style.display = isAuthenticated ? "block" : "none";
@@ -41,7 +43,9 @@
     // Defensive fallback: if older popup HTML is loaded without wrappers,
     // still enforce signed-in/signed-out control visibility.
     if (labelsInput) {
-      (labelsInput as HTMLElement).style.display = isAuthenticated ? "block" : "none";
+      (labelsInput as HTMLElement).style.display = isAuthenticated
+        ? "block"
+        : "none";
       (labelsInput as HTMLElement).classList.toggle("d-none", !isAuthenticated);
     }
 
@@ -51,7 +55,9 @@
     }
 
     if (saveButton) {
-      (saveButton as HTMLElement).style.display = isAuthenticated ? "inline-flex" : "none";
+      (saveButton as HTMLElement).style.display = isAuthenticated
+        ? "inline-flex"
+        : "none";
       (saveButton as HTMLElement).classList.toggle("d-none", !isAuthenticated);
     }
 
@@ -79,7 +85,9 @@
    * @param {boolean} alreadySaved - Whether the current selection was already saved.
    */
   function setSaving(isSaving, hasSelection, alreadySaved) {
-    var button = document.getElementById("save-clip") as HTMLButtonElement | null;
+    var button = document.getElementById(
+      "save-clip",
+    ) as HTMLButtonElement | null;
     if (!button) return;
 
     button.disabled = isSaving || !hasSelection || alreadySaved;
@@ -97,23 +105,31 @@
    */
   function requestAuthStatus() {
     return new Promise(function (resolve, reject) {
-      chrome.runtime.sendMessage({ type: MESSAGE_TYPES.GET_AUTH_STATUS }, function (response) {
-        if (chrome.runtime && chrome.runtime.lastError) {
-          var sendMsg = mapChromeRuntimeErrorToMessage(
-            chrome.runtime.lastError,
-            "Failed to check sign-in status"
-          );
-          reject(new Error(sendMsg));
-          return;
-        }
+      chrome.runtime.sendMessage(
+        { type: MESSAGE_TYPES.GET_AUTH_STATUS },
+        function (response) {
+          if (chrome.runtime && chrome.runtime.lastError) {
+            var sendMsg = mapChromeRuntimeErrorToMessage(
+              chrome.runtime.lastError,
+              "Failed to check sign-in status",
+            );
+            reject(new Error(sendMsg));
+            return;
+          }
 
-        if (!response || !response.success) {
-          reject(new Error((response && response.error) || "Failed to check sign-in status"));
-          return;
-        }
+          if (!response || !response.success) {
+            reject(
+              new Error(
+                (response && response.error) ||
+                  "Failed to check sign-in status",
+              ),
+            );
+            return;
+          }
 
-        resolve(Boolean(response.isAuthenticated));
-      });
+          resolve(Boolean(response.isAuthenticated));
+        },
+      );
     });
   }
 
@@ -146,7 +162,7 @@
         if (chrome.runtime && chrome.runtime.lastError) {
           var queryMsg = mapChromeRuntimeErrorToMessage(
             chrome.runtime.lastError,
-            "Failed to query active tab"
+            "Failed to query active tab",
           );
           reject(new Error(queryMsg));
           return;
@@ -158,32 +174,43 @@
           return;
         }
 
-        chrome.tabs.sendMessage(tab.id, { type: MESSAGE_TYPES.GET_CLIP_DATA }, function (response) {
-          if (chrome.runtime && chrome.runtime.lastError) {
-            var msg = mapChromeRuntimeErrorToMessage(
-              chrome.runtime.lastError,
-              "Failed to contact content script"
-            );
-            reject(new Error(msg));
-            return;
-          }
+        chrome.tabs.sendMessage(
+          tab.id,
+          { type: MESSAGE_TYPES.GET_CLIP_DATA },
+          function (response) {
+            if (chrome.runtime && chrome.runtime.lastError) {
+              var msg = mapChromeRuntimeErrorToMessage(
+                chrome.runtime.lastError,
+                "Failed to contact content script",
+              );
+              reject(new Error(msg));
+              return;
+            }
 
-          if (!response || !response.success) {
-            var message =
-              (response && response.error) ||
-              "Could not capture selection. Make sure some text is selected.";
-            reject(new Error(message));
-            return;
-          }
+            if (!response || !response.success) {
+              var message =
+                (response && response.error) ||
+                "Could not capture selection. Make sure some text is selected.";
+              reject(new Error(message));
+              return;
+            }
 
-          var clip = (response.clip || {}) as { raw_content?: string; labels?: string[] };
-          if (!clip.raw_content) {
-            reject(new Error("No text selected. Select text on the page and try again."));
-            return;
-          }
+            var clip = (response.clip || {}) as {
+              raw_content?: string;
+              labels?: string[];
+            };
+            if (!clip.raw_content) {
+              reject(
+                new Error(
+                  "No text selected. Select text on the page and try again.",
+                ),
+              );
+              return;
+            }
 
-          resolve(clip);
-        });
+            resolve(clip);
+          },
+        );
       });
     });
   }
@@ -232,26 +259,29 @@
    */
   function saveClip(clip) {
     return new Promise(function (resolve, reject) {
-      chrome.runtime.sendMessage({ type: MESSAGE_TYPES.SAVE_CLIP, clip: clip }, function (response) {
-        if (chrome.runtime && chrome.runtime.lastError) {
-          var sendMsg = mapChromeRuntimeErrorToMessage(
-            chrome.runtime.lastError,
-            "Failed to send clip"
-          );
-          reject(new Error(sendMsg));
-          return;
-        }
+      chrome.runtime.sendMessage(
+        { type: MESSAGE_TYPES.SAVE_CLIP, clip: clip },
+        function (response) {
+          if (chrome.runtime && chrome.runtime.lastError) {
+            var sendMsg = mapChromeRuntimeErrorToMessage(
+              chrome.runtime.lastError,
+              "Failed to send clip",
+            );
+            reject(new Error(sendMsg));
+            return;
+          }
 
-        if (!response || !response.success) {
-          var message =
-            (response && response.error) ||
-            "Failed to save clip. Check that you are signed in.";
-          reject(new Error(message));
-          return;
-        }
+          if (!response || !response.success) {
+            var message =
+              (response && response.error) ||
+              "Failed to save clip. Check that you are signed in.";
+            reject(new Error(message));
+            return;
+          }
 
-        resolve(response.clip || null);
-      });
+          resolve(response.clip || null);
+        },
+      );
     });
   }
 
@@ -259,8 +289,12 @@
    * Initialize the popup once the DOM is ready by wiring up handlers.
    */
   document.addEventListener("DOMContentLoaded", function () {
-    var button = document.getElementById("save-clip") as HTMLButtonElement | null;
-    var labelsInput = document.getElementById("labels-input") as HTMLInputElement | null;
+    var button = document.getElementById(
+      "save-clip",
+    ) as HTMLButtonElement | null;
+    var labelsInput = document.getElementById(
+      "labels-input",
+    ) as HTMLInputElement | null;
     var hasSelection = false;
     var currentSelectionKey = "";
     var lastSavedSelectionKey = "";
@@ -285,7 +319,9 @@
       }
     }
 
-    var loginButton = document.getElementById("open-login") as HTMLButtonElement | null;
+    var loginButton = document.getElementById(
+      "open-login",
+    ) as HTMLButtonElement | null;
 
     if (loginButton) {
       loginButton.addEventListener("click", openLoginPage);
@@ -301,8 +337,10 @@
       .catch(function (error) {
         setAuthenticatedUi(false);
         setStatus(
-          error && error.message ? error.message : "Unable to check sign-in status.",
-          "error"
+          error && error.message
+            ? error.message
+            : "Unable to check sign-in status.",
+          "error",
         );
       });
 
@@ -310,7 +348,8 @@
       .then(function (clip: any) {
         currentSelectionKey = buildSelectionKey(clip.raw_content || "");
         hasSelection = currentSelectionKey.length > 0;
-        hasSavedCurrentSelection = hasSelection && currentSelectionKey === lastSavedSelectionKey;
+        hasSavedCurrentSelection =
+          hasSelection && currentSelectionKey === lastSavedSelectionKey;
         setSelectionPreview(buildSelectionPreview(clip.raw_content || ""));
         setSaving(false, hasSelection, hasSavedCurrentSelection);
       })
@@ -327,7 +366,10 @@
 
     button.addEventListener("click", function () {
       if (!hasSelection) {
-        setStatus("No text selected. Select text on the page and try again.", "error");
+        setStatus(
+          "No text selected. Select text on the page and try again.",
+          "error",
+        );
         return;
       }
       if (hasSavedCurrentSelection) {
@@ -343,7 +385,8 @@
         .then(function (clip: any) {
           currentSelectionKey = buildSelectionKey(clip.raw_content || "");
           hasSelection = currentSelectionKey.length > 0;
-          hasSavedCurrentSelection = hasSelection && currentSelectionKey === lastSavedSelectionKey;
+          hasSavedCurrentSelection =
+            hasSelection && currentSelectionKey === lastSavedSelectionKey;
           setSelectionPreview(buildSelectionPreview(clip.raw_content || ""));
           if (hasSavedCurrentSelection) {
             setStatus("This selected text was already saved.", "");
@@ -375,7 +418,8 @@
           setStatus("Clip saved successfully.", "success");
         })
         .catch(function (error) {
-          var message = error && error.message ? error.message : "Failed to save clip.";
+          var message =
+            error && error.message ? error.message : "Failed to save clip.";
           if (message.toLowerCase().indexOf("no text selected") !== -1) {
             currentSelectionKey = "";
             hasSelection = false;

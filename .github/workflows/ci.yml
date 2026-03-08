@@ -14,9 +14,78 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  backend-quality:
+    name: Backend quality
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/requirements-dev.txt
+
+      - name: Install backend dependencies
+        run: pip install -r requirements-dev.txt
+        working-directory: backend
+
+      - name: Run backend lint
+        run: python -m ruff check .
+        working-directory: backend
+
+      - name: Run backend format check
+        run: python -m black --check .
+        working-directory: backend
+
+      - name: Run backend typecheck
+        run: python -m mypy .
+        working-directory: backend
+
+  extension-quality:
+    name: Extension quality
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.1
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: pnpm
+          cache-dependency-path: extension/pnpm-lock.yaml
+
+      - name: Install extension dependencies
+        run: pnpm install --frozen-lockfile
+        working-directory: extension
+
+      - name: Run extension lint
+        run: pnpm run lint
+        working-directory: extension
+
+      - name: Run extension format check
+        run: pnpm run format:check
+        working-directory: extension
+
+      - name: Run extension typecheck
+        run: pnpm run typecheck
+        working-directory: extension
+
   backend-tests:
     name: Backend tests
     runs-on: ubuntu-latest
+    needs:
+      - backend-quality
     services:
       postgres:
         image: postgres:16
@@ -43,10 +112,10 @@ jobs:
         with:
           python-version: "3.12"
           cache: pip
-          cache-dependency-path: backend/requirements.txt
+          cache-dependency-path: backend/requirements-dev.txt
 
       - name: Install backend dependencies
-        run: pip install -r requirements.txt
+        run: pip install -r requirements-dev.txt
         working-directory: backend
 
       - name: Wait for PostgreSQL
@@ -72,6 +141,8 @@ jobs:
   extension-unit-tests:
     name: Extension unit tests
     runs-on: ubuntu-latest
+    needs:
+      - extension-quality
 
     steps:
       - name: Checkout repository

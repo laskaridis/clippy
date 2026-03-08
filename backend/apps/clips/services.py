@@ -8,7 +8,12 @@ from django.db.models import Count, F, FloatField, Max, Q, Value
 from django.db.models.expressions import ExpressionWrapper
 from django.db.models.functions import Coalesce, Greatest
 
-from django.contrib.postgres.search import SearchQuery, SearchRank, SearchVector, TrigramSimilarity
+from django.contrib.postgres.search import (
+    SearchQuery,
+    SearchRank,
+    SearchVector,
+    TrigramSimilarity,
+)
 
 from apps.clips.models import Clip, Label
 
@@ -29,14 +34,18 @@ class QuickSearchResult(TypedDict):
     hits: QuickSearchGroups
 
 
-def quick_search(*, user, query: str, limit: int = MAX_QUICK_SEARCH_LIMIT) -> QuickSearchResult:
+def quick_search(
+    *, user, query: str, limit: int = MAX_QUICK_SEARCH_LIMIT
+) -> QuickSearchResult:
     """Return grouped top-N search hits scoped to a user with strict query validation."""
     validated_query = _validate_query(query)
     if limit <= 0:
         return _empty_result(validated_query)
 
     effective_limit = min(limit, MAX_QUICK_SEARCH_LIMIT)
-    candidates = _postgresql_candidates(user=user, query=validated_query, limit=effective_limit)
+    candidates = _postgresql_candidates(
+        user=user, query=validated_query, limit=effective_limit
+    )
 
     selected = sorted(candidates, key=_candidate_sort_key)[:effective_limit]
     hits: QuickSearchGroups = {
@@ -45,7 +54,9 @@ def quick_search(*, user, query: str, limit: int = MAX_QUICK_SEARCH_LIMIT) -> Qu
         "websites": [],
     }
     for candidate in selected:
-        item = {key: value for key, value in candidate.items() if not key.startswith("_")}
+        item = {
+            key: value for key, value in candidate.items() if not key.startswith("_")
+        }
         if candidate["type"] == "clip":
             hits["clips"].append(item)
         elif candidate["type"] == "label":

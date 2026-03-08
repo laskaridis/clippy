@@ -1,9 +1,9 @@
 // @ts-nocheck
-export {}
-const test = require('node:test');
-const assert = require('node:assert/strict');
+export {};
+const test = require("node:test");
+const assert = require("node:assert/strict");
 
-const { registerContextMenuHandlers } = require('./contextMenuHandlers');
+const { registerContextMenuHandlers } = require("./contextMenuHandlers");
 
 function createChrome() {
   let installedListener;
@@ -46,12 +46,12 @@ function createChrome() {
   };
 }
 
-test('registerContextMenuHandlers no-ops when runtime API is unavailable', () => {
+test("registerContextMenuHandlers no-ops when runtime API is unavailable", () => {
   global.chrome = undefined;
   assert.doesNotThrow(() => registerContextMenuHandlers());
 });
 
-test('registerContextMenuHandlers creates Clip text menu on install', () => {
+test("registerContextMenuHandlers creates Clip text menu on install", () => {
   const mock = createChrome();
 
   registerContextMenuHandlers();
@@ -59,18 +59,18 @@ test('registerContextMenuHandlers creates Clip text menu on install', () => {
   onInstalled();
 
   assert.deepEqual(mock.createCalls, [
-    { id: 'GET-CLIP-DATA', title: 'Clip text', contexts: ['selection'] },
+    { id: "GET-CLIP-DATA", title: "Clip text", contexts: ["selection"] },
   ]);
 });
 
-test('registerContextMenuHandlers opens popup only for GET-CLIP-DATA clicks', () => {
+test("registerContextMenuHandlers opens popup only for GET-CLIP-DATA clicks", () => {
   const mock = createChrome();
 
   registerContextMenuHandlers();
   const onClicked = mock.getClickedListener();
 
-  onClicked({ menuItemId: 'OTHER' }, {});
-  onClicked({ menuItemId: 'GET-CLIP-DATA' }, {});
+  onClicked({ menuItemId: "OTHER" }, {});
+  onClicked({ menuItemId: "GET-CLIP-DATA" }, {});
 
   assert.equal(mock.openPopupCalls.length, 1);
 });

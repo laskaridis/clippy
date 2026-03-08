@@ -1,7 +1,7 @@
 // @ts-nocheck
-export {}
-const test = require('node:test');
-const assert = require('node:assert/strict');
+export {};
+const test = require("node:test");
+const assert = require("node:assert/strict");
 
 function makeClassList() {
   const set = new Set();
@@ -28,16 +28,16 @@ function makeClassList() {
   };
 }
 
-function makeElement(id, textContent = '') {
+function makeElement(id, textContent = "") {
   const listeners = {};
   return {
     id,
     textContent,
-    className: '',
+    className: "",
     classList: makeClassList(),
     style: {},
     disabled: false,
-    value: '',
+    value: "",
     parentNode: {
       insertBefore() {},
     },
@@ -56,14 +56,17 @@ function makeElement(id, textContent = '') {
 function createPopupHarness(options = {}) {
   const onDomReady = { fn: null };
 
-  const status = makeElement('status');
-  const saveControls = makeElement('save-controls');
-  const authControls = makeElement('auth-controls');
-  const labelsInput = makeElement('labels-input');
-  const labelsLabel = makeElement('labels-label');
-  const saveButton = makeElement('save-clip', 'Save selected text');
-  const loginButton = makeElement('open-login', 'Log in');
-  const previewText = makeElement('selection-preview-text', 'No text selected on active page.');
+  const status = makeElement("status");
+  const saveControls = makeElement("save-controls");
+  const authControls = makeElement("auth-controls");
+  const labelsInput = makeElement("labels-input");
+  const labelsLabel = makeElement("labels-label");
+  const saveButton = makeElement("save-clip", "Save selected text");
+  const loginButton = makeElement("open-login", "Log in");
+  const previewText = makeElement(
+    "selection-preview-text",
+    "No text selected on active page.",
+  );
 
   const elements = {
     status,
@@ -80,15 +83,17 @@ function createPopupHarness(options = {}) {
       appendChild() {},
     },
     getElementById(id) {
-      return elements[
-        id === 'selection-preview-text'
-          ? 'previewText'
-          : id === 'save-clip'
-            ? 'saveButton'
-            : id === 'open-login'
-              ? 'loginButton'
-              : id
-      ] || null;
+      return (
+        elements[
+          id === "selection-preview-text"
+            ? "previewText"
+            : id === "save-clip"
+              ? "saveButton"
+              : id === "open-login"
+                ? "loginButton"
+                : id
+        ] || null
+      );
     },
     querySelector(selector) {
       if (selector === 'label[for="labels-input"]') {
@@ -103,7 +108,7 @@ function createPopupHarness(options = {}) {
       return makeElement(tag);
     },
     addEventListener(type, fn) {
-      if (type === 'DOMContentLoaded') {
+      if (type === "DOMContentLoaded") {
         onDomReady.fn = fn;
       }
     },
@@ -114,36 +119,44 @@ function createPopupHarness(options = {}) {
   };
 
   global.MESSAGE_TYPES = {
-    GET_AUTH_STATUS: 'GET_AUTH_STATUS',
-    GET_CLIP_DATA: 'GET_CLIP_DATA',
-    SAVE_CLIP: 'SAVE_CLIP',
+    GET_AUTH_STATUS: "GET_AUTH_STATUS",
+    GET_CLIP_DATA: "GET_CLIP_DATA",
+    SAVE_CLIP: "SAVE_CLIP",
   };
 
-  global.mapChromeRuntimeErrorToMessage = (_lastError, fallback) => fallback || 'Unexpected error';
-  global.getLoginPageUrl = () => 'http://localhost:8000/accounts/login/';
+  global.mapChromeRuntimeErrorToMessage = (_lastError, fallback) =>
+    fallback || "Unexpected error";
+  global.getLoginPageUrl = () => "http://localhost:8000/accounts/login/";
 
   let saveClipCalls = 0;
-  const authResponse = options.authResponse || { success: true, isAuthenticated: true };
+  const authResponse = options.authResponse || {
+    success: true,
+    isAuthenticated: true,
+  };
   const clipResponse = options.clipResponse || {
     success: true,
-    clip: { title: 'Page', url: 'https://example.com', raw_content: 'Selected text' },
+    clip: {
+      title: "Page",
+      url: "https://example.com",
+      raw_content: "Selected text",
+    },
   };
 
   global.chrome = {
     runtime: {
       sendMessage(message, callback) {
-        if (message.type === 'GET_AUTH_STATUS') {
+        if (message.type === "GET_AUTH_STATUS") {
           callback(authResponse);
           return;
         }
 
-        if (message.type === 'SAVE_CLIP') {
+        if (message.type === "SAVE_CLIP") {
           saveClipCalls += 1;
           callback({ success: true, clip: { id: 1 } });
           return;
         }
 
-        callback({ success: false, error: 'Unknown message type' });
+        callback({ success: false, error: "Unknown message type" });
       },
       lastError: null,
     },
@@ -152,12 +165,12 @@ function createPopupHarness(options = {}) {
         callback([{ id: 1 }]);
       },
       sendMessage(_tabId, message, callback) {
-        if (message.type === 'GET_CLIP_DATA') {
+        if (message.type === "GET_CLIP_DATA") {
           callback(clipResponse);
           return;
         }
 
-        callback({ success: false, error: 'Unknown tab message type' });
+        callback({ success: false, error: "Unknown tab message type" });
       },
       create() {},
     },
@@ -169,16 +182,16 @@ function createPopupHarness(options = {}) {
       return saveClipCalls;
     },
     fireDomReady() {
-      assert.equal(typeof onDomReady.fn, 'function');
+      assert.equal(typeof onDomReady.fn, "function");
       onDomReady.fn();
     },
   };
 }
 
 function loadPopupModule() {
-  const modulePath = require.resolve('./popup');
+  const modulePath = require.resolve("./popup");
   delete require.cache[modulePath];
-  require('./popup');
+  require("./popup");
 }
 
 async function flushMicrotasks() {
@@ -187,25 +200,11 @@ async function flushMicrotasks() {
   await new Promise((resolve) => setTimeout(resolve, 0));
 }
 
-test('popup disables save button and keeps default preview when there is no selected text', async () => {
-  const harness = createPopupHarness({
-    clipResponse: { success: false, error: 'No text selected. Select text on the page and try again.' },
-  });
-
-  loadPopupModule();
-  harness.fireDomReady();
-  await flushMicrotasks();
-
-  assert.equal(harness.elements.saveButton.disabled, true);
-  assert.equal(harness.elements.previewText.textContent, 'No text selected on active page.');
-});
-
-test('popup enables save button and renders a normalized, truncated selection preview', async () => {
-  const longSelection = `\n  This   is    a very long selection with extra whitespace that should be collapsed into single spaces before truncation.\n  `;
+test("popup disables save button and keeps default preview when there is no selected text", async () => {
   const harness = createPopupHarness({
     clipResponse: {
-      success: true,
-      clip: { title: 'Page', url: 'https://example.com', raw_content: longSelection.repeat(2) },
+      success: false,
+      error: "No text selected. Select text on the page and try again.",
     },
   });
 
@@ -213,33 +212,64 @@ test('popup enables save button and renders a normalized, truncated selection pr
   harness.fireDomReady();
   await flushMicrotasks();
 
-  const normalized = longSelection.repeat(2).replace(/\s+/g, ' ').trim();
-  const expected = normalized.slice(0, 120) + '...';
+  assert.equal(harness.elements.saveButton.disabled, true);
+  assert.equal(
+    harness.elements.previewText.textContent,
+    "No text selected on active page.",
+  );
+});
+
+test("popup enables save button and renders a normalized, truncated selection preview", async () => {
+  const longSelection = `\n  This   is    a very long selection with extra whitespace that should be collapsed into single spaces before truncation.\n  `;
+  const harness = createPopupHarness({
+    clipResponse: {
+      success: true,
+      clip: {
+        title: "Page",
+        url: "https://example.com",
+        raw_content: longSelection.repeat(2),
+      },
+    },
+  });
+
+  loadPopupModule();
+  harness.fireDomReady();
+  await flushMicrotasks();
+
+  const normalized = longSelection.repeat(2).replace(/\s+/g, " ").trim();
+  const expected = normalized.slice(0, 120) + "...";
 
   assert.equal(harness.elements.saveButton.disabled, false);
   assert.equal(harness.elements.previewText.textContent, expected);
 });
 
-test('popup does not submit save when no selection is available', async () => {
+test("popup does not submit save when no selection is available", async () => {
   const harness = createPopupHarness({
-    clipResponse: { success: false, error: 'No text selected. Select text on the page and try again.' },
+    clipResponse: {
+      success: false,
+      error: "No text selected. Select text on the page and try again.",
+    },
   });
 
   loadPopupModule();
   harness.fireDomReady();
   await flushMicrotasks();
 
-  harness.elements.saveButton.trigger('click');
+  harness.elements.saveButton.trigger("click");
 
   assert.equal(harness.getSaveClipCalls(), 0);
-  assert.match(harness.elements.status.textContent || '', /No text selected/i);
+  assert.match(harness.elements.status.textContent || "", /No text selected/i);
 });
 
-test('popup prevents duplicate submit after a successful save of the same selection', async () => {
+test("popup prevents duplicate submit after a successful save of the same selection", async () => {
   const harness = createPopupHarness({
     clipResponse: {
       success: true,
-      clip: { title: 'Page', url: 'https://example.com', raw_content: 'Repeated selection' },
+      clip: {
+        title: "Page",
+        url: "https://example.com",
+        raw_content: "Repeated selection",
+      },
     },
   });
 
@@ -249,17 +279,20 @@ test('popup prevents duplicate submit after a successful save of the same select
 
   assert.equal(harness.elements.saveButton.disabled, false);
 
-  harness.elements.saveButton.trigger('click');
+  harness.elements.saveButton.trigger("click");
   await flushMicrotasks();
 
   assert.equal(harness.getSaveClipCalls(), 1);
   assert.equal(harness.elements.saveButton.disabled, true);
-  assert.equal(harness.elements.saveButton.textContent, 'Already saved');
-  assert.match(harness.elements.status.textContent || '', /saved successfully/i);
+  assert.equal(harness.elements.saveButton.textContent, "Already saved");
+  assert.match(
+    harness.elements.status.textContent || "",
+    /saved successfully/i,
+  );
 
-  harness.elements.saveButton.trigger('click');
+  harness.elements.saveButton.trigger("click");
   await flushMicrotasks();
 
   assert.equal(harness.getSaveClipCalls(), 1);
-  assert.match(harness.elements.status.textContent || '', /already saved/i);
+  assert.match(harness.elements.status.textContent || "", /already saved/i);
 });

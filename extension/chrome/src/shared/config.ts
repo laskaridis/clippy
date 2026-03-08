@@ -11,8 +11,9 @@
  * - Fallback to http://localhost:8000.
  */
 function getApiBaseUrl() {
-  const runtimeConfig = (globalThis as { WEBCLIPPINGS_RUNTIME_CONFIG?: { apiBaseUrl?: unknown } })
-    .WEBCLIPPINGS_RUNTIME_CONFIG;
+  const runtimeConfig = (
+    globalThis as { WEBCLIPPINGS_RUNTIME_CONFIG?: { apiBaseUrl?: unknown } }
+  ).WEBCLIPPINGS_RUNTIME_CONFIG;
   if (runtimeConfig && typeof runtimeConfig.apiBaseUrl === "string") {
     try {
       return new URL(runtimeConfig.apiBaseUrl).origin;
@@ -22,13 +23,15 @@ function getApiBaseUrl() {
   }
 
   try {
-    const manifest = chrome && chrome.runtime && chrome.runtime.getManifest
-      ? chrome.runtime.getManifest()
-      : null;
+    const manifest =
+      chrome && chrome.runtime && chrome.runtime.getManifest
+        ? chrome.runtime.getManifest()
+        : null;
 
-    const hosts = manifest && Array.isArray(manifest.host_permissions)
-      ? manifest.host_permissions
-      : [];
+    const hosts =
+      manifest && Array.isArray(manifest.host_permissions)
+        ? manifest.host_permissions
+        : [];
 
     // host_permissions are like "http://localhost:8000/*"; strip the path.
     for (let i = 0; i < hosts.length; i += 1) {

@@ -10,4 +10,3 @@ urlpatterns = [
     path("api/", include("apps.clips.api.urls")),
     path("clips/", include("apps.clips.urls")),
 ]
-

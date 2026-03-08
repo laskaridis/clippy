@@ -17,6 +17,7 @@ from apps.clips.api.serializers import (
 from apps.clips.services import quick_search
 from webclippings.authentication import CsrfExemptSessionAuthentication
 
+
 class ClipListCreateView(generics.ListCreateAPIView):
     authentication_classes = [CsrfExemptSessionAuthentication]
     permission_classes = [permissions.IsAuthenticated]
@@ -39,7 +40,9 @@ class ClipListCreateView(generics.ListCreateAPIView):
         clip = serializer.save()
         output_serializer = ClipSerializer(clip, context=self.get_serializer_context())
         headers = self.get_success_headers(output_serializer.data)
-        return Response(output_serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+        return Response(
+            output_serializer.data, status=status.HTTP_201_CREATED, headers=headers
+        )
 
 
 class ClipDetailView(generics.RetrieveDestroyAPIView):
@@ -71,9 +74,13 @@ class LabelListCreateView(generics.ListCreateAPIView):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         label = serializer.save()
-        output_serializer = LabelSerializer(label, context=self.get_serializer_context())
+        output_serializer = LabelSerializer(
+            label, context=self.get_serializer_context()
+        )
         headers = self.get_success_headers(output_serializer.data)
-        return Response(output_serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+        return Response(
+            output_serializer.data, status=status.HTTP_201_CREATED, headers=headers
+        )
 
 
 class LabelDetailView(generics.RetrieveUpdateDestroyAPIView):
@@ -87,11 +94,16 @@ class LabelDetailView(generics.RetrieveUpdateDestroyAPIView):
     def partial_update(self, request, *args, **kwargs):
         instance = self.get_object()
         serializer = LabelUpdateCommandSerializer(
-            instance, data=request.data, partial=True, context=self.get_serializer_context()
+            instance,
+            data=request.data,
+            partial=True,
+            context=self.get_serializer_context(),
         )
         serializer.is_valid(raise_exception=True)
         label = serializer.save()
-        output_serializer = LabelSerializer(label, context=self.get_serializer_context())
+        output_serializer = LabelSerializer(
+            label, context=self.get_serializer_context()
+        )
         return Response(output_serializer.data, status=status.HTTP_200_OK)
 
     def patch(self, request, *args, **kwargs):  # explicit alias for clarity

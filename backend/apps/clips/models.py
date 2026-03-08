@@ -4,24 +4,34 @@ from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models
 
+
 class Label(models.Model):
-    uuid = models.UUIDField(default=uuid.uuid4, unique=True, editable=False, db_index=True)
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="labels")
+    uuid = models.UUIDField(
+        default=uuid.uuid4, unique=True, editable=False, db_index=True
+    )
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="labels"
+    )
     name = models.CharField(max_length=100)
     description = models.TextField(blank=True, null=True)
     color = models.CharField(max_length=32, blank=True, null=True)
 
     class Meta:
         constraints = [
-            models.UniqueConstraint(fields=["user", "name"], name="uniq_label_name_per_user"),
+            models.UniqueConstraint(
+                fields=["user", "name"], name="uniq_label_name_per_user"
+            ),
         ]
 
     def __str__(self) -> str:  # pragma: no cover - simple repr
         return self.name
 
+
 class Clip(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="clips")
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="clips"
+    )
     title = models.CharField(max_length=255, blank=True)
     url = models.URLField()
     domain = models.CharField(max_length=255)
@@ -42,6 +52,7 @@ class Clip(models.Model):
 
     def __str__(self) -> str:  # pragma: no cover - simple repr
         return self.title or str(self.id)
+
 
 class ClipLabel(models.Model):
     clip = models.ForeignKey(Clip, on_delete=models.CASCADE)

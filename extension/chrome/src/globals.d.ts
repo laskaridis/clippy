@@ -1,8 +1,20 @@
-declare function successResponse(payload?: Record<string, unknown>): Record<string, unknown>;
-declare function errorResponse(message?: string, extra?: Record<string, unknown>): Record<string, unknown>;
-declare function getSelectedClipData(): { title: string; url: string; raw_content: string };
+declare function successResponse(
+  payload?: Record<string, unknown>,
+): Record<string, unknown>;
+declare function errorResponse(
+  message?: string,
+  extra?: Record<string, unknown>,
+): Record<string, unknown>;
+declare function getSelectedClipData(): {
+  title: string;
+  url: string;
+  raw_content: string;
+};
 declare function registerContentMessageHandlers(): void;
-declare function mapChromeRuntimeErrorToMessage(lastError?: unknown, fallback?: string): string;
+declare function mapChromeRuntimeErrorToMessage(
+  lastError?: unknown,
+  fallback?: string,
+): string;
 declare function getApiBaseUrl(): string;
 declare function getClipsEndpoint(): string;
 declare function getLoginPageUrl(): string;

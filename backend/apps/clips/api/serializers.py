@@ -4,6 +4,7 @@ from rest_framework import serializers
 
 from apps.clips.models import Clip, Label
 
+
 class LabelSerializer(serializers.ModelSerializer):
     clip_count = serializers.SerializerMethodField()
 
@@ -24,28 +25,39 @@ class LabelSerializer(serializers.ModelSerializer):
 
 class LabelCreateCommandSerializer(serializers.Serializer):
     name = serializers.CharField(max_length=100)
-    description = serializers.CharField(allow_blank=True, allow_null=True, required=False)
-    color = serializers.CharField(allow_blank=True, allow_null=True, required=False, max_length=32)
+    description = serializers.CharField(
+        allow_blank=True, allow_null=True, required=False
+    )
+    color = serializers.CharField(
+        allow_blank=True, allow_null=True, required=False, max_length=32
+    )
 
     def create(self, validated_data):
         request = self.context.get("request")
         user = getattr(request, "user", None)
         if user is None or not user.is_authenticated:
-            raise serializers.ValidationError("Authentication required to create labels")
+            raise serializers.ValidationError(
+                "Authentication required to create labels"
+            )
 
         return Label.objects.create(user=user, **validated_data)
 
 
 class LabelUpdateCommandSerializer(serializers.Serializer):
     name = serializers.CharField(max_length=100, required=False)
-    description = serializers.CharField(allow_blank=True, allow_null=True, required=False)
-    color = serializers.CharField(allow_blank=True, allow_null=True, required=False, max_length=32)
+    description = serializers.CharField(
+        allow_blank=True, allow_null=True, required=False
+    )
+    color = serializers.CharField(
+        allow_blank=True, allow_null=True, required=False, max_length=32
+    )
 
     def update(self, instance: Label, validated_data):
         for field, value in validated_data.items():
             setattr(instance, field, value)
         instance.save()
         return instance
+
 
 class ClipSerializer(serializers.ModelSerializer):
     labels = LabelSerializer(many=True, read_only=True)
@@ -117,4 +129,6 @@ class CreateClipCommandSerializer(serializers.Serializer):
 
 
 class QuickSearchQuerySerializer(serializers.Serializer):
-    q = serializers.CharField(min_length=3, max_length=50, trim_whitespace=False, required=True)
+    q = serializers.CharField(
+        min_length=3, max_length=50, trim_whitespace=False, required=True
+    )

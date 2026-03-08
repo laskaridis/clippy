@@ -32,3 +32,66 @@
 - Allways use color coding for messages (green=ok, yellow=warn, red=error)
 - Allways include documentation to explain purpose and intendent usage and expected outcomes.
 - Modularise script files to improve clarity and maintainability (i.e. avoid monolithic scripts)
+
+## Tooling
+
+### Backend (`backend/`)
+- **Lint**: `ruff`
+- **Format**: `black`
+- **Type check**: `mypy`
+- Config is in `backend/pyproject.toml`.
+
+### Extension (`extension/`)
+- **Lint**: `eslint` (`eslint.config.mjs`)
+- **Format**: `prettier`
+- **Type check**: `typescript` (`tsc --noEmit`)
+- Config and ignores live in:
+  - `extension/eslint.config.mjs`
+  - `extension/.prettierignore`
+  - `extension/chrome/tsconfig.json`
+
+## Commands
+
+Run repository-wide checks from repo root:
+
+```bash
+./scripts/lint.sh
+./scripts/format.sh
+./scripts/typecheck.sh
+```
+
+Run module-specific checks:
+
+```bash
+# backend
+cd backend
+pip install -r requirements-dev.txt
+python -m ruff check .
+python -m black --check .
+python -m mypy .
+
+# extension
+cd extension
+pnpm install --frozen-lockfile
+pnpm run lint
+pnpm run format:check
+pnpm run typecheck
+```
+
+## Auto-fix and formatting
+
+Use these commands to apply fixes:
+
+```bash
+# backend
+cd backend
+python -m black .
+python -m ruff check --fix .
+
+# extension
+cd extension
+pnpm run lint:fix
+pnpm run format
+```
+
+The git pre-commit hook runs branch policy checks plus fast, staged-file formatting/linting for backend Python and extension TypeScript files.
