@@ -22,10 +22,11 @@ A reviewer can verify behavior by signing in with sample data, typing valid quer
 - [x] (2026-02-28 12:34Z) Added Milestone 1 tests (`test_models` + new `test_quick_search`) and validated them on both SQLite and PostgreSQL.
 - [x] (2026-02-28 12:37Z) Ran full backend regression (`python manage.py test`) on both SQLite and PostgreSQL after Milestone 1 changes.
 - [x] (2026-03-08 12:10Z) Implemented Milestone 2 API endpoint (`GET /api/clips/quick-search/`), serializer validation, URL wiring, and OpenAPI contract updates.
-- [ ] Add web quick-search input, dynamic grouped results, and accessibility behavior.
+- [x] (2026-03-08 14:53Z) Implemented web quick-search input with debounced API calls, grouped result rendering, keyboard controls (`ArrowUp/Down`, `Enter`, `Escape`), inline validation messaging, and ARIA status/combobox semantics in `clips/list.html`.
 - [x] (2026-03-08 12:10Z) Added/updated backend API tests for Milestone 2 behavior: 401 auth guard, 400 invalid `q`, user scoping, grouped `hits` keys, and max-five cap; added regression coverage for encoded whitespace rejection and literal percent-escape preservation.
-- [ ] Add or update backend tests for web milestone behavior (remaining: Milestone 3 web/filter coverage).
+- [x] (2026-03-08 14:53Z) Added Milestone 3 web/filter coverage in `apps.clips.tests.test_views` for label UUID filtering, invalid UUID handling, and exact URL filtering with ownership scoping.
 - [x] (2026-03-08 12:10Z) Ran Milestone 2 validation commands in PostgreSQL-backed runtime: `python manage.py test apps.clips.tests.test_api`, `python manage.py test apps.clips.tests.test_quick_search apps.clips.tests.test_api`, and full `python manage.py test`.
+- [x] (2026-03-08 14:54Z) Ran Milestone 3 validation commands in PostgreSQL-backed runtime: `python manage.py test apps.clips.tests.test_views` and full `python manage.py test`.
 - [x] (2026-02-28 12:34Z) Updated living sections with implementation progress, decisions, and observed surprises.
 
 ## Surprises & Discoveries
@@ -100,7 +101,7 @@ A reviewer can verify behavior by signing in with sample data, typing valid quer
 
 ## Outcomes & Retrospective
 
-Milestone 1 and Milestone 2 are implemented and validated. Completed scope now includes label UUID support, migration-level PostgreSQL search prerequisites, reusable quick-search service behavior, and authenticated API delivery at `GET /api/clips/quick-search/` with strict input validation and OpenAPI-aligned grouped results. Milestone 2 review feedback was incorporated by centralizing query decoding behavior (avoiding duplicate decode paths) and adding regression coverage for encoded whitespace rejection and literal percent-escape query preservation. Remaining work is Milestone 3 (web UX/accessibility and list filters), with the main follow-on risk being API/UI contract drift during frontend integration.
+Milestones 1, 2, and 3 are implemented and validated. Completed scope now includes label UUID support, migration-level PostgreSQL search prerequisites, reusable quick-search service behavior, authenticated API delivery at `GET /api/clips/quick-search/` with strict input validation and OpenAPI-aligned grouped results, and web quick-search UX integration on `/clips/` with accessibility-first keyboard/state semantics. The list page now supports `label=<label-uuid>` and `url=<exact-url>` filters with ownership enforcement, active-filter context, and clear-filter navigation. End-to-end backend validation passed on PostgreSQL-backed runtime after Milestone 3 updates.
 
 ## Context and Orientation
 
