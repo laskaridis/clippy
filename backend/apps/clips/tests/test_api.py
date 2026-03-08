@@ -357,6 +357,10 @@ class QuickSearchApiTests(TestCase):
         self.assertEqual(has_whitespace.status_code, 400)
         self.assertEqual(has_whitespace.json(), {"q": ["Whitespace is not allowed."]})
 
+        encoded_whitespace = self.client.get(f"{self.quick_search_path}?q=python%20notes")
+        self.assertEqual(encoded_whitespace.status_code, 400)
+        self.assertEqual(encoded_whitespace.json(), {"q": ["Whitespace is not allowed."]})
+
         too_long = self.client.get(self.quick_search_path, {"q": "a" * 51})
         self.assertEqual(too_long.status_code, 400)
         self.assertEqual(
@@ -410,3 +414,20 @@ class QuickSearchApiTests(TestCase):
     def test_quick_search_url_routing(self) -> None:
         match = resolve("/api/clips/quick-search/")
         self.assertIs(match.func.view_class, QuickSearchView)
+
+    def test_quick_search_preserves_literal_percent_escape_sequences(self) -> None:
+        self._create_clip(
+            user=self.user,
+            title="Escaped Python Notes",
+            url="https://example.com/escaped",
+            content="reference for python%20notes syntax",
+        )
+        self.client.force_login(self.user)
+
+        response = self.client.get(f"{self.quick_search_path}?q=python%2520notes")
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.json()
+        self.assertEqual(payload["query"], "python%20notes")
+        self.assertGreater(payload["total"], 0)
+        self.assertTrue(any(hit["title"] == "Escaped Python Notes" for hit in payload["hits"]["clips"]))
