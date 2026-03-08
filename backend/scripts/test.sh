@@ -40,9 +40,10 @@ echo "[backend-test] ensuring local infrastructure"
 "${INFRA_ENSURE_SCRIPT}"
 
 echo "[backend-test] loading worktree environment"
+ENV_EXPORTS="$("${ENV_SCRIPT}" --print)"
 set -a
-# shellcheck disable=SC1090
-source <("${ENV_SCRIPT}" --print)
+# shellcheck disable=SC1091
+source /dev/stdin <<<"${ENV_EXPORTS}"
 set +a
 
 echo "[backend-test] running: python manage.py test $*"
