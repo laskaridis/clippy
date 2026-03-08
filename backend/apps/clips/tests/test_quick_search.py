@@ -46,9 +46,9 @@ class QuickSearchServiceTests(TestCase):
         with self.assertRaisesMessage(ValidationError, "at least 3 characters"):
             quick_search(user=self.user, query="ab")
 
-    def test_rejects_whitespace_after_url_decoding(self) -> None:
+    def test_rejects_whitespace_in_query(self) -> None:
         with self.assertRaisesMessage(ValidationError, "Whitespace is not allowed"):
-            quick_search(user=self.user, query="python%20notes")
+            quick_search(user=self.user, query="python notes")
 
     def test_rejects_too_long_query(self) -> None:
         with self.assertRaisesMessage(ValidationError, "no more than 50 characters"):
@@ -166,7 +166,7 @@ class QuickSearchServiceTests(TestCase):
         self.assertGreaterEqual(len(first_ids), 2)
         self.assertEqual(first_ids[0], str(newer.id))
 
-    def test_returns_decoded_query_value(self) -> None:
+    def test_returns_original_query_value(self) -> None:
         self._create_clip(
             user=self.user,
             title="Python",
@@ -176,4 +176,4 @@ class QuickSearchServiceTests(TestCase):
         )
 
         result = quick_search(user=self.user, query="python%32")
-        self.assertEqual(result["query"], "python2")
+        self.assertEqual(result["query"], "python%32")

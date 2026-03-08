@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from typing import Any, TypedDict
-from urllib.parse import quote, unquote
+from urllib.parse import quote
 
 from django.core.exceptions import ValidationError
 from django.db.models import Count, F, FloatField, Max, Q, Value
@@ -31,12 +31,12 @@ class QuickSearchResult(TypedDict):
 
 def quick_search(*, user, query: str, limit: int = MAX_QUICK_SEARCH_LIMIT) -> QuickSearchResult:
     """Return grouped top-N search hits scoped to a user with strict query validation."""
-    decoded_query = _validate_and_decode_query(query)
+    validated_query = _validate_query(query)
     if limit <= 0:
-        return _empty_result(decoded_query)
+        return _empty_result(validated_query)
 
     effective_limit = min(limit, MAX_QUICK_SEARCH_LIMIT)
-    candidates = _postgresql_candidates(user=user, query=decoded_query, limit=effective_limit)
+    candidates = _postgresql_candidates(user=user, query=validated_query, limit=effective_limit)
 
     selected = sorted(candidates, key=_candidate_sort_key)[:effective_limit]
     hits: QuickSearchGroups = {
@@ -54,15 +54,15 @@ def quick_search(*, user, query: str, limit: int = MAX_QUICK_SEARCH_LIMIT) -> Qu
             hits["websites"].append(item)
 
     return {
-        "query": decoded_query,
+        "query": validated_query,
         "total": len(selected),
         "hits": hits,
     }
 
 
-def _empty_result(decoded_query: str) -> QuickSearchResult:
+def _empty_result(query: str) -> QuickSearchResult:
     return {
-        "query": decoded_query,
+        "query": query,
         "total": 0,
         "hits": {
             "clips": [],
@@ -72,15 +72,15 @@ def _empty_result(decoded_query: str) -> QuickSearchResult:
     }
 
 
-def _validate_and_decode_query(query: str) -> str:
-    decoded_query = unquote(query or "")
-    if len(decoded_query) < 3:
+def _validate_query(query: str) -> str:
+    normalized_query = query or ""
+    if len(normalized_query) < 3:
         raise ValidationError("Ensure this field has at least 3 characters.")
-    if len(decoded_query) > 50:
+    if len(normalized_query) > 50:
         raise ValidationError("Ensure this field has no more than 50 characters.")
-    if any(char.isspace() for char in decoded_query):
+    if any(char.isspace() for char in normalized_query):
         raise ValidationError("Whitespace is not allowed.")
-    return decoded_query
+    return normalized_query
 
 
 def _candidate_sort_key(candidate: dict[str, Any]) -> tuple[Any, ...]:
