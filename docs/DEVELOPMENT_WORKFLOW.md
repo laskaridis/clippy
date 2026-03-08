@@ -9,6 +9,9 @@ This repository follows a branch-based workflow to keep `master` always releasab
 - Feature branch names must follow: `feature/<short-description-of-feature>`.
 - Use lowercase letters, numbers, and hyphens in the short description (example: `feature/add-clipping-tags`).
 - Run `./scripts/setup-git-hooks.sh` once per clone to enforce this rule via git hooks.
+- **Hard gate (agents):** every task assigned to an agent must be executed in a dedicated git worktree under `.worktrees/` on a non-`master` branch.
+- **Hard gate (agents):** every agent task must be handed off via a pull request; direct branch handoff without a PR is not allowed.
+- If an agent is not operating in a dedicated worktree and preparing a PR, it must stop and fail the task as non-compliant with workflow policy.
 
 ## Day-to-Day Flow
 
@@ -19,10 +22,6 @@ This repository follows a branch-based workflow to keep `master` always releasab
 4. Merge only after review and passing checks.
 5. Use squash merge for pull requests into `master`.
 
-If you need to commit non-feature maintenance work (for example, emergency fix branches), bypass once with:
-
-`SKIP_FEATURE_BRANCH_CHECK=1 git commit ...`
-
 
 ## Git Worktree Development
 
@@ -30,6 +29,7 @@ When working on multiple features in parallel with `git worktree`, each worktree
 
 - Worktrees for this repository must be created under the repository-local `.worktrees/` directory (for example, `<repo>/.worktrees/<worktree-name>`).
 - Do not create project worktrees outside `.worktrees/`.
+- Agent work must always run in parallel with user work by using a separate worktree from the user's active working directory.
 - Do not delete any worktree unless the task is explicitly confirmed complete by the user and the user explicitly asks for worktree deletion.
 
 - Use `backend/scripts/bootsrap.sh` to start Django in local development.
@@ -69,6 +69,8 @@ When working on multiple features in parallel with `git worktree`, each worktree
 Before handing work back ensure all the following is ture:
 [ ] Code compiles/runs.
 [ ] Relevant tests pass locally.
+[ ] Work was completed in a dedicated `.worktrees/` worktree (not in the user's active directory).
+[ ] A pull request is opened (or ready to open) as the required sign-off path for the task.
 [ ] Edge cases for auth and ownership are covered.
 [ ] Migrations are included if needed.
 [ ] Docs/specs are updated for behavior changes.
