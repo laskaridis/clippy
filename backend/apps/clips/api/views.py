@@ -1,4 +1,8 @@
+from django.core.exceptions import ValidationError as DjangoValidationError
+
 from rest_framework import generics, permissions, status
+from rest_framework.exceptions import ValidationError
+from rest_framework.views import APIView
 from rest_framework.response import Response
 
 from apps.clips.models import Clip, Label
@@ -8,7 +12,9 @@ from apps.clips.api.serializers import (
     LabelCreateCommandSerializer,
     LabelSerializer,
     LabelUpdateCommandSerializer,
+    QuickSearchQuerySerializer,
 )
+from apps.clips.services import quick_search
 from webclippings.authentication import CsrfExemptSessionAuthentication
 
 class ClipListCreateView(generics.ListCreateAPIView):
@@ -90,3 +96,23 @@ class LabelDetailView(generics.RetrieveUpdateDestroyAPIView):
 
     def patch(self, request, *args, **kwargs):  # explicit alias for clarity
         return self.partial_update(request, *args, **kwargs)
+
+
+class QuickSearchView(APIView):
+    authentication_classes = [CsrfExemptSessionAuthentication]
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_authenticate_header(self, request) -> str:
+        return "Session"
+
+    def get(self, request, *args, **kwargs):
+        serializer = QuickSearchQuerySerializer(data=request.query_params)
+        serializer.is_valid(raise_exception=True)
+        query = serializer.validated_data["q"]
+
+        try:
+            result = quick_search(user=request.user, query=query)
+        except DjangoValidationError as exc:
+            raise ValidationError({"q": exc.messages}) from exc
+
+        return Response(result, status=status.HTTP_200_OK)

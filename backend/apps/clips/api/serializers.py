@@ -1,4 +1,4 @@
-from urllib.parse import urlparse
+from urllib.parse import unquote, urlparse
 
 from rest_framework import serializers
 
@@ -114,3 +114,13 @@ class CreateClipCommandSerializer(serializers.Serializer):
                 clip.labels.add(*labels)
 
         return clip
+
+
+class QuickSearchQuerySerializer(serializers.Serializer):
+    q = serializers.CharField(min_length=3, max_length=50, trim_whitespace=False, required=True)
+
+    def validate_q(self, value: str) -> str:
+        decoded_query = unquote(value)
+        if any(char.isspace() for char in decoded_query):
+            raise serializers.ValidationError("Whitespace is not allowed.")
+        return decoded_query

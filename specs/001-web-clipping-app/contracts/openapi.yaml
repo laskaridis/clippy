@@ -102,6 +102,40 @@ paths:
               schema:
                 $ref: "#/components/schemas/Clip"
 
+  /api/clips/quick-search/:
+    get:
+      summary: Quick-search grouped top hits for current user
+      operationId: quickSearchClips
+      parameters:
+        - in: query
+          name: q
+          required: true
+          schema:
+            type: string
+            minLength: 3
+            maxLength: 50
+          description: URL-encoded query text without whitespace.
+      responses:
+        "200":
+          description: Quick-search grouped results
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/QuickSearchResponse"
+        "400":
+          description: Invalid query
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  q:
+                    type: array
+                    items:
+                      type: string
+        "401":
+          description: Authentication required
+
   /api/clips/{id}/:
     get:
       summary: Retrieve a single clip
@@ -332,3 +366,89 @@ components:
         color:
           type: string
           nullable: true
+
+    QuickSearchResponse:
+      type: object
+      properties:
+        query:
+          type: string
+        total:
+          type: integer
+        hits:
+          type: object
+          properties:
+            clips:
+              type: array
+              items:
+                $ref: "#/components/schemas/QuickSearchClipHit"
+            labels:
+              type: array
+              items:
+                $ref: "#/components/schemas/QuickSearchLabelHit"
+            websites:
+              type: array
+              items:
+                $ref: "#/components/schemas/QuickSearchWebsiteHit"
+          required: [clips, labels, websites]
+      required: [query, total, hits]
+
+    QuickSearchClipHit:
+      type: object
+      properties:
+        type:
+          type: string
+          enum: [clip]
+        clip_id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        snippet:
+          type: string
+        url:
+          type: string
+          format: uri
+        score:
+          type: number
+          format: float
+        target_url:
+          type: string
+      required: [type, clip_id, title, snippet, url, score, target_url]
+
+    QuickSearchLabelHit:
+      type: object
+      properties:
+        type:
+          type: string
+          enum: [label]
+        label_uuid:
+          type: string
+          format: uuid
+        name:
+          type: string
+        clip_count:
+          type: integer
+        score:
+          type: number
+          format: float
+        target_url:
+          type: string
+      required: [type, label_uuid, name, clip_count, score, target_url]
+
+    QuickSearchWebsiteHit:
+      type: object
+      properties:
+        type:
+          type: string
+          enum: [website]
+        url:
+          type: string
+          format: uri
+        clip_count:
+          type: integer
+        score:
+          type: number
+          format: float
+        target_url:
+          type: string
+      required: [type, url, clip_count, score, target_url]
