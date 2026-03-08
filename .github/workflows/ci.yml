@@ -9,10 +9,30 @@ on:
       - master
       - "**"
 
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   backend-tests:
     name: Backend tests
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: webclippings_ci
+          POSTGRES_USER: webclippings
+          POSTGRES_PASSWORD: password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U webclippings -d webclippings_ci"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    env:
+      DATABASE_URL: postgres://webclippings:password@127.0.0.1:5432/webclippings_ci
 
     steps:
       - name: Checkout repository
@@ -28,6 +48,22 @@ jobs:
       - name: Install backend dependencies
         run: pip install -r requirements.txt
         working-directory: backend
+
+      - name: Wait for PostgreSQL
+        run: |
+          python - <<'PY'
+          import socket
+          import time
+
+          deadline = time.time() + 30
+          while time.time() < deadline:
+            try:
+              with socket.create_connection(("127.0.0.1", 5432), timeout=1):
+                raise SystemExit(0)
+            except OSError:
+              time.sleep(1)
+          raise SystemExit("PostgreSQL did not become ready in time")
+          PY
 
       - name: Run backend test suite
         run: python manage.py test
@@ -67,6 +103,22 @@ jobs:
     needs:
       - backend-tests
       - extension-unit-tests
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: webclippings_ci
+          POSTGRES_USER: webclippings
+          POSTGRES_PASSWORD: password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U webclippings -d webclippings_ci"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    env:
+      DATABASE_URL: postgres://webclippings:password@127.0.0.1:5432/webclippings_ci
 
     steps:
       - name: Checkout repository

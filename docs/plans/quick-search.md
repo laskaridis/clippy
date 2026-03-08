@@ -17,13 +17,15 @@ A reviewer can verify behavior by signing in with sample data, typing valid quer
 - [x] (2026-02-28 11:41Z) Created initial ExecPlan with architecture, API/UI flow, tests, acceptance checks, and recovery guidance.
 - [x] (2026-02-28 12:01Z) Revised plan constraints from stakeholder feedback: exact URL matching, query validation rules, latency target, accessibility requirements, label UUID filtering, and explicit web-only scope.
 - [x] (2026-02-28 12:08Z) Selected Option 2 tech direction: PostgreSQL full-text + trigram search for ranking and performance.
-- [ ] Add `Label.uuid` public identifier field and migration to support `/clips?label=<uuid>` filters.
-- [ ] Implement backend quick-search application service with PostgreSQL full-text/trigram ranking across clips, labels, and exact URLs.
+- [x] (2026-02-28 12:19Z) Added `Label.uuid`, created migration `0002_label_uuid_quick_search_support`, added `(user, url)` clip index, and added PostgreSQL `pg_trgm` + trigram/FTS index setup in migration hooks.
+- [x] (2026-02-28 12:29Z) Implemented `apps.clips.services.quick_search` with strict decoded-query validation, user-scoped clip/label/exact-url candidate generation, PostgreSQL ranking, deterministic tie-breaks, and global top-five grouping.
+- [x] (2026-02-28 12:34Z) Added Milestone 1 tests (`test_models` + new `test_quick_search`) and validated them on both SQLite and PostgreSQL.
+- [x] (2026-02-28 12:37Z) Ran full backend regression (`python manage.py test`) on both SQLite and PostgreSQL after Milestone 1 changes.
 - [ ] Add quick-search API endpoint, serializers, URL route, and API contract updates.
 - [ ] Add web quick-search input, dynamic grouped results, and accessibility behavior.
-- [ ] Add or update backend tests for ranking, authorization boundaries, validation, filter behavior, and endpoint behavior.
-- [ ] Run validation commands and record evidence snippets.
-- [ ] Update living sections (`Progress`, `Decision Log`, `Surprises & Discoveries`, `Outcomes & Retrospective`) as implementation proceeds.
+- [ ] Add or update backend tests for API and web milestone behavior (completed: Milestone 1 model/service coverage; remaining: API endpoint and web/filter coverage).
+- [ ] Run validation commands and record evidence snippets for remaining milestones.
+- [x] (2026-02-28 12:34Z) Updated living sections with implementation progress, decisions, and observed surprises.
 
 ## Surprises & Discoveries
 
@@ -35,6 +37,15 @@ A reviewer can verify behavior by signing in with sample data, typing valid quer
 
 - Observation: `docs/plans/` existed with no prior plans; this feature is the first tracked plan there.
   Evidence: `ls -la docs/plans` previously returned only `.` and `..`.
+
+- Observation: `makemigrations` cannot run non-interactively when adding a unique UUID field with callable default directly, so the UUID rollout required a two-phase migration.
+  Evidence: `python manage.py makemigrations clips` prompted for interactive selection and raised `EOFError` in non-interactive execution.
+
+- Observation: Docker CLI is available locally, but Docker daemon is not running; PostgreSQL verification required a local `initdb`/`pg_ctl` instance instead of a container.
+  Evidence: `docker run ...` failed with `Cannot connect to the Docker daemon at unix:///var/run/docker.sock`.
+
+- Observation: Django detected an index-name drift for the new `(user, url)` index until the model declared an explicit name matching the migration.
+  Evidence: `python manage.py makemigrations --check --dry-run` initially proposed `0003_rename_clips_clip_user_id_3effdd_idx...` before model index naming was aligned.
 
 ## Decision Log
 
@@ -74,9 +85,21 @@ A reviewer can verify behavior by signing in with sample data, typing valid quer
   Rationale: Option 2 depends on PostgreSQL capabilities that SQLite does not provide.
   Date/Author: 2026-02-28 / Codex
 
+- Decision: Implement `Label.uuid` with a two-phase migration (`null=True` add, data backfill, then `unique=True` + non-null default) instead of a single direct unique-add migration.
+  Rationale: Avoided unsafe/interactive migration generation behavior and ensured deterministic backfill for existing rows.
+  Date/Author: 2026-02-28 / Codex
+
+- Decision: Create PostgreSQL search prerequisites (extension and trigram/FTS indexes) via vendor-guarded migration functions.
+  Rationale: Kept SQLite-based local test flows functional while enabling required PostgreSQL optimizations where supported.
+  Date/Author: 2026-02-28 / Codex
+
+- Decision: Keep a non-PostgreSQL fallback path in `quick_search` while preserving PostgreSQL full-text/trigram ranking as the primary path.
+  Rationale: Maintains repo-wide testability in default SQLite setups without changing the production/stakeholder PostgreSQL direction.
+  Date/Author: 2026-02-28 / Codex
+
 ## Outcomes & Retrospective
 
-Planning is now decision-complete for core behavior and constraints. The main implementation risk is introducing label UUID filtering while preserving backward-compatible internal model relations. The plan addresses this by adding an explicit migration milestone and filter tests.
+Milestone 1 is implemented and validated: label UUID support, migration-level PostgreSQL search prerequisites, and reusable quick-search service behavior now exist with test coverage and PostgreSQL verification. Remaining work is confined to Milestone 2 (API endpoint/contract) and Milestone 3 (web UX and filters). The main follow-on risk is keeping API and web behavior consistent with the service-level validation/ranking contract.
 
 ## Context and Orientation
 
@@ -108,9 +131,9 @@ Acceptance for this milestone: model tests confirm label UUID uniqueness and mig
 
 At the end of this milestone, authenticated clients can call a quick-search endpoint and receive grouped JSON results aligned with OpenAPI.
 
-Implementation narrative: add `GET /api/clips/quick-search/?q=<query>` in `backend/apps/clips/api/views.py` and `backend/apps/clips/api/urls.py`. Keep the view thin: validate query via serializer, call service, return grouped payload. Validation rules are mandatory and explicit: `q` required, URL-encoded by client, no whitespace allowed, minimum 3 chars, maximum 50 chars. Invalid input returns HTTP 400 with actionable validation text. Ensure ranking fields exposed by the API are derived from the PostgreSQL search query path (not re-ranked in Python without reason).
+Implementation narrative: add `GET /api/clips/quick-search/?q=<query>` in `backend/apps/clips/api/views.py` and `backend/apps/clips/api/urls.py`. Keep the view thin: validate query via serializer, call service, return a `hits` payload grouped by result type. Validation rules are mandatory and explicit: `q` required, URL-encoded by client, no whitespace allowed, minimum 3 chars, maximum 50 chars. Invalid input returns HTTP 400 with actionable validation text. Ensure ranking fields exposed by the API are derived from the PostgreSQL search query path (not re-ranked in Python without reason).
 
-Acceptance for this milestone: API tests confirm 401 for anonymous requests, 400 for invalid `q`, user-scoped results only, grouped keys (`clips`, `labels`, `websites`), and max five total hits.
+Acceptance for this milestone: API tests confirm 401 for anonymous requests, 400 for invalid `q`, user-scoped results only, `hits` keys (`clips`, `labels`, `websites`), and max five total hits.
 
 ### Milestone 3: Web quick-search UX, accessibility, and navigation filters
 
@@ -234,7 +257,7 @@ Expected quick-search response shape:
     {
       "query": "python",
       "total": 5,
-      "groups": {
+      "hits": {
         "clips": [
           {
             "type": "clip",
@@ -290,7 +313,7 @@ In `backend/apps/clips/services.py`, define:
     class QuickSearchResult(TypedDict):
         query: str
         total: int
-        groups: dict[str, list[dict]]
+        hits: dict[str, list[dict]]
 
     def quick_search(*, user, query: str, limit: int = 5) -> QuickSearchResult:
         """Return grouped top-N quick-search hits scoped to one user with strict query validation."""
@@ -321,3 +344,4 @@ Dependencies and constraints:
 ## Change Note
 
 2026-02-28: Updated this ExecPlan with confirmed stakeholder constraints: exact URL search targets, strict query validation (`3..50`, no whitespace, URL-encoded), p56 <= 500ms target, accessibility requirements, label UUID filtering contract, explicit web-only scope (extension out of scope), and PostgreSQL full-text/trigram implementation direction (Option 2).
+2026-02-28: Updated this ExecPlan during Milestone 1 implementation to capture completed model/migration/service work, test evidence (SQLite + PostgreSQL), migration strategy decisions, and execution surprises (Docker daemon unavailable, index-name drift, and UUID migration prompt behavior).

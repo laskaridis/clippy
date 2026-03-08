@@ -1,6 +1,6 @@
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
-from django.db import IntegrityError
+from django.db import IntegrityError, connection
 from django.test import TestCase
 
 from apps.clips.models import Clip, ClipLabel, Label
@@ -33,6 +33,47 @@ class LabelModelTests(TestCase):
 
         self.assertNotEqual(first.user, second.user)
         self.assertEqual(first.name, second.name)
+
+    def test_label_uuid_is_auto_generated_and_unique(self) -> None:
+        first = Label.objects.create(user=self.user, name="research")
+        second = Label.objects.create(user=self.user, name="work")
+
+        self.assertIsNotNone(first.uuid)
+        self.assertIsNotNone(second.uuid)
+        self.assertNotEqual(first.uuid, second.uuid)
+
+
+class ClipQuickSearchMigrationTests(TestCase):
+    def test_postgres_quick_search_support_objects_exist(self) -> None:
+        if connection.vendor != "postgresql":
+            self.skipTest("PostgreSQL-only migration checks")
+
+        expected_indexes = {
+            "clips_clip_user_id_3effdd_idx",
+            "clips_clip_normalized_text_trgm_idx",
+            "clips_clip_title_trgm_idx",
+            "clips_clip_url_trgm_idx",
+            "clips_label_name_trgm_idx",
+            "clips_clip_search_vector_idx",
+            "clips_label_search_vector_idx",
+        }
+
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT 1 FROM pg_extension WHERE extname = 'pg_trgm'")
+            self.assertIsNotNone(cursor.fetchone())
+
+            cursor.execute(
+                """
+                SELECT indexname
+                FROM pg_indexes
+                WHERE schemaname = current_schema()
+                AND tablename IN ('clips_clip', 'clips_label')
+                """
+            )
+            index_names = {row[0] for row in cursor.fetchall()}
+
+        for index_name in expected_indexes:
+            self.assertIn(index_name, index_names)
 
 
 class ClipModelTests(TestCase):

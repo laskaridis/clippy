@@ -1,6 +1,6 @@
 ---
 name: worktree-bootstrap 
-description: Bootstrap and verify per-worktree backend and extension runtime for local development in this repository. Use when asked to set up or run a worktree environment, prepare backend+extension local testing, or debug worktree runtime mismatch issues (port/host/base URL/sqlite path/runtime metadata/output extension directory).
+description: Bootstrap and verify per-worktree backend and extension runtime for local development in this repository. Use when asked to set up or run a worktree environment, prepare backend+extension local testing, or debug worktree runtime mismatch issues (port/host/base URL/database/env file/runtime metadata/output extension directory).
 ---
 
 # Worktree Runtime Bootstrap
@@ -14,7 +14,7 @@ Use this skill when the user asks things like:
 - "set up backend and extension for this worktree"
 - "Bootstrap worktree runtime"
 - "fix worktree runtime mismatch"
-- "verify worktree port/base URL/sqlite path"
+- "verify worktree port/base URL/database env"
 
 ## Workflow
 
@@ -22,7 +22,8 @@ Use this skill when the user asks things like:
 2. Read the summary output and report:
 - worktree id
 - backend host/port/base URL
-- sqlite path
+- database URL (redacted as needed)
+- env file path
 - extension unpacked directory
 - runtime metadata files checked
 3. If the script reports warnings, surface exact remediation commands.
@@ -33,7 +34,7 @@ Use this skill when the user asks things like:
 - Keep authentication and CSRF behavior unchanged.
 - Do not broaden any CSRF exemptions.
 - Do not print or log user clip content.
-- Keep SQLite worktree-scoped; avoid shared mutable DB files across worktrees.
+- Keep database/runtime state worktree-scoped; avoid shared mutable DB containers or env files across worktrees.
 
 ## Outputs
 

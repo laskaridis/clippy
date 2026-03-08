@@ -2,22 +2,24 @@
 
 ## Architecture Style
 
-The backend uses a modular monolith:
-- one deployable Django application
-- strongly separated feature modules under `backend/apps/`
-- explicit dependency direction to keep low coupling and high cohesion
+- The backend uses a modular monolith:
+  - one deployable Django application
+  - strongly separated bounded contexts under `backend/apps/`
+  - explicit dependency direction to keep low coupling and high cohesion
+- The codebase follows a cloud-native approach
 
 ## Tech stack
 
 - Backend (`backend/`):
   * Django 5.2
   * Django REST Framework 
+  * PostgreSQL (required runtime database)
 - Web app (`backend/`):
   * boostrap css
-- Extensions (`extension/`)
+- Browser extensions (`extension/`)
   * Chrome Manifest V3
   * typescript
-  * playwrtight
+  * playwrtight (for e2e tests)
   * pnpm
 
 ## Main Architectural Components
@@ -41,7 +43,7 @@ The backend uses a modular monolith:
 - Dependencies: Django/DRF and shared platform services.
 - Interactions: serves `/clips/*` and `/api/*` flows; uses authenticated user context from accounts/session.
 
-4. Database (PostgreSQL/SQLite via Django ORM)
+4. Database (PostgreSQL via Django ORM)
 - Responsibility: persistence and hard integrity guarantees.
 - Interactions: all writes/reads go through module-owned models and query boundaries.
 
