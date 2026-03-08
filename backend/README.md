@@ -39,12 +39,26 @@ Resolves deterministic per-worktree defaults for:
 
 ```bash
 cd backend
-./scripts/bootsrap.sh
+./scripts/start-server.sh
 ```
 
 Default URL: `http://127.0.0.1:8000`
 
 Also ensures that the current environment is confitured (similarly to `--bootstrap-only`)
+
+Stop server:
+
+```bash
+cd backend
+./scripts/stop-server.sh
+```
+
+Check server status:
+
+```bash
+cd backend
+./scripts/check-server.sh
+```
 
 ## Local environment introspection
 

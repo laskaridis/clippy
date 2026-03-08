@@ -46,9 +46,19 @@ class QuickSearchServiceTests(TestCase):
         with self.assertRaisesMessage(ValidationError, "at least 3 characters"):
             quick_search(user=self.user, query="ab")
 
-    def test_rejects_whitespace_in_query(self) -> None:
-        with self.assertRaisesMessage(ValidationError, "Whitespace is not allowed"):
-            quick_search(user=self.user, query="python notes")
+    def test_accepts_phrase_query_with_whitespace(self) -> None:
+        clip = self._create_clip(
+            user=self.user,
+            title="Stealth ship notes",
+            url="https://example.com/stealth-ship",
+            raw_content="A stealth ship can reduce radar visibility significantly.",
+            normalized_text="a stealth ship can reduce radar visibility significantly.",
+        )
+
+        result = quick_search(user=self.user, query="stealth ship")
+
+        clip_ids: set[str] = {item["clip_id"] for item in result["hits"]["clips"]}
+        self.assertIn(str(clip.id), clip_ids)
 
     def test_rejects_too_long_query(self) -> None:
         with self.assertRaisesMessage(ValidationError, "no more than 50 characters"):
@@ -181,3 +191,24 @@ class QuickSearchServiceTests(TestCase):
 
         result = quick_search(user=self.user, query="python%32")
         self.assertEqual(result["query"], "python%32")
+
+    def test_clip_hits_include_headline_snippet(self) -> None:
+        self._create_clip(
+            user=self.user,
+            title="Search relevance",
+            url="https://example.com/search",
+            raw_content=(
+                "A long paragraph about ranking models where python appears in context "
+                "and the rest explains retrieval quality."
+            ),
+            normalized_text=(
+                "a long paragraph about ranking models where python appears in context "
+                "and the rest explains retrieval quality."
+            ),
+        )
+
+        result = quick_search(user=self.user, query="python")
+        self.assertGreaterEqual(len(result["hits"]["clips"]), 1)
+        snippet = result["hits"]["clips"][0]["snippet"]
+        self.assertTrue(snippet)
+        self.assertIn("python", snippet.lower())

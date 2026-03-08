@@ -76,6 +76,9 @@ Consider all the following as **hard gates**:
 - Git worktrees for this repository MUST be created under the repository-local
   `.worktrees/` directory (for example, `<repo>/.worktrees/<worktree-name>`).
 - Do NOT create project worktrees outside `.worktrees/`.
+- Run exactly one backend server instance per worktree at a time. If the server
+  must pick up changes, restart that instance instead of starting an additional
+  runserver process on another port.
 - Do NOt delete any worktree unless the task is explicitly confirmed complete
   by the user and the user explicitly asks for worktree deletion.
 
@@ -84,6 +87,10 @@ Guidelines to work with the codebase effectively in a worktreee:
 - Treat `backend/scripts/bootsrap.sh` as the single backend lifecycle contract 
   for local tooling/tests (bootstrap, migrations/admin setup, runtime metadata,
   and runserver).
+- Backend server entrypoints (preferred for local development):
+  - Start: `cd backend && ./scripts/start-server.sh`
+  - Stop: `cd backend && ./scripts/stop-server.sh`
+  - Check running status/url: `cd backend && ./scripts/check-server.sh`
 - If `DATABASE_URL` is not set, the script bootstraps a deterministic
   per-worktree PostgreSQL container via `infra/docker/docker-compose.yml`
   (isolated compose project, db name, and db port).
