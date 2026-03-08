@@ -35,6 +35,19 @@ scripts/start-task.sh <issue-number> <task-slug> [base-branch]
 
 This creates a compliant worktree/branch and marks the issue `in progress`.
 
+### Emergency bypass policy
+
+Use bypasses only for urgent incidents and always create immediate follow-up work.
+
+- Narrow bypass (preferred): set `SKIP_FEATURE_BRANCH_CHECK=1` for a single commit.
+- Broad bypass (last resort): `git commit --no-verify`.
+
+Hard requirements when using either bypass:
+- include the incident/ticket reference in the commit message
+- open (or link) a follow-up issue before end of day
+- open a PR that restores full workflow compliance
+- do not continue regular feature development under bypass mode
+
 ## Git branch policy
 
 Treat all the following as **hard gates**:
