@@ -87,7 +87,7 @@ tasks:
     depends_on: []
 
   - id: verify-and-resolve-pr-feedback-round-2
-    status: pending
+    status: done
     priority: P1
     title: Validate server lifecycle fixes and map PR feedback resolutions
     files:
@@ -95,6 +95,26 @@ tasks:
       - backend/scripts/stop-server.sh
       - backend/scripts/check-server.sh
     deliverable: Targeted validation passes and each new PR review comment has a mapped resolution note.
+    resolution_notes:
+      - review_item: start-server exits early when no process matches under pipefail
+        resolution: "Replaced grep pipeline in backend/scripts/start-server.sh PID lookup with awk filtering so no-match returns empty output without aborting."
+        commit: f0d2f10
+        review_comment_id: 2904294607
+      - review_item: stop-server exits before no-server branch when no process matches
+        resolution: "Replaced grep pipeline in backend/scripts/stop-server.sh PID lookup with awk filtering so explicit no-server diagnostics remain reachable."
+        commit: c1f59d1
+        review_comment_id: 2904294614
+      - review_item: check-server exits before no-server branch when no process matches
+        resolution: "Reworked backend/scripts/check-server.sh process lookup to awk-based pid|command output preserving full command text and avoiding no-match pipeline failure."
+        commit: e6cd8c2
+        review_comment_id: 2904294619
+    validation_notes:
+      - "bash -n backend/scripts/start-server.sh"
+      - "bash -n backend/scripts/stop-server.sh"
+      - "bash -n backend/scripts/check-server.sh"
+      - "set -euo pipefail lookup check: start/stop PID pipeline returns success on no-match"
+      - "set -euo pipefail lookup check: check-server pipeline returns success on no-match"
+      - "cd backend && ./scripts/check-server.sh (reports active backend URL)"
     depends_on:
       - fix-start-server-empty-process-list
       - fix-stop-server-empty-process-list
