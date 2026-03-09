@@ -1,0 +1,62 @@
+.clip-title {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  line-height: 1.3;
+  min-height: 2.3em;
+}
+
+.clip-preview {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  overflow: hidden;
+  line-height: 1.4;
+  min-height: 4.2em;
+}
+
+.clip-source-link {
+  color: var(--bs-secondary-color);
+  opacity: 0.9;
+  transition: color 0.15s ease, opacity 0.15s ease;
+}
+
+.clip-source-link:hover,
+.clip-source-link:focus-visible {
+  color: var(--bs-primary);
+  opacity: 1;
+}
+
+.quick-search-panel {
+  max-height: 22rem;
+  overflow-y: auto;
+}
+
+.quick-search-group-title {
+  font-size: 0.75rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--bs-secondary-color);
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+.quick-search-item.active,
+.quick-search-item:focus-visible {
+  color: var(--bs-body-color);
+  background: var(--bs-primary-bg-subtle);
+  outline: none;
+}
+
+.quick-search-clip-headline {
+  color: var(--bs-emphasis-color);
+  font-size: 0.95rem;
+  line-height: 1.35;
+}
+
+.quick-search-clip-meta {
+  color: var(--bs-secondary-color);
+  font-size: 0.78rem;
+  line-height: 1.3;
+}
