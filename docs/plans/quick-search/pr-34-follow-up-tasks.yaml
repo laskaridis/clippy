@@ -33,7 +33,7 @@ tasks:
     depends_on: []
 
   - id: fix-quick-search-abort
-    status: pending
+    status: done
     priority: P2
     title: Abort in-flight quick-search when input clears
     files:
@@ -54,7 +54,7 @@ tasks:
       - fix-quick-search-abort
 
   - id: verify-and-resolve-pr-feedback
-    status: pending
+    status: done
     priority: P1
     title: Verify changes and resolve PR feedback
     files:
@@ -63,6 +63,28 @@ tasks:
       - .agents/skills/feature-delivery-gate/scripts/gate.sh
       - backend/apps/clips/templates/clips/list.html
     deliverable: Targeted validation passes and each PR review comment has a mapped resolution note.
+    resolution_notes:
+      - review_item: Detached HEAD commit flows blocked by pre-commit preflight
+        resolution: "Moved detached-HEAD check before agent preflight in .githooks/pre-commit."
+        commit: dfa8f3f
+      - review_item: start-task label existence check fails for multi-word labels
+        resolution: "Switched to gh label JSON name matching in scripts/start-task.sh."
+        commit: b80f289
+      - review_item: feature-delivery gate label existence check fails for multi-word labels
+        resolution: "Switched to gh label JSON name matching in .agents/skills/feature-delivery-gate/scripts/gate.sh."
+        commit: 1ac1512
+      - review_item: quick-search stale responses reopen panel after input clears
+        resolution: "Abort in-flight quick-search requests when input is empty or invalid in backend/apps/clips/static/clips/js/list.js."
+        commit: "fix: abort stale quick-search responses"
+      - review_item: inline clips list CSS/JS should be extracted to static assets
+        resolution: "Moved inline assets from list template to backend/apps/clips/static/clips/css/list.css and backend/apps/clips/static/clips/js/list.js."
+        commit: e1e2dc4
+    validation_notes:
+      - "bash -n .githooks/pre-commit"
+      - "bash -n scripts/start-task.sh"
+      - "bash -n .agents/skills/feature-delivery-gate/scripts/gate.sh"
+      - "node --check backend/apps/clips/static/clips/js/list.js"
+      - "cd backend && python manage.py test --noinput (63 tests passed)"
     depends_on:
       - fix-precommit-detached-head
       - fix-start-task-label-check
