@@ -24,7 +24,7 @@ tasks:
     depends_on: []
 
   - id: fix-gate-label-check
-    status: pending
+    status: done
     priority: P1
     title: Match multi-word labels in feature-delivery gate script
     files:
