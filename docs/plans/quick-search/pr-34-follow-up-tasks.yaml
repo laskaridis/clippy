@@ -76,7 +76,7 @@ tasks:
     depends_on: []
 
   - id: fix-check-server-empty-process-list
-    status: pending
+    status: done
     priority: P2
     title: Preserve explicit no-server branch in check-server
     files:
