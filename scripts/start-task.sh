@@ -64,7 +64,7 @@ fi
 
 git worktree add "${WORKTREE_DIR}" -b "${BRANCH_NAME}" "origin/${BASE_BRANCH}"
 
-if ! gh label list --limit 200 | awk '{print $1}' | grep -Fxq "in progress"; then
+if ! gh label list --limit 200 --json name --jq '.[].name' | grep -Fxq "in progress"; then
   gh label create "in progress" --color "FBCA04" --description "Work actively in progress" >/dev/null
 fi
 
