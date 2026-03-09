@@ -65,7 +65,7 @@ tasks:
     depends_on: []
 
   - id: fix-stop-server-empty-process-list
-    status: pending
+    status: done
     priority: P2
     title: Preserve explicit no-server branch in stop-server
     files:
