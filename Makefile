@@ -77,6 +77,7 @@ check:
 backend-init: ## Install backend dependencies in backend/.venv
 	@$(PYTHON) -m venv $(VENV_DIR)
 	@$(PIP) install -r backend/requirements.txt
+	@$(PIP) install -r backend/requirements-dev.txt
 
 backend-test: ## Run backend tests (worktree-aware)
 	@cd backend && ./scripts/test.sh
