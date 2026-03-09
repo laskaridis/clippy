@@ -1,0 +1,65 @@
+plan_id: pr-34-follow-up
+pr:
+  number: 34
+  title: "Milestone 3: quick-search web UX and list filters"
+  url: "https://github.com/laskaridis/clippy/pull/34"
+
+tasks:
+  - id: fix-precommit-detached-head
+    priority: P1
+    title: Preserve detached-HEAD commit flows in pre-commit hook
+    files:
+      - .githooks/pre-commit
+    deliverable: Detached HEAD paths (for example rebase/cherry-pick continue flows) are not blocked by branch-only preflight checks.
+    depends_on: []
+
+  - id: fix-start-task-label-check
+    priority: P1
+    title: Match multi-word labels in start-task script
+    files:
+      - scripts/start-task.sh
+    deliverable: Existing "in progress" label is detected reliably using label-name matching that supports spaces.
+    depends_on: []
+
+  - id: fix-gate-label-check
+    priority: P1
+    title: Match multi-word labels in feature-delivery gate script
+    files:
+      - .agents/skills/feature-delivery-gate/scripts/gate.sh
+    deliverable: Existing "in review" label is detected reliably using label-name matching that supports spaces.
+    depends_on: []
+
+  - id: fix-quick-search-abort
+    priority: P2
+    title: Abort in-flight quick-search when input clears
+    files:
+      - backend/apps/clips/templates/clips/list.html
+    deliverable: Clearing the query aborts in-flight requests so stale responses do not reopen the quick-search panel.
+    depends_on: []
+
+  - id: decouple-template-assets
+    priority: P2
+    title: Decouple CSS and JavaScript from HTML templates
+    files:
+      - backend/apps/clips/templates/clips/list.html
+      - backend/apps/clips/static/clips/css/
+      - backend/apps/clips/static/clips/js/
+    deliverable: Inline style/script blocks are extracted to static assets and referenced via template static includes without UX regressions.
+    depends_on:
+      - fix-quick-search-abort
+
+  - id: verify-and-resolve-pr-feedback
+    priority: P1
+    title: Verify changes and resolve PR feedback
+    files:
+      - .githooks/pre-commit
+      - scripts/start-task.sh
+      - .agents/skills/feature-delivery-gate/scripts/gate.sh
+      - backend/apps/clips/templates/clips/list.html
+    deliverable: Targeted validation passes and each PR review comment has a mapped resolution note.
+    depends_on:
+      - fix-precommit-detached-head
+      - fix-start-task-label-check
+      - fix-gate-label-check
+      - fix-quick-search-abort
+      - decouple-template-assets
