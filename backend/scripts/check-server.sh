@@ -4,7 +4,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BACKEND_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
 find_worktree_runserver() {
-  ps -axo pid=,command= | grep 'manage.py runserver' | grep -v grep | while read -r pid command; do
+  ps -axo pid=,command= | awk '/manage.py runserver/ { pid=$1; $1=""; sub(/^ /, ""); print pid "|" $0 }' | while IFS='|' read -r pid command; do
     local cwd
     cwd="$(lsof -a -p "${pid}" -d cwd -Fn 2>/dev/null | sed -n 's/^n//p')"
     if [[ "${cwd}" == "${BACKEND_DIR}" ]]; then
