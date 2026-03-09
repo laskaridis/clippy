@@ -249,6 +249,13 @@
     });
   }
 
+  function abortInFlightRequest() {
+    if (abortController) {
+      abortController.abort();
+      abortController = null;
+    }
+  }
+
   if (!searchInput || !searchFeedback || !searchStatus || !searchPanel || !searchResults) {
     return;
   }
@@ -260,15 +267,19 @@
 
     if (requestTimer) {
       clearTimeout(requestTimer);
+      requestTimer = null;
     }
 
     if (!query) {
+      abortInFlightRequest();
+      lastRenderedQuery = "";
       closePanel();
       return;
     }
 
     var validation = validateQuery(query);
     if (!validation.valid) {
+      abortInFlightRequest();
       closePanel();
       searchFeedback.textContent = validation.message;
       return;
