@@ -8,14 +8,12 @@ Use this file as the entry point, then follow the topic-specific guidance below.
 
 Use the root `Makefile` as the primary interface for local workflows and automation:
 
-- `make init` - install dependencies and configure hooks
-- `make build` - build artifacts
-- `make test` - run test suites
-- `make lint` - run lint checks
-- `make format` - format source
-- `make run` - run the local stack
-- `make clean` - remove generated local artifacts
-- `make check` - run lint + typecheck + tests
+- `make all-*` targets are the canonical cross-project entrypoints.
+- `make backend-*` and `make extension-*` targets are project-scoped entrypoints.
+- Legacy short aliases (`make init`, `make build`, etc.) map to the `all-*` targets.
+
+For workflow policy, see `docs/DEVELOPMENT_WORKFLOW.md`.
+For the live command list, run `make help`.
 
 ## Directory outline
 - .codex # codex agent specific configuration (i.e. skills, etc)
