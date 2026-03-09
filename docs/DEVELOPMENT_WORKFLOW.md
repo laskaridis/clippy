@@ -14,21 +14,6 @@ in-order:
 6. Open a pull request into `master`.
 7. Move the task issue to "In review".
 
-## Canonical command interface
-
-Use root `make` targets as the default entrypoint for both humans and coding agents:
-
-- `make init`
-- `make build`
-- `make test`
-- `make lint`
-- `make format`
-- `make run`
-- `make clean`
-- `make check`
-
-Run `make help` to see target descriptions.
-
 ### Enforced preflight gate
 
 Before editing code, run:
