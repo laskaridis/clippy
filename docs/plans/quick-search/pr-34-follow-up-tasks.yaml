@@ -53,6 +53,53 @@ tasks:
     depends_on:
       - fix-quick-search-abort
 
+  - id: fix-start-server-empty-process-list
+    status: pending
+    priority: P1
+    title: Keep start-server functional when no backend process is running
+    files:
+      - backend/scripts/start-server.sh
+    deliverable: start-server reaches the startup path cleanly in the no-running-server case under set -euo pipefail.
+    source_review_comment_id: 2904294607
+    source_review_created_at: "2026-03-09T09:40:24Z"
+    depends_on: []
+
+  - id: fix-stop-server-empty-process-list
+    status: pending
+    priority: P2
+    title: Preserve explicit no-server branch in stop-server
+    files:
+      - backend/scripts/stop-server.sh
+    deliverable: stop-server prints the intended no-server diagnostic path instead of exiting early from process lookup.
+    source_review_comment_id: 2904294614
+    source_review_created_at: "2026-03-09T09:40:24Z"
+    depends_on: []
+
+  - id: fix-check-server-empty-process-list
+    status: pending
+    priority: P2
+    title: Preserve explicit no-server branch in check-server
+    files:
+      - backend/scripts/check-server.sh
+    deliverable: check-server emits the documented no-server status message when no matching runserver process exists.
+    source_review_comment_id: 2904294619
+    source_review_created_at: "2026-03-09T09:40:24Z"
+    depends_on: []
+
+  - id: verify-and-resolve-pr-feedback-round-2
+    status: pending
+    priority: P1
+    title: Validate server lifecycle fixes and map PR feedback resolutions
+    files:
+      - backend/scripts/start-server.sh
+      - backend/scripts/stop-server.sh
+      - backend/scripts/check-server.sh
+    deliverable: Targeted validation passes and each new PR review comment has a mapped resolution note.
+    depends_on:
+      - fix-start-server-empty-process-list
+      - fix-stop-server-empty-process-list
+      - fix-check-server-empty-process-list
+
   - id: verify-and-resolve-pr-feedback
     status: done
     priority: P1
