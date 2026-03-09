@@ -58,7 +58,7 @@ if ! gh pr list --head "$BRANCH" --state open --json number,url | grep -q '"numb
 fi
 
 if [[ "$TO_REVIEW" -eq 1 ]]; then
-  if ! gh label list --limit 200 | awk '{print $1}' | grep -Fxq "in review"; then
+  if ! gh label list --limit 200 --json name --jq '.[].name' | grep -Fxq "in review"; then
     gh label create "in review" --color "0E8A16" --description "Work is in review" >/dev/null
   fi
   gh issue edit "$ISSUE" --remove-label "in progress" --add-label "in review" >/dev/null
