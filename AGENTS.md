@@ -4,6 +4,19 @@ Guidelines for coding agents working in this repository.
 
 Use this file as the entry point, then follow the topic-specific guidance below.
 
+## Canonical task entrypoints
+
+Use the root `Makefile` as the primary interface for local workflows and automation:
+
+- `make init` - install dependencies and configure hooks
+- `make build` - build artifacts
+- `make test` - run test suites
+- `make lint` - run lint checks
+- `make format` - format source
+- `make run` - run the local stack
+- `make clean` - remove generated local artifacts
+- `make check` - run lint + typecheck + tests
+
 ## Directory outline
 - .codex # codex agent specific configuration (i.e. skills, etc)
 - .local # artifacts specific to the local environment
