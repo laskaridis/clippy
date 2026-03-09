@@ -10,13 +10,14 @@ if ! git rev-parse --git-dir >/dev/null 2>&1; then
 fi
 
 ROOT_DIR="$(git rev-parse --show-toplevel)"
-if [[ -x "${ROOT_DIR}/scripts/agent-preflight.sh" ]]; then
-  "${ROOT_DIR}/scripts/agent-preflight.sh"
-fi
 
 if ! branch_name="$(git symbolic-ref --quiet --short HEAD 2>/dev/null)"; then
   # Detached HEAD (e.g., rebase/cherry-pick) should not be blocked.
   exit 0
+fi
+
+if [[ -x "${ROOT_DIR}/scripts/agent-preflight.sh" ]]; then
+  "${ROOT_DIR}/scripts/agent-preflight.sh"
 fi
 
 if [[ "${branch_name}" =~ ^feature/[a-z0-9-]+$ ]]; then

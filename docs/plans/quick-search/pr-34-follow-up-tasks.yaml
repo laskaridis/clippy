@@ -6,6 +6,7 @@ pr:
 
 tasks:
   - id: fix-precommit-detached-head
+    status: done
     priority: P1
     title: Preserve detached-HEAD commit flows in pre-commit hook
     files:
@@ -14,6 +15,7 @@ tasks:
     depends_on: []
 
   - id: fix-start-task-label-check
+    status: pending
     priority: P1
     title: Match multi-word labels in start-task script
     files:
@@ -22,6 +24,7 @@ tasks:
     depends_on: []
 
   - id: fix-gate-label-check
+    status: pending
     priority: P1
     title: Match multi-word labels in feature-delivery gate script
     files:
@@ -30,6 +33,7 @@ tasks:
     depends_on: []
 
   - id: fix-quick-search-abort
+    status: pending
     priority: P2
     title: Abort in-flight quick-search when input clears
     files:
@@ -38,6 +42,7 @@ tasks:
     depends_on: []
 
   - id: decouple-template-assets
+    status: pending
     priority: P2
     title: Decouple CSS and JavaScript from HTML templates
     files:
@@ -49,6 +54,7 @@ tasks:
       - fix-quick-search-abort
 
   - id: verify-and-resolve-pr-feedback
+    status: pending
     priority: P1
     title: Verify changes and resolve PR feedback
     files:
