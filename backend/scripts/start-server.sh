@@ -6,7 +6,7 @@ BACKEND_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
 BOOTSTRAP_SCRIPT="${SCRIPT_DIR}/bootsrap.sh"
 
 list_worktree_runserver_pids() {
-  ps -axo pid=,command= | grep -E 'manage.py runserver|scripts/bootsrap.sh --no-reload' | grep -v grep | while read -r pid rest; do
+  ps -axo pid=,command= | awk '/manage.py runserver|scripts\/bootsrap.sh --no-reload/ { print $1 }' | while read -r pid; do
     local cwd
     cwd="$(lsof -a -p "${pid}" -d cwd -Fn 2>/dev/null | sed -n 's/^n//p')"
     if [[ "${cwd}" == "${BACKEND_DIR}" && "${pid}" != "$$" ]]; then

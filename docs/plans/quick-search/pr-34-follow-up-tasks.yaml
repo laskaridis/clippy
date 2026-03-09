@@ -54,7 +54,7 @@ tasks:
       - fix-quick-search-abort
 
   - id: fix-start-server-empty-process-list
-    status: pending
+    status: done
     priority: P1
     title: Keep start-server functional when no backend process is running
     files:
