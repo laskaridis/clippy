@@ -1,0 +1,344 @@
+(function() {
+  function getCookie(name) {
+    var cookieValue = null;
+    if (document.cookie && document.cookie !== "") {
+      var cookies = document.cookie.split(";");
+      for (var i = 0; i < cookies.length; i++) {
+        var cookie = cookies[i].trim();
+        if (cookie.substring(0, name.length + 1) === name + "=") {
+          cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+          break;
+        }
+      }
+    }
+    return cookieValue;
+  }
+
+  var csrfToken = getCookie("csrftoken");
+  var buttons = document.querySelectorAll(".clip-delete");
+  buttons.forEach(function(button) {
+    button.addEventListener("click", function(event) {
+      event.preventDefault();
+      var url = button.getAttribute("data-delete-url");
+      if (!url) {
+        return;
+      }
+
+      fetch(url, {
+        method: "DELETE",
+        headers: {
+          "X-CSRFToken": csrfToken,
+          "X-Requested-With": "XMLHttpRequest"
+        },
+        credentials: "same-origin"
+      }).then(function(response) {
+        if (response.status === 204 || response.status === 200) {
+          var row = button.closest("[data-clip-row]");
+          if (row) {
+            row.remove();
+          }
+        } else if (response.status === 403) {
+          alert("You are not allowed to delete this clip.");
+        } else {
+          alert("Failed to delete clip.");
+        }
+      }).catch(function() {
+        alert("Failed to delete clip.");
+      });
+    });
+  });
+
+  var searchInput = document.getElementById("quick-search-input");
+  var searchFeedback = document.getElementById("quick-search-feedback");
+  var searchStatus = document.getElementById("quick-search-status");
+  var searchPanel = document.getElementById("quick-search-panel");
+  var searchResults = document.getElementById("quick-search-results");
+  var activeIndex = -1;
+  var requestTimer = null;
+  var abortController = null;
+  var lastRenderedQuery = "";
+
+  function normalizeQuery(query) {
+    return String(query || "").trim();
+  }
+
+  function validateQuery(query) {
+    var normalizedQuery = normalizeQuery(query);
+    if (normalizedQuery.length < 3) {
+      return { valid: false, message: "Type at least 3 characters to search." };
+    }
+    if (normalizedQuery.length > 50) {
+      return { valid: false, message: "Search must be 50 characters or less." };
+    }
+    return { valid: true, message: "", query: normalizedQuery };
+  }
+
+  function clearActiveState() {
+    var items = searchResults.querySelectorAll("[data-result-item]");
+    items.forEach(function(item) {
+      item.classList.remove("active");
+      item.setAttribute("aria-selected", "false");
+    });
+  }
+
+  function setActiveItem(index) {
+    var items = searchResults.querySelectorAll("[data-result-item]");
+    if (!items.length) {
+      activeIndex = -1;
+      searchInput.removeAttribute("aria-activedescendant");
+      return;
+    }
+
+    if (index < 0) {
+      index = items.length - 1;
+    } else if (index >= items.length) {
+      index = 0;
+    }
+
+    clearActiveState();
+    activeIndex = index;
+    var activeItem = items[activeIndex];
+    activeItem.classList.add("active");
+    activeItem.setAttribute("aria-selected", "true");
+    searchInput.setAttribute("aria-activedescendant", activeItem.id);
+    activeItem.scrollIntoView({ block: "nearest" });
+  }
+
+  function closePanel() {
+    activeIndex = -1;
+    searchInput.setAttribute("aria-expanded", "false");
+    searchInput.removeAttribute("aria-activedescendant");
+    searchPanel.classList.add("d-none");
+  }
+
+  function openPanel() {
+    searchInput.setAttribute("aria-expanded", "true");
+    searchPanel.classList.remove("d-none");
+  }
+
+  function escapeHtml(value) {
+    return String(value)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/\"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+  }
+
+  function renderHighlightedSnippet(value) {
+    var escaped = escapeHtml(value || "");
+    return escaped
+      .replace(/&lt;b&gt;/g, "<b>")
+      .replace(/&lt;\/b&gt;/g, "</b>");
+  }
+
+  function renderGroup(items, title) {
+    if (!items || !items.length) {
+      return "";
+    }
+
+    var groupHtml = '<div class="p-2 border-bottom">';
+    groupHtml += '<div class="quick-search-group-title">' + title + "</div>";
+    for (var i = 0; i < items.length; i++) {
+      var item = items[i];
+      var secondaryText = "";
+      var tertiaryText = "";
+      if (item.type === "clip") {
+        secondaryText = item.snippet || item.url || "";
+        tertiaryText = item.title || "";
+      } else if (item.type === "label") {
+        secondaryText = item.clip_count + " clips";
+      } else {
+        secondaryText = item.clip_count + " clips";
+      }
+
+      var label = item.title || item.name || item.url || "Result";
+      var safeLabel = escapeHtml(label);
+      var safeSecondaryText = item.type === "clip"
+        ? renderHighlightedSnippet(secondaryText)
+        : escapeHtml(secondaryText);
+      var safeTertiaryText = escapeHtml(tertiaryText);
+      var safeUrl = escapeHtml(item.url || "");
+      var safeTargetUrl = escapeHtml(item.target_url || "#");
+      var optionId = "quick-search-option-" + title + "-" + i + "-" + Math.abs(label.length + i);
+      groupHtml += '<a href="' + safeTargetUrl + '" id="' + optionId + '" class="list-group-item list-group-item-action quick-search-item" role="option" aria-selected="false" data-result-item>';
+      if (item.type === "clip") {
+        groupHtml += '<div class="fw-semibold quick-search-clip-headline">' + safeSecondaryText + "</div>";
+        if (tertiaryText || item.url) {
+          var clipMeta = "";
+          if (tertiaryText) {
+            clipMeta += safeTertiaryText;
+          }
+          if (item.url) {
+            if (clipMeta) {
+              clipMeta += " · ";
+            }
+            clipMeta += safeUrl;
+          }
+          groupHtml += '<div class="quick-search-clip-meta">' + clipMeta + "</div>";
+        }
+      } else {
+        groupHtml += '<div class="fw-semibold">' + safeLabel + "</div>";
+        if (secondaryText) {
+          groupHtml += '<div class="small text-secondary">' + safeSecondaryText + "</div>";
+        }
+      }
+      groupHtml += "</a>";
+    }
+    groupHtml += "</div>";
+    return groupHtml;
+  }
+
+  function renderResults(payload) {
+    var hits = payload && payload.hits ? payload.hits : { clips: [], labels: [], websites: [] };
+    var total = payload && typeof payload.total === "number" ? payload.total : 0;
+    lastRenderedQuery = payload && typeof payload.query === "string" ? payload.query : "";
+
+    searchResults.innerHTML = "";
+
+    if (total === 0) {
+      searchResults.innerHTML = '<div class="p-3 text-secondary">No results found.</div>';
+      searchStatus.textContent = "No results found.";
+      openPanel();
+      return;
+    }
+
+    var html = "";
+    html += renderGroup(hits.clips, "clips");
+    html += renderGroup(hits.labels, "labels");
+    html += renderGroup(hits.websites, "websites");
+    searchResults.innerHTML = html;
+    searchStatus.textContent = total + " quick search result" + (total === 1 ? "" : "s") + " available.";
+    openPanel();
+  }
+
+  function fetchQuickSearch(query) {
+    if (abortController) {
+      abortController.abort();
+    }
+    abortController = new AbortController();
+
+    var endpoint = "/api/clips/quick-search/?q=" + encodeURIComponent(query);
+    fetch(endpoint, {
+      method: "GET",
+      credentials: "same-origin",
+      signal: abortController.signal,
+      headers: {
+        Accept: "application/json"
+      }
+    }).then(function(response) {
+      if (!response.ok) {
+        return response.json().then(function(errorBody) {
+          throw errorBody;
+        });
+      }
+      return response.json();
+    }).then(function(payload) {
+      activeIndex = -1;
+      renderResults(payload);
+    }).catch(function(error) {
+      if (error && error.name === "AbortError") {
+        return;
+      }
+      closePanel();
+      if (error && error.q && error.q.length) {
+        searchFeedback.textContent = error.q[0];
+        return;
+      }
+      searchFeedback.textContent = "Unable to load quick search results.";
+    });
+  }
+
+  if (!searchInput || !searchFeedback || !searchStatus || !searchPanel || !searchResults) {
+    return;
+  }
+
+  searchInput.addEventListener("input", function() {
+    var query = searchInput.value;
+    searchStatus.textContent = "";
+    searchFeedback.textContent = "";
+
+    if (requestTimer) {
+      clearTimeout(requestTimer);
+    }
+
+    if (!query) {
+      closePanel();
+      return;
+    }
+
+    var validation = validateQuery(query);
+    if (!validation.valid) {
+      closePanel();
+      searchFeedback.textContent = validation.message;
+      return;
+    }
+
+    requestTimer = setTimeout(function() {
+      fetchQuickSearch(validation.query);
+    }, 200);
+  });
+
+  searchInput.addEventListener("focus", function() {
+    var query = searchInput.value;
+    if (!query) {
+      return;
+    }
+
+    var validation = validateQuery(query);
+    if (!validation.valid) {
+      closePanel();
+      searchFeedback.textContent = validation.message;
+      return;
+    }
+
+    searchFeedback.textContent = "";
+    if (validation.query === lastRenderedQuery && searchResults.innerHTML.trim()) {
+      openPanel();
+      return;
+    }
+
+    fetchQuickSearch(validation.query);
+  });
+
+  searchInput.addEventListener("keydown", function(event) {
+    var items = searchResults.querySelectorAll("[data-result-item]");
+    if (!items.length) {
+      if (event.key === "Escape") {
+        closePanel();
+      }
+      return;
+    }
+
+    if (event.key === "ArrowDown") {
+      event.preventDefault();
+      setActiveItem(activeIndex + 1);
+    } else if (event.key === "ArrowUp") {
+      event.preventDefault();
+      setActiveItem(activeIndex - 1);
+    } else if (event.key === "Enter") {
+      if (activeIndex >= 0 && activeIndex < items.length) {
+        event.preventDefault();
+        window.location.href = items[activeIndex].getAttribute("href");
+      }
+    } else if (event.key === "Escape") {
+      event.preventDefault();
+      closePanel();
+    }
+  });
+
+  searchResults.addEventListener("mousemove", function(event) {
+    var option = event.target.closest("[data-result-item]");
+    if (!option) {
+      return;
+    }
+    var items = Array.prototype.slice.call(searchResults.querySelectorAll("[data-result-item]"));
+    setActiveItem(items.indexOf(option));
+  });
+
+  document.addEventListener("click", function(event) {
+    if (!searchPanel.contains(event.target) && event.target !== searchInput) {
+      closePanel();
+    }
+  });
+})();

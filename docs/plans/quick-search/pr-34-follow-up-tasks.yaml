@@ -42,7 +42,7 @@ tasks:
     depends_on: []
 
   - id: decouple-template-assets
-    status: pending
+    status: done
     priority: P2
     title: Decouple CSS and JavaScript from HTML templates
     files:
