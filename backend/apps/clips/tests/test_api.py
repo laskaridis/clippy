@@ -44,6 +44,11 @@ class ClipApiTests(TestCase):
         force_authenticate(request, user=user or self.user)
         return request
 
+    def _build_url_of_length(self, length: int) -> str:
+        prefix = "https://example.com/"
+        self.assertGreater(length, len(prefix))
+        return f"{prefix}{'a' * (length - len(prefix))}"
+
     def test_list_clips_returns_only_current_user_clips(self) -> None:
         # Create two clips for the authenticated user and one for another user
         Clip.objects.create(
@@ -121,6 +126,34 @@ class ClipApiTests(TestCase):
 
         self.assertEqual(response.status_code, 400)
         self.assertIn("raw_content", response.data)
+
+    def test_create_clip_accepts_url_longer_than_200_chars(self) -> None:
+        payload = {
+            "url": self._build_url_of_length(2048),
+            "raw_content": "Long URL should still be accepted.",
+        }
+
+        view = ClipListCreateView.as_view()
+        request = self._auth_post("/api/clips/", payload)
+        response = view(request)
+
+        self.assertEqual(response.status_code, 201)
+        clip = Clip.objects.get(user=self.user)
+        self.assertEqual(clip.url, payload["url"])
+        self.assertEqual(clip.domain, "example.com")
+
+    def test_create_clip_rejects_url_longer_than_2048_chars(self) -> None:
+        payload = {
+            "url": self._build_url_of_length(2049),
+            "raw_content": "This should fail validation.",
+        }
+
+        view = ClipListCreateView.as_view()
+        request = self._auth_post("/api/clips/", payload)
+        response = view(request)
+
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("url", response.data)
 
     def test_retrieve_clip_scoped_to_current_user(self) -> None:
         clip = Clip.objects.create(
