@@ -80,7 +80,7 @@ class ClipSerializer(serializers.ModelSerializer):
 
 class CreateClipCommandSerializer(serializers.Serializer):
     title = serializers.CharField(max_length=255, allow_blank=True, required=False)
-    url = serializers.URLField()
+    url = serializers.URLField(max_length=2048)
     raw_content = serializers.CharField()
     notes = serializers.CharField(allow_blank=True, allow_null=True, required=False)
     labels = serializers.ListField(

@@ -33,7 +33,7 @@ class Clip(models.Model):
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="clips"
     )
     title = models.CharField(max_length=255, blank=True)
-    url = models.URLField()
+    url = models.URLField(max_length=2048)
     domain = models.CharField(max_length=255)
     raw_content = models.TextField()
     normalized_text = models.TextField()
