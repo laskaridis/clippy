@@ -11,6 +11,13 @@ class AccountsAuthTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, "accounts/login.html")
 
+    def test_home_navbar_is_not_forced_to_dark_theme(self) -> None:
+        response = self.client.get("/")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, "navbar-dark", html=False)
+        self.assertContains(response, 'id="themeToggle"', html=False)
+
     def test_successful_login_redirects_to_clips(self) -> None:
         User = get_user_model()
         user = User.objects.create_user(
