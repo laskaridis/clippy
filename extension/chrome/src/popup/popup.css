@@ -34,6 +34,7 @@
   --bs-body-color: #f8fafc;
   --bs-secondary-bg: #121826;
   --bs-secondary-color: #cbd5e1;
+  --bs-secondary-rgb: 203, 213, 225;
   --bs-border-color: rgba(255, 255, 255, 0.08);
   --bs-primary: #8b5cf6;
   --bs-link-color: #8b5cf6;
@@ -45,6 +46,7 @@
   --bs-body-color: #0b0e14;
   --bs-secondary-bg: #ffffff;
   --bs-secondary-color: #334155;
+  --bs-secondary-rgb: 51, 65, 85;
   --bs-border-color: rgba(15, 23, 42, 0.12);
   --bs-primary: #7c3aed;
   --bs-link-color: #7c3aed;

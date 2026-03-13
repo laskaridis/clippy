@@ -9,7 +9,7 @@ PIP := $(VENV_DIR)/bin/pip
 .PHONY: help all-init all-build all-test all-lint all-format all-typecheck all-run all-clean all-check \
 	init build test lint format typecheck run clean check \
 	backend-init backend-test backend-lint backend-format backend-typecheck backend-run backend-stop backend-status backend-clean \
-	extension-init extension-build extension-build-worktree extension-test extension-test-e2e extension-lint extension-format extension-typecheck extension-clean
+	extension-init extension-build extension-build-worktree extension-test extension-test-e2e extension-test-a11y extension-lint extension-format extension-typecheck extension-clean
 
 help: ## Show available commands
 	@awk 'BEGIN {FS = ":.*##"; printf "Usage: make <target>\n\nTargets:\n"} /^[a-zA-Z0-9_.-]+:.*##/ {printf "  %-10s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -117,6 +117,9 @@ extension-test: ## Run extension unit tests
 
 extension-test-e2e: ## Run extension end-to-end tests
 	@cd extension && pnpm run test:e2e
+
+extension-test-a11y: ## Run extension/frontend accessibility audits (WCAG 2.1 A/AA)
+	@cd extension && pnpm run test:a11y
 
 extension-lint: ## Run extension lint checks (eslint)
 	@cd extension && pnpm run lint
