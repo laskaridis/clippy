@@ -4,6 +4,10 @@ Guidelines for coding agents working in this repository.
 
 Use this file as the entry point, then follow the topic-specific guidance below.
 
+## *CRITICAL*: Development Workflow
+*ALLWAYS* follow the development wrokflow described in `docs/DEVELOPMENT_WORKFLOW.md`
+*BEFORE* working on any code changes.
+
 ## Canonical task entrypoints
 
 Use the root `Makefile` as the primary interface for local workflows and automation:
@@ -16,9 +20,10 @@ For workflow policy, see `docs/DEVELOPMENT_WORKFLOW.md`.
 For the live command list, run `make help`.
 
 ## Directory outline
+
 - .codex # codex agent specific configuration (i.e. skills, etc)
 - .local # artifacts specific to the local environment
-- .specify # spec-kit specific files 
+- .specify # spec-kit specific files
 - .worktrees # required location for all project git worktrees
 - backend # backend api application
 - docs # project documentation artifacts
@@ -43,6 +48,7 @@ When writing complex features or significant refactors, use an ExecPlan (as desc
 ## Priority Rules
 
 If guidance conflicts:
+
 1. Security and data isolation rules win.
 2. Architecture/domain invariants come next.
 3. Testing and documentation requirements must still be satisfied.
