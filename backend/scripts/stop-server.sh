@@ -122,7 +122,7 @@ if [[ -z "${pids}" ]]; then
 fi
 
 for pid in ${pids}; do
-  kill "${pid}"
+  kill "${pid}" 2>/dev/null || true
 done
 
 sleep 1
