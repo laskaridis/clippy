@@ -89,16 +89,21 @@
 
               <p class="mb-2 fs-6 text-secondary clip-preview">{{ clip.raw_content|truncatechars:180 }}</p>
 
-              <div class="d-flex flex-wrap gap-2 mb-2" aria-label="Clip labels">
-                {% with labels=clip.labels.all %}
-                  {% if labels %}
-                    {% for label in labels %}
-                      <span class="badge rounded-pill text-bg-primary">{{ label.name }}</span>
-                    {% endfor %}
-                  {% else %}
-                    <span class="small text-secondary">No labels</span>
-                  {% endif %}
-                {% endwith %}
+                <div class="d-flex flex-wrap gap-2 mb-2" aria-label="Clip labels">
+                  {% with labels=clip.labels.all %}
+                    {% if labels %}
+                      {% for label in labels %}
+                      <a
+                        class="badge rounded-pill text-bg-primary text-decoration-none"
+                        href="{% url 'clips_web:list' %}?label={{ label.uuid }}"
+                      >
+                        {{ label.name }}
+                      </a>
+                      {% endfor %}
+                    {% else %}
+                      <span class="small text-secondary">No labels</span>
+                    {% endif %}
+                  {% endwith %}
               </div>
 
               <p class="small text-secondary mb-0 mt-auto">{{ clip.created_at|date:"M. j, Y \\a\\t g:i A" }}</p>
