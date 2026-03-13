@@ -116,6 +116,57 @@ class ClipHtmlViewsTests(TestCase):
         clips = list(response.context["clips"])
         self.assertEqual([clip.id for clip in clips], [matching_clip.id])
 
+    def test_list_renders_label_as_clickable_link_to_label_filter(self) -> None:
+        clip = Clip.objects.create(
+            user=self.user,
+            title="First",
+            url="https://example.com/one",
+            domain="example.com",
+            raw_content="First clip content shown on list page",
+            normalized_text="first clip content shown on list page",
+        )
+        label = Label.objects.create(user=self.user, name="research")
+        clip.labels.add(label)
+
+        self.client.force_login(self.user)
+        response = self.client.get(reverse("clips_web:list"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(
+            response,
+            f'href="{reverse("clips_web:list")}?label={label.uuid}"',
+            html=False,
+        )
+
+    def test_list_label_link_does_not_preserve_existing_url_filter(self) -> None:
+        clip = Clip.objects.create(
+            user=self.user,
+            title="First",
+            url="https://example.com/one",
+            domain="example.com",
+            raw_content="First clip content shown on list page",
+            normalized_text="first clip content shown on list page",
+        )
+        label = Label.objects.create(user=self.user, name="research")
+        clip.labels.add(label)
+
+        self.client.force_login(self.user)
+        response = self.client.get(
+            f"{reverse('clips_web:list')}?url=https%3A%2F%2Fexample.com%2Fone"
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(
+            response,
+            f'href="{reverse("clips_web:list")}?label={label.uuid}"',
+            html=False,
+        )
+        self.assertNotContains(
+            response,
+            f"label={label.uuid}&amp;url=",
+            html=False,
+        )
+
     def test_list_label_filter_rejects_invalid_uuid(self) -> None:
         Clip.objects.create(
             user=self.user,
