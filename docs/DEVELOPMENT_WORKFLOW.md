@@ -2,38 +2,57 @@
 
 ## Development workflow
 
-Upon a request form the user the coding agent ALWAYS follows the following steps
+Upon a request from the user the coding agent ALWAYS follows the following steps
 in-order:
 
-0. Make sure there is a github issue for this task; if need to create one
-1. Assign the issue to @me and move it to "In progress"
-2. Create a feature branch from latest `master`.
-3. Create a got worktree for that branch under `.worktrees`.
-4. Implement changes and run relevant tests.
-5. Review your code locally and fix any issues (make sure all test pass).
-6. Open a pull request into `master`.
-7. Move the task issue to "In review".
+1. Create a feature branch from latest `master`.
+2. Create a git worktree for that branch under `.worktrees`.
+3. Implement changes and run relevant tests.
+4. Review your code locally and fix any issues (make sure all tests pass).
+5. Open a pull request into `master`.
 
 ### Enforced preflight gate
 
 Before editing code, run:
 
 ```bash
-scripts/agent-preflight.sh --issue <issue-number> --require-issue
+scripts/agent-preflight.sh
 ```
 
 This command fails unless all hard gates are met:
 - branch is `feature/<slug>`
 - current working directory is under `.worktrees/<name>`
-- issue is accessible (when provided)
 
 For a one-command compliant task bootstrap, use:
 
 ```bash
-scripts/start-task.sh <issue-number> <task-slug> [base-branch]
+scripts/start-worktree-task.sh <task-slug> [base-branch]
 ```
 
-This creates a compliant worktree/branch and marks the issue `in progress`.
+This creates a compliant worktree/branch.
+
+### Orchestrated multi-agent workflow
+
+For complex feature delivery, use an ORCHESTRATOR-led loop with strict role boundaries:
+
+1. ORCHESTRATOR delegates to CODER.
+2. CODER implements code + automated tests in the assigned worktree.
+3. ORCHESTRATOR delegates to QA.
+4. QA reviews against request scope and quality gates (functionality, test coverage, bugs, code quality, security, and a11y when applicable).
+5. If QA fails, ORCHESTRATOR delegates back to CODER with prioritized findings.
+6. Repeat CODER -> QA until QA passes, or up to 3 failed cycles.
+7. If 3 failed cycles are reached, ORCHESTRATOR escalates to the user with blocker summary and recommended options.
+8. Once QA passes, ORCHESTRATOR delegates to SHIPPING.
+9. SHIPPING creates or updates the PR and reports status.
+10. If the user requests PR fixes, ORCHESTRATOR restarts CODER -> QA -> SHIPPING.
+
+Hard rules:
+
+- ORCHESTRATOR never implements code directly.
+- QA is mandatory between CODER and SHIPPING.
+- SHIPPING runs only after QA pass.
+- Work must always remain in a dedicated `.worktrees/*` worktree on `feature/<slug>`.
+- Multiple features may be handled in parallel only by using separate worktrees and independent orchestrators.
 
 ### Emergency bypass policy
 
@@ -44,7 +63,7 @@ Use bypasses only for urgent incidents and always create immediate follow-up wor
 
 Hard requirements when using either bypass:
 - include the incident/ticket reference in the commit message
-- open (or link) a follow-up issue before end of day
+- open (or link) follow-up remediation work before end of day
 - open a PR that restores full workflow compliance
 - do not continue regular feature development under bypass mode
 

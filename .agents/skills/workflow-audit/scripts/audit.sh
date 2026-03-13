@@ -2,23 +2,19 @@
 set -euo pipefail
 
 #
-# Intent: Audit workflow compliance state for current branch/worktree/issue context.
-# Preconditions: Requires git repository context; gh CLI needed for issue/PR checks.
+# Intent: Audit workflow compliance state for current branch/worktree context.
+# Preconditions: Requires git repository context; gh CLI is optional for PR checks.
 # Invariants: Evaluates hard failures and soft warnings independently with optional strict warning mode.
 # Outcomes: Emits pass/fail audit summary suitable for gate decisions.
-# Artifacts:
-# - `/tmp/workflow-audit-issue.json` (when `--issue` is provided) — temporary issue payload capture from `gh issue view`.
 #
 
-ISSUE=""
 STRICT=0
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    --issue) ISSUE="${2:-}"; shift 2 ;;
     --strict) STRICT=1; shift ;;
     -h|--help)
-      echo "Usage: audit.sh [--issue <number>] [--strict]"
+      echo "Usage: audit.sh [--strict]"
       exit 0
       ;;
     *) echo "Unknown argument: $1" >&2; exit 1 ;;
@@ -56,21 +52,15 @@ else
   fi
 fi
 
-if [[ -n "$ISSUE" ]]; then
-  if gh issue view "$ISSUE" --json number,state,assignees,labels >/tmp/workflow-audit-issue.json 2>/dev/null; then
-    note_ok "issue #$ISSUE is accessible"
-  else
-    note_fail "issue #$ISSUE is not accessible via gh"
-  fi
-fi
-
 BRANCH="$(git branch --show-current 2>/dev/null || true)"
-if [[ -n "$BRANCH" ]]; then
+if [[ -n "$BRANCH" ]] && command -v gh >/dev/null 2>&1; then
   if gh pr list --head "$BRANCH" --state open --json number,url | grep -q '"number"'; then
     note_ok "open PR exists for branch $BRANCH"
   else
     note_warn "no open PR found for branch $BRANCH"
   fi
+elif [[ -n "$BRANCH" ]]; then
+  note_warn "gh CLI unavailable; skipped PR check"
 fi
 
 if [[ "$fail_count" -gt 0 ]]; then

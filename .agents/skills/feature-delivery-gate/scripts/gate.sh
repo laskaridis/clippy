@@ -3,44 +3,33 @@ set -euo pipefail
 
 #
 # Intent: Execute feature delivery gate checks before handoff to review.
-# Preconditions: Requires issue number, workflow preflight script, and gh CLI connectivity.
+# Preconditions: Requires workflow preflight script and gh CLI connectivity.
 # Invariants: Runs required preflight/tests and enforces existence of open PR for current branch.
-# Outcomes: Confirms gate pass and optionally transitions issue label to in review.
-# Artifacts:
-# - Optional issue label transition (`in progress` -> `in review`) when `--to-review` is used — workflow state artifact on GitHub issue.
+# Outcomes: Confirms gate pass.
 #
 
 usage() {
   cat <<'USAGE'
-Usage: gate.sh --issue <number> [--full-tests] [--to-review]
+Usage: gate.sh [--full-tests]
 USAGE
 }
 
-ISSUE=""
 FULL_TESTS=0
-TO_REVIEW=0
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    --issue) ISSUE="${2:-}"; shift 2 ;;
     --full-tests) FULL_TESTS=1; shift ;;
-    --to-review) TO_REVIEW=1; shift ;;
     -h|--help) usage; exit 0 ;;
     *) echo "Unknown argument: $1" >&2; usage >&2; exit 1 ;;
   esac
 done
-
-if [[ -z "$ISSUE" ]]; then
-  usage >&2
-  exit 1
-fi
 
 if [[ ! -x ./scripts/agent-preflight.sh ]]; then
   echo "[feature-delivery-gate] missing ./scripts/agent-preflight.sh" >&2
   exit 1
 fi
 
-./scripts/agent-preflight.sh --issue "$ISSUE" --require-issue
+./scripts/agent-preflight.sh
 
 if [[ "$FULL_TESTS" -eq 1 ]]; then
   ./scripts/test_worktree.sh
@@ -66,11 +55,4 @@ if ! gh pr list --head "$BRANCH" --state open --json number,url | grep -q '"numb
   exit 1
 fi
 
-if [[ "$TO_REVIEW" -eq 1 ]]; then
-  if ! gh label list --limit 200 --json name --jq '.[].name' | grep -Fxq "in review"; then
-    gh label create "in review" --color "0E8A16" --description "Work is in review" >/dev/null
-  fi
-  gh issue edit "$ISSUE" --remove-label "in progress" --add-label "in review" >/dev/null
-fi
-
-echo "[feature-delivery-gate] passed for issue #$ISSUE"
+echo "[feature-delivery-gate] passed for branch ${BRANCH}"

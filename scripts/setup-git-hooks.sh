@@ -8,7 +8,7 @@ set -euo pipefail
 # Outcomes: Leaves local clone ready to enforce workflow preflight checks on commit.
 # Artifacts:
 # - `git config core.hooksPath=.githooks` — persists repository-local hook path so git executes project hooks.
-# - Executable bit updates on `.githooks/*`, `scripts/agent-preflight.sh`, `scripts/start-task.sh` — ensures hook/helper scripts can run.
+# - Executable bit updates on `.githooks/*` and workflow helper scripts — ensures hook/helper scripts can run.
 #
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -24,8 +24,8 @@ chmod +x "${HOOKS_DIR}/"*
 if [[ -f "${ROOT_DIR}/scripts/agent-preflight.sh" ]]; then
   chmod +x "${ROOT_DIR}/scripts/agent-preflight.sh"
 fi
-if [[ -f "${ROOT_DIR}/scripts/start-task.sh" ]]; then
-  chmod +x "${ROOT_DIR}/scripts/start-task.sh"
+if [[ -f "${ROOT_DIR}/scripts/start-worktree-task.sh" ]]; then
+  chmod +x "${ROOT_DIR}/scripts/start-worktree-task.sh"
 fi
 
 echo "[setup-git-hooks] configured core.hooksPath=.githooks"
@@ -33,4 +33,4 @@ echo "[setup-git-hooks] installed hooks:"
 ls -1 "${HOOKS_DIR}"
 echo "[setup-git-hooks] workflow helpers:"
 echo "  - scripts/agent-preflight.sh"
-echo "  - scripts/start-task.sh"
+echo "  - scripts/start-worktree-task.sh"

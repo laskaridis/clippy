@@ -1,0 +1,5 @@
+interface:
+  display_name: "Worktree task start"
+  short_description: "Create compliant feature worktree without issue linkage"
+  default_prompt: "Start this task in full workflow compliance by creating a feature branch worktree without GitHub issue integration."
+

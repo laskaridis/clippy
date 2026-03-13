@@ -3,53 +3,30 @@ set -euo pipefail
 
 #
 # Intent: Enforce hard workflow preflight gates before development or commit operations.
-# Preconditions: Run in a git worktree; gh CLI required when issue checks are requested.
-# Invariants: Validates feature branch naming, .worktrees location, and optional issue accessibility/state.
+# Preconditions: Run in a git worktree.
+# Invariants: Validates feature branch naming and .worktrees location.
 # Outcomes: Exits non-zero on any policy violation and prints actionable error context.
-# Artifacts:
-# - Optional GitHub issue label mutation to `in progress` when `--set-in-progress` is provided.
 #
 
 usage() {
   cat <<'EOF'
-Usage: scripts/agent-preflight.sh [--issue <number>] [--require-issue] [--set-in-progress]
+Usage: scripts/agent-preflight.sh
 
 Checks:
   - current branch is feature/<slug>
   - current directory is inside .worktrees/<name>
-  - optional issue existence/assignment via GitHub CLI
 EOF
 }
 
-ISSUE_NUMBER="${WORKFLOW_ISSUE_ID:-}"
-REQUIRE_ISSUE="${WORKFLOW_REQUIRE_ISSUE:-0}"
-SET_IN_PROGRESS=0
-
-while [[ $# -gt 0 ]]; do
-  case "$1" in
-    --issue)
-      ISSUE_NUMBER="${2:-}"
-      shift 2
-      ;;
-    --require-issue)
-      REQUIRE_ISSUE=1
-      shift
-      ;;
-    --set-in-progress)
-      SET_IN_PROGRESS=1
-      shift
-      ;;
-    -h|--help)
-      usage
-      exit 0
-      ;;
-    *)
-      echo "[agent-preflight] error: unknown argument: $1" >&2
-      usage >&2
-      exit 1
-      ;;
-  esac
-done
+if [[ $# -gt 0 ]]; then
+  if [[ "$1" == "-h" || "$1" == "--help" ]]; then
+    usage
+    exit 0
+  fi
+  echo "[agent-preflight] error: unknown argument: $1" >&2
+  usage >&2
+  exit 1
+fi
 
 if ! git rev-parse --git-dir >/dev/null 2>&1; then
   echo "[agent-preflight] error: not inside a git repository" >&2
@@ -79,28 +56,4 @@ if [[ "${CURRENT_DIR}" != "${ROOT_DIR}"* ]]; then
   exit 1
 fi
 
-if [[ "${REQUIRE_ISSUE}" == "1" && -z "${ISSUE_NUMBER}" ]]; then
-  echo "[agent-preflight] error: --require-issue set but no issue provided" >&2
-  exit 1
-fi
-
-if [[ -n "${ISSUE_NUMBER}" ]]; then
-  if ! command -v gh >/dev/null 2>&1; then
-    echo "[agent-preflight] error: gh CLI is required when using --issue" >&2
-    exit 1
-  fi
-
-  if ! gh issue view "${ISSUE_NUMBER}" --json number >/dev/null; then
-    echo "[agent-preflight] error: issue #${ISSUE_NUMBER} not accessible" >&2
-    exit 1
-  fi
-
-  if [[ "${SET_IN_PROGRESS}" == "1" ]]; then
-    gh issue edit "${ISSUE_NUMBER}" --add-assignee @me --add-label "in progress" >/dev/null
-  fi
-fi
-
 echo "[agent-preflight] ok branch=${BRANCH_NAME} dir=${CURRENT_DIR}"
-if [[ -n "${ISSUE_NUMBER}" ]]; then
-  echo "[agent-preflight] ok issue=#${ISSUE_NUMBER}"
-fi

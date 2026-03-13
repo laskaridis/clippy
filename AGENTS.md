@@ -55,7 +55,7 @@ If guidance conflicts:
 
 ## Tech Debt Maintenance
 
-Coding agents must maintain `docs/TECH_DEBT_BACKLOG.md` while implementing issues.
+Coding agents must maintain `docs/TECH_DEBT_BACKLOG.md` while implementing tasks.
 
 - Add a backlog item when debt is discovered but intentionally deferred.
 - Update an existing item when progress is made, scope changes, or ownership changes.
