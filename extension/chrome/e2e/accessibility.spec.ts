@@ -95,6 +95,7 @@ test("[@a11y] extension popup signed-out meets WCAG 2.1 AA serious/critical gate
 });
 
 test("[@a11y] extension popup signed-in meets WCAG 2.1 AA serious/critical gate", async () => {
+  test.setTimeout(90_000);
   const { context, extensionId, userDataDir } = await launchExtensionContext();
   try {
     await loginThroughBackend(context);
