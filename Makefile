@@ -8,6 +8,7 @@ PIP := $(VENV_DIR)/bin/pip
 
 .PHONY: help all-init all-build all-test all-lint all-format all-typecheck all-run all-clean all-check \
 	init build test lint format typecheck run clean check \
+	worktree-start \
 	backend-init backend-test backend-lint backend-format backend-typecheck backend-run backend-stop backend-status backend-clean \
 	extension-init extension-build extension-build-worktree extension-test extension-test-e2e extension-test-a11y extension-lint extension-format extension-typecheck extension-clean
 
@@ -73,6 +74,9 @@ all-check: ## Run lint, typecheck, and test suites across all sub-projects
 
 check:
 	@$(MAKE) all-check
+
+worktree-start: ## Create a feature worktree without GitHub issue integration (slug required)
+	@./scripts/start-worktree-task.sh $(slug) $(base)
 
 backend-init: ## Install backend dependencies in backend/.venv
 	@$(PYTHON) -m venv $(VENV_DIR)

@@ -18,7 +18,7 @@ while [[ $# -gt 0 ]]; do
     --reason) REASON="${2:-}"; shift 2 ;;
     --ticket) TICKET="${2:-}"; shift 2 ;;
     -h|--help)
-      echo "Usage: bypass.sh --reason <text> --ticket <incident-or-issue-ref>"
+      echo "Usage: bypass.sh --reason <text> --ticket <incident-or-task-ref>"
       exit 0
       ;;
     *) echo "Unknown argument: $1" >&2; exit 1 ;;
@@ -50,4 +50,4 @@ echo "[safe-emergency-bypass] next command (narrow bypass):"
 echo "  SKIP_FEATURE_BRANCH_CHECK=1 git commit -m \"Emergency fix (${TICKET}): <summary>\""
 echo "[safe-emergency-bypass] fallback (last resort):"
 echo "  git commit --no-verify -m \"Emergency fix (${TICKET}): <summary>\""
-echo "[safe-emergency-bypass] required follow-up: open remediation issue/PR to restore full compliance."
+echo "[safe-emergency-bypass] required follow-up: open remediation task/PR to restore full compliance."

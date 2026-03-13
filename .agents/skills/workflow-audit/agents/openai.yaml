@@ -1,4 +1,4 @@
 interface:
   display_name: "Workflow audit"
   short_description: "Audit hard-gate workflow compliance"
-  default_prompt: "Audit this task context against development workflow hard gates and report remediation steps."
+  default_prompt: "Audit this branch/worktree context against development workflow hard gates and report remediation steps."
