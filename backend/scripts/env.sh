@@ -1,6 +1,16 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+#
+# Intent: Resolve and expose worktree runtime environment values to callers or current shell.
+# Preconditions: bootsrap.sh must be executable and able to generate runtime env metadata.
+# Invariants: Supports read-only print mode and sourced setup mode with explicit shell-behavior constraints.
+# Outcomes: Provides reliable ENV_FILE resolution and optional in-shell variable export.
+# Artifacts:
+# - `ENV_FILE` (exported during `--setup`) — path to resolved worktree env file in current shell.
+# - All key/value pairs from resolved worktree env file (exported during `--setup`) — propagates runtime vars into caller shell.
+#
+
 # Resolves and loads environment values for the current worktree.
 # Important shell behavior:
 # - Executed mode (`./scripts/env.sh`) cannot modify the parent shell env.

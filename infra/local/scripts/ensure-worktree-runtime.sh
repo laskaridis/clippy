@@ -1,6 +1,17 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+#
+# Intent: Ensure backend runtime metadata and database availability for the active worktree.
+# Preconditions: backend bootsrap.sh must be executable and capable of producing runtime JSON.
+# Invariants: Treats runtime JSON as source of truth and fails fast on missing prerequisites.
+# Outcomes: Prints concise readiness summary after DB/runtime checks complete.
+# Artifacts:
+# - Delegated `backend/.local/worktree-env-<worktree-id>.env` generation via `bootsrap.sh --print-json` (runtime env contract).
+# - Delegated `backend/.local/worktree-runtime-<worktree-id>.json` generation via `bootsrap.sh --print-json` (runtime metadata for tooling).
+# - Delegated Docker Compose postgres runtime state when bootstrap resolves to managed worktree Postgres.
+#
+
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd "${SCRIPT_DIR}/../../.." && pwd)"
 BACKEND_BOOTSTRAP_SCRIPT="${ROOT_DIR}/backend/scripts/bootsrap.sh"
@@ -38,12 +49,16 @@ echo "[infra-local] ensuring worktree runtime and database availability"
 runtime_json="$("${BACKEND_BOOTSTRAP_SCRIPT}" --print-json)"
 
 runtime_summary="$(
-  RUNTIME_JSON="${runtime_json}" python -c 'import json, os
+  RUNTIME_JSON="${runtime_json}" python - <<'PY'
+import json
+import os
+
 payload = json.loads(os.environ["RUNTIME_JSON"])
 print(
-    f"[infra-local] ready: mode={payload.get(\"databaseMode\")}, "
-    f"db={payload.get(\"databaseName\")}, port={payload.get(\"databasePort\")}, "
-    f"env={payload.get(\"envFile\")}"
-)'
+    f"[infra-local] ready: mode={payload.get('databaseMode')}, "
+    f"db={payload.get('databaseName')}, port={payload.get('databasePort')}, "
+    f"env={payload.get('envFile')}"
+)
+PY
 )"
 echo "${runtime_summary}"

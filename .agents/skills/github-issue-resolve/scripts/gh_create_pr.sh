@@ -1,6 +1,17 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+#
+# Intent: Create a PR for an issue after required tests and branch checks pass.
+# Preconditions: Requires numeric issue id, existing PR body file, non-master branch, and gh auth.
+# Invariants: Enforces tested-head marker gate and pushes current branch before PR creation.
+# Outcomes: Opens PR and updates issue workflow status to in review.
+# Artifacts:
+# - Remote branch push on `origin/<current-branch>` — publishes tested branch state for PR creation.
+# - GitHub Pull Request object — created against `master` with provided/derived title and body.
+# - GitHub issue status update to `In review` via helper script — workflow state mutation.
+#
+
 usage() {
   cat <<'USAGE'
 Usage:

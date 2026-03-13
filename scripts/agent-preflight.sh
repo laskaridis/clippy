@@ -1,6 +1,15 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+#
+# Intent: Enforce hard workflow preflight gates before development or commit operations.
+# Preconditions: Run in a git worktree; gh CLI required when issue checks are requested.
+# Invariants: Validates feature branch naming, .worktrees location, and optional issue accessibility/state.
+# Outcomes: Exits non-zero on any policy violation and prints actionable error context.
+# Artifacts:
+# - Optional GitHub issue label mutation to `in progress` when `--set-in-progress` is provided.
+#
+
 usage() {
   cat <<'EOF'
 Usage: scripts/agent-preflight.sh [--issue <number>] [--require-issue] [--set-in-progress]

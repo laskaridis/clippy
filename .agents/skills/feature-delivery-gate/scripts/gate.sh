@@ -1,6 +1,15 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+#
+# Intent: Execute feature delivery gate checks before handoff to review.
+# Preconditions: Requires issue number, workflow preflight script, and gh CLI connectivity.
+# Invariants: Runs required preflight/tests and enforces existence of open PR for current branch.
+# Outcomes: Confirms gate pass and optionally transitions issue label to in review.
+# Artifacts:
+# - Optional issue label transition (`in progress` -> `in review`) when `--to-review` is used — workflow state artifact on GitHub issue.
+#
+
 usage() {
   cat <<'USAGE'
 Usage: gate.sh --issue <number> [--full-tests] [--to-review]

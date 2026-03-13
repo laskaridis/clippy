@@ -1,6 +1,16 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+#
+# Intent: Start issue work by creating compliant worktree/branch via shared workflow script.
+# Preconditions: Requires issue id and slug; optional bootstrap requires worktree-bootstrap skill script.
+# Invariants: Delegates canonical setup to scripts/start-task.sh to preserve workflow invariants.
+# Outcomes: Creates worktree context and optionally bootstraps runtime artifacts.
+# Artifacts:
+# - Delegated artifacts from `scripts/start-task.sh` (worktree path, feature branch, issue state updates).
+# - Optional delegated runtime artifacts from worktree-bootstrap (env/json/build outputs) when `--bootstrap` is passed.
+#
+
 usage() {
   cat <<'USAGE'
 Usage: start.sh --issue <number> --slug <task-slug> [--base <branch>] [--bootstrap]

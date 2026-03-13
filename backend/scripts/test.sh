@@ -1,6 +1,15 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+#
+# Intent: Run backend Django tests in a worktree-aware runtime context.
+# Preconditions: Infra ensure script and env helper script must be present and executable.
+# Invariants: Always ensures runtime readiness before loading env exports and invoking manage.py test.
+# Outcomes: Returns backend test results using the active worktree configuration.
+# Artifacts:
+# - Sources exported env payload from `backend/scripts/env.sh --print` into test process scope — establishes worktree runtime variables for test execution.
+#
+
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd "${SCRIPT_DIR}/../.." && pwd)"
 BACKEND_DIR="${ROOT_DIR}/backend"

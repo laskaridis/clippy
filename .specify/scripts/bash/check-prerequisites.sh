@@ -1,5 +1,11 @@
 #!/usr/bin/env bash
 
+#
+# Intent: Validate prerequisite artifacts for specify plan/tasks workflows.
+# Preconditions: Requires access to feature directory paths computed from branch or SPECIFY_FEATURE.
+# Invariants: Can run in validation mode, JSON mode, or paths-only mode with deterministic outputs.
+# Outcomes: Returns clear readiness status for plan/tasks phases and lists available docs.
+
 # Consolidated prerequisite checking script
 #
 # This script provides unified prerequisite checking for Spec-Driven Development workflow.

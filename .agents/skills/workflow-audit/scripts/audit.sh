@@ -1,6 +1,15 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+#
+# Intent: Audit workflow compliance state for current branch/worktree/issue context.
+# Preconditions: Requires git repository context; gh CLI needed for issue/PR checks.
+# Invariants: Evaluates hard failures and soft warnings independently with optional strict warning mode.
+# Outcomes: Emits pass/fail audit summary suitable for gate decisions.
+# Artifacts:
+# - `/tmp/workflow-audit-issue.json` (when `--issue` is provided) — temporary issue payload capture from `gh issue view`.
+#
+
 ISSUE=""
 STRICT=0
 

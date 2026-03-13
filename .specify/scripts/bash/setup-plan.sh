@@ -1,5 +1,15 @@
 #!/usr/bin/env bash
 
+#
+# Intent: Initialize plan.md scaffolding for the active feature specification.
+# Preconditions: Needs feature path resolution and optional plan template file availability.
+# Invariants: Validates feature branch semantics, ensures feature directory exists, and creates plan artifacts idempotently.
+# Outcomes: Produces plan/spec path outputs for subsequent planning commands.
+# Artifacts:
+# - `specs/<feature>/plan.md` — created/copied from template as implementation plan artifact.
+# - Creates feature directory path when missing (`mkdir -p`).
+#
+
 set -e
 
 # Parse command line arguments
