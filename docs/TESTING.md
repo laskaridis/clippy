@@ -17,6 +17,7 @@ python manage.py test
 cd ../extension
 pnpm test
 pnpm run test:e2e
+pnpm run test:a11y
 ```
 
 ## Expectations
@@ -27,3 +28,4 @@ pnpm run test:e2e
 - Preserve modular boundaries: when cross-module behavior changes, add integration tests for the boundary contract.
 - For API changes, align tests with `specs/001-web-clipping-app/contracts/openapi.yaml` and update the contract when behavior changes.
 - Prefer targeted runs during iteration, then run broader suites before finishing.
+- For frontend accessibility work, run `pnpm run test:a11y` in `extension/`; the suite reports all findings and fails on serious/critical WCAG 2.1 A/AA violations.

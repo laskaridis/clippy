@@ -12,6 +12,7 @@
   --bs-tertiary-bg: #1A2236;
 
   --bs-secondary-color: #CBD5E1;
+  --bs-secondary-rgb: 203, 213, 225;
   --bs-tertiary-color: #94A3B8;
 
   --bs-primary: #8B5CF6;
@@ -35,6 +36,7 @@
   --bs-tertiary-bg: #E5E7EB;
 
   --bs-secondary-color: #334155;
+  --bs-secondary-rgb: 51, 65, 85;
   --bs-tertiary-color: #64748B;
 
   --bs-border-color: rgba(15, 23, 42, 0.12);
@@ -68,6 +70,30 @@
   box-shadow:
     0 0 0 1px rgba(139, 92, 246, 0.4),
     0 0 24px rgba(236, 72, 153, 0.35);
+}
+
+[data-bs-theme="dark"] .btn-outline-secondary {
+  color: #cbd5e1;
+  border-color: #64748b;
+}
+
+[data-bs-theme="dark"] .btn-outline-secondary:hover,
+[data-bs-theme="dark"] .btn-outline-secondary:focus-visible {
+  color: #f8fafc;
+  background-color: #334155;
+  border-color: #94a3b8;
+}
+
+[data-bs-theme="dark"] .btn-outline-danger {
+  color: #fecaca;
+  border-color: #f87171;
+}
+
+[data-bs-theme="dark"] .btn-outline-danger:hover,
+[data-bs-theme="dark"] .btn-outline-danger:focus-visible {
+  color: #fff;
+  background-color: #b91c1c;
+  border-color: #ef4444;
 }
 
 /* Selection (Clippy-specific) */

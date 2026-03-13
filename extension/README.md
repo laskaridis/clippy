@@ -71,6 +71,19 @@ This validates the signed-out popup experience end-to-end (status message, login
 It also validates signed-in state by logging in through `/accounts/login/` and confirming
 the save controls are shown while login controls are hidden.
 
+## Accessibility audits (WCAG 2.1 AA)
+
+Run automated accessibility audits for both:
+- Django frontend pages (`/accounts/*`, `/clips/*`)
+- Extension popup (signed-out + signed-in)
+
+```bash
+cd extension
+pnpm run test:a11y
+```
+
+This command reports all findings and fails when `serious` or `critical` issues are detected.
+
 ## Load in Chrome (unpacked)
 
 1. Build the extension for this worktree first (`pnpm run build:worktree`).
