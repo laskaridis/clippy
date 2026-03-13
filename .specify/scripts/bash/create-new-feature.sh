@@ -1,5 +1,11 @@
 #!/usr/bin/env bash
 
+#
+# Intent: Generate the next feature identifier and branch-friendly short name.
+# Preconditions: Run in repository context with specs directory and optional git history access.
+# Invariants: Normalizes naming, avoids collisions, and can emit machine-readable JSON.
+# Outcomes: Outputs created feature metadata for downstream specify planning scripts.
+
 set -e
 
 JSON_MODE=false

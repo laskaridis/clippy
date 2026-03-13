@@ -1,6 +1,15 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+#
+# Intent: Execute the full worktree test stack across backend, extension unit, and extension e2e.
+# Preconditions: Backend bootstrap script and extension test dependencies must be available.
+# Invariants: Bootstraps runtime first, loads worktree env, then runs tests with non-interactive backend execution.
+# Outcomes: Confirms cross-project behavior for the current worktree when all suites pass.
+# Artifacts:
+# - Uses `backend/.local/worktree-env-<worktree-id>.env` (resolved via `bootsrap.sh --print-env-path`) — runtime env artifact sourced for backend tests.
+#
+
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 BACKEND_DIR="${ROOT_DIR}/backend"
 EXTENSION_DIR="${ROOT_DIR}/extension"
@@ -27,7 +36,7 @@ echo "[test-worktree] running backend tests"
   # shellcheck disable=SC1090
   source "${ENV_FILE}"
   set +a
-  python manage.py test
+  python manage.py test --noinput
 )
 
 echo "[test-worktree] running extension unit tests"

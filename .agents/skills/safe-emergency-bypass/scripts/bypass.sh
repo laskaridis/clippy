@@ -1,6 +1,15 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+#
+# Intent: Record auditable emergency bypass usage details for policy exceptions.
+# Preconditions: Requires both reason and ticket reference arguments.
+# Invariants: Always appends immutable log entries to .local/emergency-bypass.log before suggesting commands.
+# Outcomes: Creates an audit trail and prints required follow-up remediation guidance.
+# Artifacts:
+# - `.local/emergency-bypass.log` append-only entries (`timestamp`, `branch`, `ticket`, `reason`) — auditable bypass ledger.
+#
+
 REASON=""
 TICKET=""
 

@@ -1,4 +1,10 @@
 #!/usr/bin/env bash
+
+#
+# Intent: Provide shared helper functions for specify bash workflows.
+# Preconditions: Sourced by sibling scripts that rely on repo/branch/path utility functions.
+# Invariants: Centralizes feature path resolution, branch checks, and file/dir probe helpers.
+# Outcomes: Supplies consistent primitives consumed by specify setup/check/update scripts.
 # Common functions and variables for all scripts
 
 # Get repository root, with fallback for non-git repositories

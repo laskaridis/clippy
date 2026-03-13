@@ -1,6 +1,18 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+#
+# Intent: Bootstrap deterministic per-worktree backend runtime and optionally run Django server.
+# Preconditions: Requires git context, python manage.py access, and docker when auto-managed postgres is used.
+# Invariants: Derives stable worktree ID/ports/host metadata, writes env+runtime artifacts, and validates DB reachability.
+# Outcomes: Produces reproducible runtime state and can print env/json, bootstrap only, or run server modes.
+# Artifacts:
+# - `backend/.local/worktree-env-<worktree-id>.env` — generated shell env contract for the active worktree runtime.
+# - `backend/.local/worktree-runtime-<worktree-id>.json` — generated machine-readable runtime metadata (ports/host/db/env file).
+# - `DATABASE_URL`, `DJANGO_DEV_PORT`, `DJANGO_DEV_HOST`, `DJANGO_DEV_BASE_URL`, `ALLOWED_HOSTS` (exported) — canonical runtime env values for child processes.
+# - Optional Docker Compose postgres service/container state under `infra/docker/docker-compose.yml` — brought up when `DATABASE_URL` is not pre-set.
+#
+
 PRINT_JSON=0
 BOOTSTRAP_ONLY=0
 PRINT_ENV_PATH=0
@@ -182,7 +194,7 @@ sys.exit(1)'
 if [[ -z "${PORT_OVERRIDE}" ]]; then
   requested_port="${PORT}"
   PORT="$(resolve_default_port "${PORT}" "${PORT_RANGE_START}" "${PORT_RANGE_SIZE}")"
-  if [[ "${PORT}" != "${requested_port}" && "${PRINT_JSON}" != "1" ]]; then
+  if [[ "${PORT}" != "${requested_port}" && "${PRINT_JSON}" != "1" && "${PRINT_ENV_PATH}" != "1" ]]; then
     warn "default port ${requested_port} is busy; using ${PORT} instead"
   fi
 fi
@@ -255,7 +267,7 @@ DB_NAME="${DJANGO_DEV_DB_NAME:-${POSTGRES_DB:-$(default_db_name)}}"
 DB_USER="${DJANGO_DEV_DB_USER:-${POSTGRES_USER:-webclippings}}"
 DB_PASSWORD="${DJANGO_DEV_DB_PASSWORD:-${POSTGRES_PASSWORD:-password}}"
 COMPOSE_PROJECT="$(sanitize_compose_project "${COMPOSE_PROJECT_INPUT}")"
-if [[ "${COMPOSE_PROJECT}" != "${COMPOSE_PROJECT_INPUT}" && "${PRINT_JSON}" != "1" ]]; then
+if [[ "${COMPOSE_PROJECT}" != "${COMPOSE_PROJECT_INPUT}" && "${PRINT_JSON}" != "1" && "${PRINT_ENV_PATH}" != "1" ]]; then
   warn "compose project name sanitized to ${COMPOSE_PROJECT} (from ${COMPOSE_PROJECT_INPUT})"
 fi
 
@@ -431,6 +443,7 @@ emit_runtime_json() {
 
 if [[ "${PRINT_ENV_PATH}" == "1" ]]; then
   write_runtime_env
+  emit_runtime_json > "${RUNTIME_STATE_PATH}"
   printf '%s\n' "${RUNTIME_ENV_PATH}"
   exit 0
 fi
@@ -440,6 +453,7 @@ if [[ "${PRINT_JSON}" == "1" ]]; then
   start_worktree_postgres 1>&2
   wait_for_external_database 1>&2
   write_runtime_env
+  emit_runtime_json > "${RUNTIME_STATE_PATH}"
   emit_runtime_json
   exit 0
 fi

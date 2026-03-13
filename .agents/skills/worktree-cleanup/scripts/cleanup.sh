@@ -1,6 +1,15 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+#
+# Intent: Safely remove completed git worktrees after strict safety checks.
+# Preconditions: Must run from worktree root with clean tree and pushed upstream-tracking branch.
+# Invariants: Refuses main worktree removal, validates cleanliness and ahead/behind state before deletion.
+# Outcomes: Either reports check-only success or removes linked worktree safely.
+# Artifacts:
+# - Removes linked git worktree directory via `git worktree remove` (unless `--check-only`).
+#
+
 usage() {
   cat <<'USAGE'
 Usage:

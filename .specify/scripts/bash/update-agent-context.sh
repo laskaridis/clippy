@@ -1,5 +1,15 @@
 #!/usr/bin/env bash
 
+#
+# Intent: Update agent instruction/context files from the current feature plan metadata.
+# Preconditions: Requires plan.md in active feature directory and template files for new agent docs.
+# Invariants: Parses plan fields, preserves manual additions, and applies agent-specific file conventions.
+# Outcomes: Keeps agent context files synchronized with latest implementation plan details.
+# Artifacts:
+# - Agent context files (for selected agents, e.g. `CLAUDE.md`, `GEMINI.md`, `.github/agents/copilot-instructions.md`, etc.) — created/updated from plan metadata.
+# - Temporary working files under `/tmp/agent_update_*_$$` and `/tmp/manual_additions_$$` — transient merge/update scratch artifacts.
+#
+
 # Update agent context files with information from plan.md
 #
 # This script maintains AI agent context files by parsing feature specifications 

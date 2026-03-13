@@ -1,6 +1,16 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+#
+# Intent: Bootstrap and validate backend+extension runtime assets for one worktree.
+# Preconditions: Requires backend bootstrap script, python3, pnpm, and generated extension tooling.
+# Invariants: Resolves runtime JSON, rebuilds extension artifacts, and verifies metadata/manifest alignment.
+# Outcomes: Outputs deterministic runtime summary usable by agents and local tooling.
+# Artifacts:
+# - `/tmp/worktree-bootstrap-backend.log` and `/tmp/worktree-bootstrap-build.log` — transient diagnostics for bootstrap/build failures.
+# - Delegated generated artifacts from backend/extension scripts (worktree env/runtime json and extension `.local/worktrees/<id>/chrome`).
+#
+
 # Bootstrap and verify worktree-scoped runtime artifacts for backend + extension.
 # This script:
 # 1) resolves backend runtime values from bootsrap.sh --print-json

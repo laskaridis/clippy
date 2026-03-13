@@ -1,6 +1,17 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+#
+# Intent: Create a compliant feature branch worktree and mark the issue in progress.
+# Preconditions: Must run inside a git repository with gh CLI auth and a numeric issue id.
+# Invariants: Branch naming, worktree path, and issue label semantics follow workflow policy.
+# Outcomes: Creates branch+worktree and updates the issue assignment/label state.
+# Artifacts:
+# - `.worktrees/<task-slug>/` — new linked git worktree for isolated task development.
+# - `feature/<task-slug>` local branch (from `origin/<base-branch>`) — branch artifact for task implementation.
+# - GitHub issue assignment + `in progress` label — workflow state mutation on the referenced issue.
+#
+
 usage() {
   cat <<'EOF'
 Usage: scripts/start-task.sh <issue-number> <task-slug> [base-branch]
