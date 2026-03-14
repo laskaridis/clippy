@@ -5,6 +5,19 @@
   <meta charset="utf-8">
   <title>{% block title %}Clippy{% endblock %}</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <script>
+    (() => {
+      const storageKey = "clippy-theme";
+      try {
+        const savedTheme = window.localStorage.getItem(storageKey);
+        if (savedTheme === "light" || savedTheme === "dark") {
+          document.documentElement.setAttribute("data-bs-theme", savedTheme);
+        }
+      } catch (error) {
+        // Ignore storage unavailability and continue with default theme.
+      }
+    })();
+  </script>
 
   <!-- Bootstrap 5.3 -->
   <link
@@ -104,6 +117,7 @@
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
   <script>
+    const THEME_STORAGE_KEY = "clippy-theme";
     const toggle = document.getElementById("themeToggle");
     const moonIcon = document.getElementById("themeIconMoon");
     const sunIcon = document.getElementById("themeIconSun");
@@ -126,6 +140,11 @@
       const html = document.documentElement;
       const nextTheme = html.getAttribute("data-bs-theme") === "dark" ? "light" : "dark";
       html.setAttribute("data-bs-theme", nextTheme);
+      try {
+        window.localStorage.setItem(THEME_STORAGE_KEY, nextTheme);
+      } catch (error) {
+        // Ignore storage unavailability; applying the theme for this page is enough.
+      }
       updateThemeToggleUI(nextTheme);
     });
   </script>

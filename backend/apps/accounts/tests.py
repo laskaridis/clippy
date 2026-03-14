@@ -17,6 +17,14 @@ class AccountsAuthTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertNotContains(response, "navbar-dark", html=False)
         self.assertContains(response, 'id="themeToggle"', html=False)
+        self.assertContains(
+            response, "window.localStorage.getItem(storageKey)", html=False
+        )
+        self.assertContains(
+            response,
+            "window.localStorage.setItem(THEME_STORAGE_KEY, nextTheme)",
+            html=False,
+        )
 
     def test_successful_login_redirects_to_clips(self) -> None:
         User = get_user_model()
