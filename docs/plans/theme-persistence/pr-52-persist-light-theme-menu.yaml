@@ -1,0 +1,96 @@
+plan_id: pr-52-persist-light-theme-menu
+pr:
+  number: 52
+  title: "fix: persist selected light theme across menu navigation"
+  url: "https://github.com/laskaridis/clippy/pull/52"
+
+tasks:
+  - id: create-traceability-plan-artifact
+    status: done
+    priority: P1
+    title: Persist PR follow-up tasks under docs/plans for auditability
+    files:
+      - docs/plans/theme-persistence/pr-52-persist-light-theme-menu.yaml
+    deliverable: Review follow-up scope is captured in a versioned YAML plan file.
+    depends_on: []
+
+  - id: extract-theme-controller-script
+    status: done
+    priority: P1
+    title: Move theme JS out of base template into static asset
+    files:
+      - backend/webclippings/templates/base.html
+      - backend/static/js/theme-controller.js
+    deliverable: No inline theme script in base template; external script is loaded instead.
+    source_review_comment_id: PRRC_kwDORUs6S86u9Owa
+    depends_on:
+      - create-traceability-plan-artifact
+
+  - id: centralize-theme-constants
+    status: done
+    priority: P1
+    title: Replace string literals with shared constants
+    files:
+      - backend/static/js/theme-controller.js
+    deliverable: Storage key and theme names are declared once and reused.
+    source_review_comment_ids:
+      - PRRC_kwDORUs6S86u9POV
+      - PRRC_kwDORUs6S86u9Q2j
+    depends_on:
+      - extract-theme-controller-script
+
+  - id: encapsulate-theme-logic-in-class
+    status: done
+    priority: P1
+    title: Implement class-based theme controller
+    files:
+      - backend/static/js/theme-controller.js
+    deliverable: ThemeController class encapsulates restore, toggle, persist, and UI sync behavior.
+    source_review_comment_id: PRRC_kwDORUs6S86u9R5t
+    depends_on:
+      - centralize-theme-constants
+
+  - id: wire-template-to-controller
+    status: done
+    priority: P1
+    title: Keep early restore and proper bootstrap from template
+    files:
+      - backend/webclippings/templates/base.html
+    deliverable: Theme still restores before render and toggle still works on all pages.
+    depends_on:
+      - encapsulate-theme-logic-in-class
+
+  - id: refresh-tests-for-refactor
+    status: done
+    priority: P2
+    title: Update backend template assertions for externalized script
+    files:
+      - backend/apps/accounts/tests.py
+    deliverable: Tests validate theme support wiring without depending on inline JS snippets.
+    depends_on:
+      - wire-template-to-controller
+
+  - id: validate-and-close-review-threads
+    status: done
+    priority: P1
+    title: Validate behavior and map each review thread to resolution
+    files:
+      - backend/static/js/theme-controller.js
+      - backend/webclippings/templates/base.html
+      - backend/apps/accounts/tests.py
+      - docs/plans/theme-persistence/pr-52-persist-light-theme-menu.yaml
+    deliverable: Tests pass; PR replies reference concrete fixes per comment.
+    resolution_notes:
+      - review_item: "Don't mix javascript and css with html files."
+        resolution: "Moved theme behavior from inline template scripts to backend/static/js/theme-controller.js and wired from base.html."
+      - review_item: "Use constants instead of string literals."
+        resolution: "Introduced THEME_STORAGE_KEY, THEME_DARK, and THEME_LIGHT constants and reused them throughout theme logic."
+      - review_item: "Use a constant for the key instead of string literal."
+        resolution: "Centralized localStorage key in THEME_STORAGE_KEY."
+      - review_item: "Encapsulate theme toggling functionality within a javascript class."
+        resolution: "Implemented class-based ThemeController with methods for restore, toggle, persist, and UI updates."
+    validation_notes:
+      - "cd backend && ./scripts/test.sh apps.accounts.tests"
+      - "manual: light theme persists after My clips -> Labels navigation"
+    depends_on:
+      - refresh-tests-for-refactor
