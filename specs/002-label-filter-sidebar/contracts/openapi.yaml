@@ -1,0 +1,211 @@
+openapi: 3.0.3
+info:
+  title: WebClippings Label Filter Contract
+  version: 0.1.0
+  description: |
+    Contract additions for label-based multi-select clip filtering with URL persistence,
+    contextual label counts, and responsive filter panel state.
+servers:
+  - url: https://app.example.com
+    description: Web UI origin (placeholder)
+
+paths:
+  /clips/:
+    get:
+      summary: Render clips list with label filters and panel state
+      operationId: renderFilteredClipList
+      description: |
+        Server-rendered HTML endpoint for the clips page.
+        Repeated label query parameters apply AND filtering semantics.
+        Unknown label slugs are ignored gracefully.
+      parameters:
+        - in: query
+          name: label
+          description: |
+            Repeated selected label slugs. Example: ?label=work&label=research.
+            Matching uses AND semantics (clips must contain all selected labels).
+          required: false
+          style: form
+          explode: true
+          schema:
+            type: array
+            items:
+              type: string
+        - in: query
+          name: panel
+          description: |
+            Filter panel visibility state persisted in URL.
+            Desktop uses expanded/collapsed; small-screen drawer uses open/closed.
+          required: false
+          schema:
+            type: string
+            enum: [expanded, collapsed, open, closed]
+        - in: query
+          name: url
+          description: Existing exact-URL filter value (preserved behavior).
+          required: false
+          schema:
+            type: string
+            format: uri
+      responses:
+        "200":
+          description: Filtered clips page HTML
+          content:
+            text/html:
+              schema:
+                type: string
+        "302":
+          description: Redirect to login when unauthenticated
+
+  /api/clips/:
+    get:
+      summary: List current user's clips with optional label filtering
+      operationId: listClipsByLabelSlugs
+      description: |
+        JSON list endpoint that mirrors label filtering semantics used by /clips/.
+        Repeated label parameters are interpreted as slugs and combined with AND logic.
+      parameters:
+        - in: query
+          name: label
+          required: false
+          style: form
+          explode: true
+          schema:
+            type: array
+            items:
+              type: string
+          description: Repeated selected label slugs.
+        - in: query
+          name: url
+          required: false
+          schema:
+            type: string
+            format: uri
+      responses:
+        "200":
+          description: Filtered clip list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ClipSummary"
+        "401":
+          description: Authentication required
+
+  /api/labels/:
+    get:
+      summary: List labels with contextual counts
+      operationId: listLabelFilters
+      description: |
+        Returns labels ordered with selected labels first, then remaining labels
+        alphabetically, including contextual counts under active filters.
+      parameters:
+        - in: query
+          name: label
+          required: false
+          style: form
+          explode: true
+          schema:
+            type: array
+            items:
+              type: string
+          description: Repeated selected label slugs used for contextual counts.
+        - in: query
+          name: q
+          required: false
+          schema:
+            type: string
+            maxLength: 100
+          description: Case-insensitive label name search term.
+        - in: query
+          name: limit
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 200
+            default: 10
+          description: Default visible-label limit before Show more.
+        - in: query
+          name: expanded
+          required: false
+          schema:
+            type: boolean
+            default: false
+          description: Whether to return labels beyond the default visible limit.
+      responses:
+        "200":
+          description: Label filter payload
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LabelFilterListResponse"
+        "401":
+          description: Authentication required
+
+components:
+  schemas:
+    ClipSummary:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        url:
+          type: string
+          format: uri
+        created_at:
+          type: string
+          format: date-time
+        labels:
+          type: array
+          items:
+            $ref: "#/components/schemas/Label"
+      required: [id, url, created_at, labels]
+
+    Label:
+      type: object
+      properties:
+        name:
+          type: string
+        slug:
+          type: string
+      required: [name, slug]
+
+    LabelFilter:
+      type: object
+      properties:
+        name:
+          type: string
+        slug:
+          type: string
+        selected:
+          type: boolean
+        contextual_results_count:
+          type: integer
+          minimum: 0
+      required: [name, slug, selected, contextual_results_count]
+
+    LabelFilterListResponse:
+      type: object
+      properties:
+        selected_labels:
+          type: array
+          items:
+            $ref: "#/components/schemas/LabelFilter"
+        labels:
+          type: array
+          items:
+            $ref: "#/components/schemas/LabelFilter"
+        total_labels:
+          type: integer
+          minimum: 0
+        visible_limit:
+          type: integer
+          minimum: 1
+        has_more:
+          type: boolean
+      required: [selected_labels, labels, total_labels, visible_limit, has_more]
