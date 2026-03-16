@@ -83,7 +83,7 @@ python manage.py test apps.clips.tests.test_views apps.clips.tests.test_api apps
 Run broader project checks before handoff:
 
 ```bash
-make all-check
+make all-verify
 ```
 
 ---

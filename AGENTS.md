@@ -4,20 +4,20 @@ Guidelines for coding agents working in this repository.
 
 Use this file as the entry point, then follow the topic-specific guidance below.
 
-## *CRITICAL*: Development Workflow
-*ALLWAYS* follow the development wrokflow described in `docs/DEVELOPMENT_WORKFLOW.md`
-*BEFORE* working on any code changes.
+## Development Workflow
+Before doing any code changes **ALWAYS** read the development workflow described in `docs/DEVELOPMENT_WORKFLOW.md` and ensure it is followed. Do **NOT** consider this optional, it's **MANDATORY** and **CRITICAL** to follow to the letter.
+
+## Code quality
+Before writing code of any kind **ALWAYS** read the core principles, rules and guidelines mentioned in `docs/CODE_QUALITY.md` document and ensure they are followed. Do **NOT** consider this optional.
 
 ## Canonical task entrypoints
-
-Use the root `Makefile` as the primary interface for local workflows and automation:
-
-- `make all-*` targets are the canonical cross-project entrypoints.
+When working with the codebase use `Makefile` as the primary surface for local workflows and automation such as testing, launching servers, initializing environments, running guardrail checks, etc:
+- For the live command list, run `make help`.
+- `make all-*` targets are the cahnonical cross-project entrypoints.
 - `make backend-*` and `make extension-*` targets are project-scoped entrypoints.
 - Legacy short aliases (`make init`, `make build`, etc.) map to the `all-*` targets.
 
-For workflow policy, see `docs/DEVELOPMENT_WORKFLOW.md`.
-For the live command list, run `make help`.
+If you need to do something **ALWAYS** check first if there is a Makefile target that you could use to complete your task. If you can't find one, consider creating one.
 
 ## Directory outline
 
@@ -44,14 +44,6 @@ For the live command list, run `make help`.
 # ExecPlans
 
 When writing complex features or significant refactors, use an ExecPlan (as described in `docs/PLANS.md`) from design to implementation.
-
-## Priority Rules
-
-If guidance conflicts:
-
-1. Security and data isolation rules win.
-2. Architecture/domain invariants come next.
-3. Testing and documentation requirements must still be satisfied.
 
 ## Tech Debt Maintenance
 
