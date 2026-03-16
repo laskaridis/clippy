@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% load static %}
+{% load clips_filters %}
 
 {% block title %}My clips – Clippy{% endblock %}
 
@@ -100,7 +101,7 @@
                       {% for label in labels %}
                       <a
                         class="badge rounded-pill text-bg-primary text-decoration-none"
-                        href="{% url 'clips_web:list' %}?label={{ label.slug }}"
+                        href="{% url 'clips_web:list' %}{{ selected_label_slugs|label_filter_query:label.slug }}"
                       >
                         {{ label.name }}
                       </a>
@@ -120,9 +121,17 @@
     <p class="text-secondary mt-4 mb-0">{{ clips|length }} clip{{ clips|length|pluralize }} total</p>
   {% else %}
     <div class="card p-4 text-center">
-      <h2 class="h5 mb-2">No clips yet</h2>
-      <p class="text-secondary mb-3">Use the Clippy browser extension to start capturing the web.</p>
-      <p class="mb-0 small text-secondary">Once you save your first clip, it will appear here automatically.</p>
+      {% if selected_labels %}
+        <h2 class="h5 mb-2">No clips match the selected labels</h2>
+        <p class="text-secondary mb-3">Try removing one or more labels to broaden your results.</p>
+        <p class="mb-0">
+          <a class="btn btn-outline-secondary btn-sm" href="{% url 'clips_web:list' %}">Clear label filters</a>
+        </p>
+      {% else %}
+        <h2 class="h5 mb-2">No clips yet</h2>
+        <p class="text-secondary mb-3">Use the Clippy browser extension to start capturing the web.</p>
+        <p class="mb-0 small text-secondary">Once you save your first clip, it will appear here automatically.</p>
+      {% endif %}
     </div>
   {% endif %}
 

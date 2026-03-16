@@ -51,17 +51,17 @@
 
 ### Tests for User Story 1
 
-- [ ] T011 [P] [US1] Add view tests for repeated label query parameters and AND filtering in backend/apps/clips/tests/test_views.py
-- [ ] T012 [P] [US1] Add API tests for /api/clips/ repeated label slug filters and invalid-slug handling in backend/apps/clips/tests/test_api.py
-- [ ] T013 [P] [US1] Add contract-oriented assertions for /clips/ and /api/clips/ label parameter semantics in backend/apps/clips/tests/test_views.py and backend/apps/clips/tests/test_api.py
+- [x] T011 [P] [US1] Add view tests for repeated label query parameters and AND filtering in backend/apps/clips/tests/test_views.py
+- [x] T012 [P] [US1] Add API tests for /api/clips/ repeated label slug filters and invalid-slug handling in backend/apps/clips/tests/test_api.py
+- [x] T013 [P] [US1] Add contract-oriented assertions for /clips/ and /api/clips/ label parameter semantics in backend/apps/clips/tests/test_views.py and backend/apps/clips/tests/test_api.py
 
 ### Implementation for User Story 1
 
-- [ ] T014 [US1] Replace single UUID label filter parsing with repeated slug parsing in backend/apps/clips/views.py
-- [ ] T015 [US1] Implement AND label filtering for clip list API responses in backend/apps/clips/api/views.py
-- [ ] T016 [P] [US1] Update label links and filter controls to use repeated label slug parameters in backend/apps/clips/templates/clips/list.html
-- [ ] T017 [US1] Render clear empty-results state when active labels match zero clips in backend/apps/clips/templates/clips/list.html
-- [ ] T018 [US1] Ensure list context exposes selected label metadata needed by sidebar controls in backend/apps/clips/views.py
+- [x] T014 [US1] Replace single UUID label filter parsing with repeated slug parsing in backend/apps/clips/views.py
+- [x] T015 [US1] Implement AND label filtering for clip list API responses in backend/apps/clips/api/views.py
+- [x] T016 [P] [US1] Update label links and filter controls to use repeated label slug parameters in backend/apps/clips/templates/clips/list.html
+- [x] T017 [US1] Render clear empty-results state when active labels match zero clips in backend/apps/clips/templates/clips/list.html
+- [x] T018 [US1] Ensure list context exposes selected label metadata needed by sidebar controls in backend/apps/clips/views.py
 
 **Checkpoint**: User Story 1 can be validated independently as the MVP.
 
