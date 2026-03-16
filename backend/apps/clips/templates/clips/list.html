@@ -46,17 +46,39 @@
     </div>
   </section>
 
-  {% if selected_labels or active_url_filter %}
-    <section class="mb-4" aria-label="Active filters">
+  {% if selected_labels %}
+    <section class="mb-4" aria-label="Selected labels">
       <div class="d-flex flex-wrap align-items-center gap-2">
-        <span class="small text-secondary">Active filters:</span>
-        {% for selected_label in selected_labels %}
-          <span class="badge text-bg-primary">Label: {{ selected_label.name }}</span>
+        <span class="small text-secondary">Selected labels:</span>
+        {% for selected_label in selected_label_pills %}
+          <span class="badge text-bg-primary d-inline-flex align-items-center gap-2" data-selected-label-pill>
+            <span>{{ selected_label.name }}</span>
+            <a
+              href="{% url 'clips_web:list' %}{{ selected_label.remove_query }}"
+              class="link-light text-decoration-none"
+              aria-label="Remove label {{ selected_label.name }}"
+              data-label-pill-remove
+              data-label-slug="{{ selected_label.slug }}"
+            >
+              ×
+            </a>
+          </span>
         {% endfor %}
-        {% if active_url_filter %}
-          <span class="badge text-bg-primary">URL: {{ active_url_filter }}</span>
-        {% endif %}
-        <a class="btn btn-outline-secondary btn-sm" href="{% url 'clips_web:list' %}">Clear filters</a>
+        <a
+          class="btn btn-outline-secondary btn-sm"
+          href="{% url 'clips_web:list' %}{{ clear_label_filters_query }}"
+          data-label-clear-all
+        >
+          Clear all
+        </a>
+      </div>
+    </section>
+  {% endif %}
+  {% if active_url_filter %}
+    <section class="mb-4" aria-label="Active URL filter">
+      <div class="d-flex flex-wrap align-items-center gap-2">
+        <span class="small text-secondary">Active URL filter:</span>
+        <span class="badge text-bg-primary">{{ active_url_filter }}</span>
       </div>
     </section>
   {% endif %}
@@ -101,7 +123,9 @@
                       {% for label in labels %}
                       <a
                         class="badge rounded-pill text-bg-primary text-decoration-none"
-                        href="{% url 'clips_web:list' %}{{ selected_label_slugs|label_filter_query:label.slug }}"
+                        href="{% url 'clips_web:list' %}{{ current_query_params|label_filter_query:label.slug }}"
+                        data-label-add-link
+                        data-label-slug="{{ label.slug }}"
                       >
                         {{ label.name }}
                       </a>
@@ -125,7 +149,13 @@
         <h2 class="h5 mb-2">No clips match the selected labels</h2>
         <p class="text-secondary mb-3">Try removing one or more labels to broaden your results.</p>
         <p class="mb-0">
-          <a class="btn btn-outline-secondary btn-sm" href="{% url 'clips_web:list' %}">Clear label filters</a>
+          <a
+            class="btn btn-outline-secondary btn-sm"
+            href="{% url 'clips_web:list' %}{{ clear_label_filters_query }}"
+            data-label-clear-all
+          >
+            Clear label filters
+          </a>
         </p>
       {% else %}
         <h2 class="h5 mb-2">No clips yet</h2>

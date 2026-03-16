@@ -142,6 +142,65 @@ class ClipApiTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual([str(item["id"]) for item in response.data], [str(clip.id)])
 
+    def test_list_clips_ignores_unknown_or_inaccessible_slugs_with_filter_groups(
+        self,
+    ) -> None:
+        clip = Clip.objects.create(
+            user=self.user,
+            title="Owned clip",
+            url="https://example.com/owned",
+            domain="example.com",
+            raw_content="Owned clip",
+            normalized_text="owned clip",
+        )
+        own_label = Label.objects.create(user=self.user, name="research")
+        other_user_label = Label.objects.create(user=self.other_user, name="secret")
+        clip.labels.add(own_label)
+
+        view = ClipListCreateView.as_view()
+        request = self._auth_get(
+            f"/api/clips/?group=domain&group=source&label={own_label.slug}&label=unknown&label={other_user_label.slug}"
+        )
+        response = view(request)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual([str(item["id"]) for item in response.data], [str(clip.id)])
+
+    def test_list_clips_keeps_label_filtering_stable_with_non_label_group_params(
+        self,
+    ) -> None:
+        matching_clip = Clip.objects.create(
+            user=self.user,
+            title="Matches label",
+            url="https://example.com/one",
+            domain="example.com",
+            raw_content="Matches label",
+            normalized_text="matches label",
+        )
+        non_matching_clip = Clip.objects.create(
+            user=self.user,
+            title="No match",
+            url="https://example.com/two",
+            domain="example.com",
+            raw_content="No match",
+            normalized_text="no match",
+        )
+        label = Label.objects.create(user=self.user, name="research")
+        other_label = Label.objects.create(user=self.user, name="personal")
+        matching_clip.labels.add(label)
+        non_matching_clip.labels.add(other_label)
+
+        view = ClipListCreateView.as_view()
+        request = self._auth_get(
+            f"/api/clips/?group=domain&group=source&label={label.slug}"
+        )
+        response = view(request)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            [str(item["id"]) for item in response.data], [str(matching_clip.id)]
+        )
+
     def test_create_clip_creates_clip_and_labels(self) -> None:
         payload = {
             "title": "My clip",

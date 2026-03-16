@@ -75,18 +75,18 @@
 
 ### Tests for User Story 2
 
-- [ ] T019 [P] [US2] Add view tests for restoring selected labels from URL and rendering selected-label pills in backend/apps/clips/tests/test_views.py
-- [ ] T020 [P] [US2] Add regression tests for pill removal and clear-all query-string behavior in backend/apps/clips/tests/test_views.py
-- [ ] T021 [P] [US2] Add API/view parity tests for graceful ignore of unknown or inaccessible slugs in backend/apps/clips/tests/test_api.py and backend/apps/clips/tests/test_views.py
-- [ ] T047 [P] [US2] Add regression tests for coexistence with non-label filter-group query parameters during label add/remove/clear in backend/apps/clips/tests/test_views.py and backend/apps/clips/tests/test_api.py
+- [x] T019 [P] [US2] Add view tests for restoring selected labels from URL and rendering selected-label pills in backend/apps/clips/tests/test_views.py
+- [x] T020 [P] [US2] Add regression tests for pill removal and clear-all query-string behavior in backend/apps/clips/tests/test_views.py
+- [x] T021 [P] [US2] Add API/view parity tests for graceful ignore of unknown or inaccessible slugs in backend/apps/clips/tests/test_api.py and backend/apps/clips/tests/test_views.py
+- [x] T047 [P] [US2] Add regression tests for coexistence with non-label filter-group query parameters during label add/remove/clear in backend/apps/clips/tests/test_views.py and backend/apps/clips/tests/test_api.py
 
 ### Implementation for User Story 2
 
-- [ ] T022 [US2] Build selected-label pill view models and clear-all state in backend/apps/clips/views.py
-- [ ] T023 [US2] Render removable selected-label pills and desktop clear-all action above results in backend/apps/clips/templates/clips/list.html
-- [ ] T024 [US2] Implement URL mutation helpers for add/remove/clear of repeated label params in backend/apps/clips/static/clips/js/list.js
-- [ ] T025 [US2] Keep web and API slug-ignore behavior aligned for invalid/unowned labels in backend/apps/clips/views.py and backend/apps/clips/api/views.py
-- [ ] T026 [US2] Preserve non-label and future filter-group query parameters while mutating label filters in backend/apps/clips/filtering.py and backend/apps/clips/static/clips/js/list.js
+- [x] T022 [US2] Build selected-label pill view models and clear-all state in backend/apps/clips/views.py
+- [x] T023 [US2] Render removable selected-label pills and desktop clear-all action above results in backend/apps/clips/templates/clips/list.html
+- [x] T024 [US2] Implement URL mutation helpers for add/remove/clear of repeated label params in backend/apps/clips/static/clips/js/list.js
+- [x] T025 [US2] Keep web and API slug-ignore behavior aligned for invalid/unowned labels in backend/apps/clips/views.py and backend/apps/clips/api/views.py
+- [x] T026 [US2] Preserve non-label and future filter-group query parameters while mutating label filters in backend/apps/clips/filtering.py and backend/apps/clips/static/clips/js/list.js
 
 **Checkpoint**: User Stories 1 and 2 both operate independently with stable shareable URLs.
 

@@ -182,7 +182,7 @@ class ClipHtmlViewsTests(TestCase):
             html=False,
         )
 
-    def test_list_label_link_does_not_preserve_existing_url_filter(self) -> None:
+    def test_list_label_link_preserves_existing_non_label_query_params(self) -> None:
         clip = Clip.objects.create(
             user=self.user,
             title="First",
@@ -196,18 +196,13 @@ class ClipHtmlViewsTests(TestCase):
 
         self.client.force_login(self.user)
         response = self.client.get(
-            f"{reverse('clips_web:list')}?url=https%3A%2F%2Fexample.com%2Fone"
+            f"{reverse('clips_web:list')}?url=https%3A%2F%2Fexample.com%2Fone&panel=expanded&group=domain"
         )
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(
             response,
-            f'href="{reverse("clips_web:list")}?label={label.slug}"',
-            html=False,
-        )
-        self.assertNotContains(
-            response,
-            f"label={label.slug}&amp;url=",
+            f'href="{reverse("clips_web:list")}?url=https%3A%2F%2Fexample.com%2Fone&amp;panel=expanded&amp;group=domain&amp;label={label.slug}"',
             html=False,
         )
 
@@ -251,6 +246,82 @@ class ClipHtmlViewsTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(list(response.context["clips"])), 1)
+
+    def test_list_ignores_inaccessible_label_slug(self) -> None:
+        clip = Clip.objects.create(
+            user=self.user,
+            title="Owned clip",
+            url="https://example.com/owned",
+            domain="example.com",
+            raw_content="Owned clip",
+            normalized_text="owned clip",
+        )
+        own_label = Label.objects.create(user=self.user, name="research")
+        other_user_label = Label.objects.create(user=self.other_user, name="secret")
+        clip.labels.add(own_label)
+
+        self.client.force_login(self.user)
+        response = self.client.get(
+            f"{reverse('clips_web:list')}?label={own_label.slug}&label={other_user_label.slug}"
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual([item.id for item in response.context["clips"]], [clip.id])
+        self.assertEqual(response.context["selected_label_slugs"], [own_label.slug])
+
+    def test_list_renders_selected_label_pills_with_remove_actions(self) -> None:
+        first_label = Label.objects.create(user=self.user, name="research")
+        second_label = Label.objects.create(user=self.user, name="personal")
+
+        self.client.force_login(self.user)
+        response = self.client.get(
+            f"{reverse('clips_web:list')}?panel=expanded&group=domain&label={first_label.slug}&label={second_label.slug}"
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Selected labels:")
+        self.assertContains(response, "data-selected-label-pill", count=2)
+        self.assertContains(response, "data-label-pill-remove", count=2)
+        self.assertContains(
+            response,
+            f'data-label-slug="{first_label.slug}"',
+            html=False,
+        )
+        self.assertContains(
+            response,
+            f'href="{reverse("clips_web:list")}?panel=expanded&amp;group=domain&amp;label={second_label.slug}"',
+            html=False,
+        )
+        self.assertContains(
+            response,
+            f'data-label-slug="{second_label.slug}"',
+            html=False,
+        )
+        self.assertContains(
+            response,
+            f'href="{reverse("clips_web:list")}?panel=expanded&amp;group=domain&amp;label={first_label.slug}"',
+            html=False,
+        )
+
+    def test_list_clear_all_labels_link_removes_only_label_params(self) -> None:
+        first_label = Label.objects.create(user=self.user, name="research")
+        second_label = Label.objects.create(user=self.user, name="personal")
+
+        self.client.force_login(self.user)
+        response = self.client.get(
+            f"{reverse('clips_web:list')}?panel=expanded&group=domain&group=source&label={first_label.slug}&label={second_label.slug}"
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            response.context["clear_label_filters_query"],
+            "?panel=expanded&group=domain&group=source",
+        )
+        self.assertContains(
+            response,
+            f'href="{reverse("clips_web:list")}?panel=expanded&amp;group=domain&amp;group=source"',
+            html=False,
+        )
 
     def test_list_renders_filtered_empty_state_when_labels_have_no_results(
         self,
