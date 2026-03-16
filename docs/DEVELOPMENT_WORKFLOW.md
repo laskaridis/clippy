@@ -2,14 +2,13 @@
 
 ## Development workflow
 
-Upon a request from the user the coding agent ALWAYS follows the following steps
-in-order:
+Upon a request from the user the coding agent *ALWAYS* follows the following steps in-order:
 
-1. Create a feature branch from latest `master`.
-2. Create a git worktree for that branch under `.worktrees`.
-3. Implement changes and run relevant tests.
-4. Review your code locally and fix any issues (make sure all tests pass).
-5. Open a pull request into `master`.
+*STEP 1*: Create a feature branch from latest `master`.
+*STEP 2*: Create a git worktree for that branch under `.worktrees`.
+*STEP 3*: Implement changes and run relevant tests.
+*STEP 4*: Review your code locally and fix any issues (make sure all tests pass) to avoid the embarassment of shipping bugs to production - run `make all-verify` and to make sure your code is releasable.
+*STEP 5*: After you finish always open a pull request into `master` to hand-over your work - it's *CRITICAL* to not forget this since nobody will know you finished.
 
 ### Enforced preflight gate
 
@@ -54,6 +53,19 @@ Hard rules:
 - Work must always remain in a dedicated `.worktrees/*` worktree on `feature/<slug>`.
 - Multiple features may be handled in parallel only by using separate worktrees and independent orchestrators.
 
+## Git branch policy
+
+Treat all the following as **hard gates**:
+- All work must be done on a dedicated feature branch, NEVER directly on the
+  mainline (i.e. `master`).
+- Feature branch naming MUST follow `feature/<short-description-of-feature>`
+- Use lowercase letters, numbers, and hyphens in the short description 
+  (example: `feature/add-clipping-tags`).
+- Run `./scripts/setup-git-hooks.sh` once per clone to enforce this rule via git
+  hooks.
+- The pre-commit hook now runs `scripts/agent-preflight.sh` to enforce branch +
+  worktree hard gates before any commit.
+
 ### Emergency bypass policy
 
 Use bypasses only for urgent incidents and always create immediate follow-up work.
@@ -67,18 +79,6 @@ Hard requirements when using either bypass:
 - open a PR that restores full workflow compliance
 - do not continue regular feature development under bypass mode
 
-## Git branch policy
-
-Treat all the following as **hard gates**:
-- All work must be done on a dedicated feature branch, NEVER directly on the
-  mainline (i.e. `master`).
-- Feature branch naming MUST follow `feature/<short-description-of-feature>`
-- Use lowercase letters, numbers, and hyphens in the short description 
-  (example: `feature/add-clipping-tags`).
-- Run `./scripts/setup-git-hooks.sh` once per clone to enforce this rule via git
-  hooks.
-- The pre-commit hook now runs `scripts/agent-preflight.sh` to enforce branch +
-  worktree hard gates before any commit.
 
 ## Git worktree development
 
@@ -160,7 +160,7 @@ Treat the following as **hard gates**:
 
 Before handing work back ensure all the following is ture:
 [ ] Code compiles/runs.
-[ ] Relevant tests pass locally.
+[ ] Relevant tests and quality gates pass locally.
 [ ] Work was completed in a dedicated `.worktrees/` worktree (not in the user's active directory).
 [ ] A pull request is opened (or ready to open) as the required sign-off path for the task.
 [ ] Edge cases for auth and ownership are covered.

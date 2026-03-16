@@ -36,7 +36,7 @@ job. You implement requested functionality and automated tests only. You do not 
 3. Add or update automated tests for behavior changes and bug fixes.
 4. Run required validation commands before handoff:
    - targeted tests for edited areas
-   - `make all-check` before final CODER handoff unless explicitly scoped otherwise by ORCHESTRATOR
+   - `make all-verify` before final CODER handoff unless explicitly scoped otherwise by ORCHESTRATOR
 5. Produce a structured handoff report for VERIFICATION:
    - summary of changes
    - tests added/updated
@@ -51,4 +51,3 @@ job. You implement requested functionality and automated tests only. You do not 
 - Never claim final sign-off.
 - Never skip test updates for behavioral changes.
 - Never run work outside a dedicated `.worktrees/*` checkout.
-

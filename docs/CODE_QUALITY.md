@@ -1,97 +1,56 @@
-# Code Quality Guidelines
+# Code Quality
+This documents how to write corect, clean, highly maintainable code that fulfills the quality standards for this project.
 
-- Make small, focused changes.
-- Preserve current language style:
-  - Python: clear class/function boundaries, meaningful names, simple control flow.
-  - Extension TS: write TypeScript source and keep emitted JavaScript build output compatible with the Chrome runtime.
-- Keep user-facing error messages actionable.
-- Remove dead code introduced during refactors.
-- Do not introduce new dependencies without strong justification.
-
-## General principles
-- Emphasize writing clean, easily maintainable code.
-- Apply SOLID and KISS principles.
+## Core principles 
+- Prioritise writing clean, easily maintainable code.
+- Keep it simple; Allways prefer the simplest possible implementation that solves the problem and is the easier to understand and reason about.
+- YAGNI; refrain from adding features or code for hypothetical future needs.
 - Bias heavily towards high cohesion and low coupling.
+- Refrain from introducing new dependencies without clear and strong justification.
+- Make small, focused, incremental changes.
+- Design your code so it is idempotent, wherever practical.
+- Keep user-facing error messages actionable.
+- Refrain from keeping around unused code or other artifacts.
 
 ## Code clarity
 - Use intention revealing names for variables, functions, classes, etc.
-- **ALLWAYS** document your code:
-- In your comments communicate intent and purpose, not simply to describe what the code does.
-- **ALLWAYS** ask: if this code breaks at 1am in production, would somebody looking at it for the first time
-  be able to quickly understand it to fix it? If the answer is no - refactor.
-- Make sure any that pre-conditions, invariants and side-effects are crealry visible to the reader, preferrably
-  in code and secondarily via comments.
-- Prefer functional programing paradigm if possible for clarity.
+- Document scripts, public classes, modules, and non-trivial functions:
+  - Focus your documentation on intent, key assumptions pre-conditions, invariants and side-effects.
+  - Avoid commenting obvious implementation details.
+- As a litmus test, **ALWAYS** ask: if this code breaks at 1am in production, would somebody looking at it for the first time be able to quickly understand it to fix it? If the answer is no - refactor.
+- Prefer functional programming idiom where practical to promote clarity:
+  - Prefer pure functions and stateless logic where practical.
+  - Avoid hidden state and side effects.
+  - Keep data transformations explicit.
+
+## Write good git commits
+- Limit the subject line to 72 characters.
+- Separate the subject from the body with a blanc line.
+- **Keep commits logically scoped**:
+  - One logical change per commit
+  - Avoid mixing unrelated changes
+- **Provide the necessary context in the body**: 
+  - Emphasize explaining the intent (i.e. the why) behind your changes.
+  - Mention important design decisions and key assumptions.
+  - Note any side effects, migrations, or compatibility impacts
+- **Reference relevant artifacts when applicable**:
+  - Spec IDs
+  - Issue numbers
+  - ADRs
+  - Related PRs
+
+## Testing
+- Write tests for **all** new behavior.
+- Update tests when modifying behavior.
+- Do not remove failing tests without replacing them with correct ones.
+- When fixing bugs first make sure you have an automated test replicating the problem.
 
 ## Code safety
-- Prefer immutability.
+- Prefer immutability where practical.
 - Use optionals when possible instead of NULL values.
-- For non-statically typed languages use type hints as much as possible
+- For non-statically typed languages (e.g. python) **ALWAYS** use type hints and typechecks to avoid embarrasing bugs.
 
 ## Scripting
 - Allways use color coding for messages (green=ok, yellow=warn, red=error)
-- Allways include documentation to explain purpose and intendent usage and expected outcomes.
+- Allways include documentation to explain purpose and independent usage and expected outcomes.
 - Modularise script files to improve clarity and maintainability (i.e. avoid monolithic scripts)
-
-## Tooling
-
-### Backend (`backend/`)
-- **Lint**: `ruff`
-- **Format**: `black`
-- **Type check**: `mypy`
-- Config is in `backend/pyproject.toml`.
-
-### Extension (`extension/`)
-- **Lint**: `eslint` (`eslint.config.mjs`)
-- **Format**: `prettier`
-- **Type check**: `typescript` (`tsc --noEmit`)
-- Config and ignores live in:
-  - `extension/eslint.config.mjs`
-  - `extension/.prettierignore`
-  - `extension/chrome/tsconfig.json`
-
-## Commands
-
-Run repository-wide checks from repo root:
-
-```bash
-./scripts/lint.sh
-./scripts/format.sh
-./scripts/typecheck.sh
-```
-
-Run module-specific checks:
-
-```bash
-# backend
-cd backend
-pip install -r requirements-dev.txt
-python -m ruff check .
-python -m black --check .
-python -m mypy .
-
-# extension
-cd extension
-pnpm install --frozen-lockfile
-pnpm run lint
-pnpm run format:check
-pnpm run typecheck
-```
-
-## Auto-fix and formatting
-
-Use these commands to apply fixes:
-
-```bash
-# backend
-cd backend
-python -m black .
-python -m ruff check --fix .
-
-# extension
-cd extension
-pnpm run lint:fix
-pnpm run format
-```
-
-The git pre-commit hook runs branch policy checks plus fast, staged-file formatting/linting for backend Python and extension TypeScript files.
