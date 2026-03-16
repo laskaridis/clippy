@@ -116,6 +116,50 @@ class ClipHtmlViewsTests(TestCase):
         clips = list(response.context["clips"])
         self.assertEqual([clip.id for clip in clips], [matching_clip.id])
 
+    def test_list_filters_by_repeated_label_slugs_with_and_semantics(self) -> None:
+        both_clip = Clip.objects.create(
+            user=self.user,
+            title="Has both labels",
+            url="https://example.com/both",
+            domain="example.com",
+            raw_content="Has both labels",
+            normalized_text="has both labels",
+        )
+        first_only_clip = Clip.objects.create(
+            user=self.user,
+            title="First only",
+            url="https://example.com/first",
+            domain="example.com",
+            raw_content="First only",
+            normalized_text="first only",
+        )
+        second_only_clip = Clip.objects.create(
+            user=self.user,
+            title="Second only",
+            url="https://example.com/second",
+            domain="example.com",
+            raw_content="Second only",
+            normalized_text="second only",
+        )
+        first_label = Label.objects.create(user=self.user, name="research")
+        second_label = Label.objects.create(user=self.user, name="personal")
+        both_clip.labels.add(first_label, second_label)
+        first_only_clip.labels.add(first_label)
+        second_only_clip.labels.add(second_label)
+
+        self.client.force_login(self.user)
+        response = self.client.get(
+            f"{reverse('clips_web:list')}?label={first_label.slug}&label={second_label.slug}"
+        )
+
+        self.assertEqual(response.status_code, 200)
+        clips = list(response.context["clips"])
+        self.assertEqual([clip.id for clip in clips], [both_clip.id])
+        self.assertEqual(
+            response.context["selected_label_slugs"],
+            [first_label.slug, second_label.slug],
+        )
+
     def test_list_renders_label_as_clickable_link_to_label_filter(self) -> None:
         clip = Clip.objects.create(
             user=self.user,
@@ -167,6 +211,31 @@ class ClipHtmlViewsTests(TestCase):
             html=False,
         )
 
+    def test_list_label_link_preserves_existing_selected_labels(self) -> None:
+        clip = Clip.objects.create(
+            user=self.user,
+            title="First",
+            url="https://example.com/one",
+            domain="example.com",
+            raw_content="First clip content shown on list page",
+            normalized_text="first clip content shown on list page",
+        )
+        selected_label = Label.objects.create(user=self.user, name="research")
+        candidate_label = Label.objects.create(user=self.user, name="personal")
+        clip.labels.add(selected_label, candidate_label)
+
+        self.client.force_login(self.user)
+        response = self.client.get(
+            f"{reverse('clips_web:list')}?label={selected_label.slug}"
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(
+            response,
+            f'href="{reverse("clips_web:list")}?label={selected_label.slug}&amp;label={candidate_label.slug}"',
+            html=False,
+        )
+
     def test_list_ignores_unknown_label_slug(self) -> None:
         Clip.objects.create(
             user=self.user,
@@ -182,6 +251,34 @@ class ClipHtmlViewsTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(list(response.context["clips"])), 1)
+
+    def test_list_renders_filtered_empty_state_when_labels_have_no_results(
+        self,
+    ) -> None:
+        clip = Clip.objects.create(
+            user=self.user,
+            title="No match",
+            url="https://example.com/no-match",
+            domain="example.com",
+            raw_content="No match",
+            normalized_text="no match",
+        )
+        clip.labels.add(Label.objects.create(user=self.user, name="personal"))
+        selected_label = Label.objects.create(user=self.user, name="research")
+
+        self.client.force_login(self.user)
+        response = self.client.get(
+            f"{reverse('clips_web:list')}?label={selected_label.slug}"
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "No clips match the selected labels")
+        self.assertContains(response, "Clear label filters")
+        self.assertEqual(response.context["selected_labels_count"], 1)
+        self.assertEqual(
+            response.context["selected_label_metadata"],
+            [{"id": selected_label.id, "name": "research", "slug": "research"}],
+        )
 
     def test_list_filters_by_exact_url_for_current_user(self) -> None:
         matching_url = "https://example.com/path"

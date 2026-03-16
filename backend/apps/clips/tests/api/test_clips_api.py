@@ -5,7 +5,7 @@ from django.urls import resolve
 from rest_framework.test import APIRequestFactory, force_authenticate
 
 from apps.clips.api.views import ClipDetailView, ClipListCreateView
-from apps.clips.models import Clip
+from apps.clips.models import Clip, Label
 
 
 class ClipApiTests(TestCase):
@@ -77,6 +77,70 @@ class ClipApiTests(TestCase):
         self.assertEqual(len(response.data), 2)
         ids = {str(item["id"]) for item in response.data}
         self.assertEqual(ids, {str(c.id) for c in Clip.objects.filter(user=self.user)})
+
+    def test_list_clips_filters_by_repeated_label_slug_with_and_semantics(self) -> None:
+        both_clip = Clip.objects.create(
+            user=self.user,
+            title="Has both labels",
+            url="https://example.com/both",
+            domain="example.com",
+            raw_content="Has both labels",
+            normalized_text="has both labels",
+        )
+        first_only_clip = Clip.objects.create(
+            user=self.user,
+            title="First only",
+            url="https://example.com/first",
+            domain="example.com",
+            raw_content="First only",
+            normalized_text="first only",
+        )
+        second_only_clip = Clip.objects.create(
+            user=self.user,
+            title="Second only",
+            url="https://example.com/second",
+            domain="example.com",
+            raw_content="Second only",
+            normalized_text="second only",
+        )
+        first_label = Label.objects.create(user=self.user, name="research")
+        second_label = Label.objects.create(user=self.user, name="personal")
+        both_clip.labels.add(first_label, second_label)
+        first_only_clip.labels.add(first_label)
+        second_only_clip.labels.add(second_label)
+
+        view = ClipListCreateView.as_view()
+        request = self._auth_get(
+            f"/api/clips/?label={first_label.slug}&label={second_label.slug}"
+        )
+        response = view(request)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            [str(item["id"]) for item in response.data], [str(both_clip.id)]
+        )
+
+    def test_list_clips_ignores_unknown_or_inaccessible_label_slugs(self) -> None:
+        clip = Clip.objects.create(
+            user=self.user,
+            title="Owned clip",
+            url="https://example.com/owned",
+            domain="example.com",
+            raw_content="Owned clip",
+            normalized_text="owned clip",
+        )
+        own_label = Label.objects.create(user=self.user, name="research")
+        other_user_label = Label.objects.create(user=self.other_user, name="secret")
+        clip.labels.add(own_label)
+
+        view = ClipListCreateView.as_view()
+        request = self._auth_get(
+            f"/api/clips/?label={own_label.slug}&label=unknown&label={other_user_label.slug}"
+        )
+        response = view(request)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual([str(item["id"]) for item in response.data], [str(clip.id)])
 
     def test_create_clip_creates_clip_and_labels(self) -> None:
         payload = {

@@ -53,6 +53,11 @@ class ClipListView(LoginRequiredMixin, ListView):
         context["active_url_filter"] = self.request.GET.get("url") or ""
         context["selected_label_slugs"] = [label.slug for label in selected_labels]
         context["selected_labels"] = selected_labels
+        context["selected_labels_count"] = len(selected_labels)
+        context["selected_label_metadata"] = [
+            {"id": label.id, "name": label.name, "slug": label.slug}
+            for label in selected_labels
+        ]
         context["panel_state"] = _parse_panel_state(self.request.GET.get("panel"))
         return context
 
