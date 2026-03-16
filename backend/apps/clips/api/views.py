@@ -6,6 +6,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 
 from apps.clips.models import Clip, Label
+from apps.clips.filtering import parse_label_slugs
 from apps.clips.api.serializers import (
     ClipSerializer,
     CreateClipCommandSerializer,
@@ -16,7 +17,6 @@ from apps.clips.api.serializers import (
 )
 from apps.clips.services import (
     apply_label_and_filter,
-    parse_label_slugs,
     quick_search,
     resolve_selected_labels,
 )

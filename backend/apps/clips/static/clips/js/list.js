@@ -15,6 +15,97 @@
   }
 
   var csrfToken = getCookie("csrftoken");
+
+  function normalizeLabelSlug(value) {
+    return String(value || "").trim().toLowerCase();
+  }
+
+  function normalizeLabelSlugs(values) {
+    var normalized = [];
+    var seen = {};
+    values.forEach(function(rawValue) {
+      var value = normalizeLabelSlug(rawValue);
+      if (!value || seen[value]) {
+        return;
+      }
+      seen[value] = true;
+      normalized.push(value);
+    });
+    return normalized;
+  }
+
+  function buildSearchPreservingNonLabel(sourceParams, selectedLabels) {
+    var nextParams = new URLSearchParams();
+    sourceParams.forEach(function(value, key) {
+      if (key !== "label") {
+        nextParams.append(key, value);
+      }
+    });
+    normalizeLabelSlugs(selectedLabels).forEach(function(slug) {
+      nextParams.append("label", slug);
+    });
+    return nextParams.toString();
+  }
+
+  function mutateLabelQuery(action, labelSlug) {
+    var params = new URLSearchParams(window.location.search);
+    var selectedLabels = normalizeLabelSlugs(params.getAll("label"));
+
+    if (action === "add") {
+      selectedLabels = normalizeLabelSlugs(selectedLabels.concat([labelSlug]));
+    } else if (action === "remove") {
+      var normalizedSlug = normalizeLabelSlug(labelSlug);
+      selectedLabels = selectedLabels.filter(function(slug) {
+        return slug !== normalizedSlug;
+      });
+    } else if (action === "clear") {
+      selectedLabels = [];
+    }
+
+    var nextSearch = buildSearchPreservingNonLabel(params, selectedLabels);
+    var nextUrl = window.location.pathname + (nextSearch ? "?" + nextSearch : "") + window.location.hash;
+    window.location.assign(nextUrl);
+  }
+
+  function bindLabelQueryLinks() {
+    var addButtons = document.querySelectorAll("[data-label-add-link]");
+    addButtons.forEach(function(button) {
+      button.addEventListener("click", function(event) {
+        event.preventDefault();
+        mutateLabelQuery("add", button.getAttribute("data-label-slug"));
+      });
+    });
+
+    var removeButtons = document.querySelectorAll("[data-label-pill-remove]");
+    removeButtons.forEach(function(button) {
+      button.addEventListener("click", function(event) {
+        event.preventDefault();
+        mutateLabelQuery("remove", button.getAttribute("data-label-slug"));
+      });
+    });
+
+    var clearButtons = document.querySelectorAll("[data-label-clear-all]");
+    clearButtons.forEach(function(button) {
+      button.addEventListener("click", function(event) {
+        event.preventDefault();
+        mutateLabelQuery("clear");
+      });
+    });
+  }
+
+  bindLabelQueryLinks();
+  window.ClipsListLabelFilters = {
+    add: function(labelSlug) {
+      mutateLabelQuery("add", labelSlug);
+    },
+    remove: function(labelSlug) {
+      mutateLabelQuery("remove", labelSlug);
+    },
+    clear: function() {
+      mutateLabelQuery("clear");
+    }
+  };
+
   var buttons = document.querySelectorAll(".clip-delete");
   buttons.forEach(function(button) {
     button.addEventListener("click", function(event) {

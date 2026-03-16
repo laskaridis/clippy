@@ -3,10 +3,14 @@ from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect
 from django.views.generic import DetailView, ListView, TemplateView
 
+from apps.clips.filtering import (
+    clear_label_filters_query,
+    parse_label_slugs,
+    remove_label_query,
+)
 from apps.clips.models import Clip, Label
 from apps.clips.services import (
     apply_label_and_filter,
-    parse_label_slugs,
     resolve_selected_labels,
 )
 
@@ -54,8 +58,24 @@ class ClipListView(LoginRequiredMixin, ListView):
         context["selected_label_slugs"] = [label.slug for label in selected_labels]
         context["selected_labels"] = selected_labels
         context["selected_labels_count"] = len(selected_labels)
+        context["current_query_params"] = self.request.GET
+        context["clear_label_filters_query"] = clear_label_filters_query(
+            query_params=self.request.GET
+        )
         context["selected_label_metadata"] = [
             {"id": label.id, "name": label.name, "slug": label.slug}
+            for label in selected_labels
+        ]
+        context["selected_label_pills"] = [
+            {
+                "id": label.id,
+                "name": label.name,
+                "slug": label.slug,
+                "remove_query": remove_label_query(
+                    query_params=self.request.GET,
+                    label_slug=label.slug,
+                ),
+            }
             for label in selected_labels
         ]
         context["panel_state"] = _parse_panel_state(self.request.GET.get("panel"))
