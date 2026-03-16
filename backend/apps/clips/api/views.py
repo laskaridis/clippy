@@ -14,6 +14,8 @@ from apps.clips.api.serializers import (
     LabelUpdateCommandSerializer,
     QuickSearchQuerySerializer,
 )
+from apps.clips.filtering import parse_label_slugs
+from apps.clips.services import apply_label_and_filter, resolve_selected_labels
 from apps.clips.services import quick_search
 from webclippings.authentication import CsrfExemptSessionAuthentication
 
@@ -23,11 +25,22 @@ class ClipListCreateView(generics.ListCreateAPIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        return (
+        queryset = (
             Clip.objects.filter(user=self.request.user)
             .select_related("user")
             .prefetch_related("labels")
         )
+        selected_label_slugs = parse_label_slugs(
+            self.request.query_params.getlist("label")
+        )
+        selected_labels = resolve_selected_labels(
+            user=self.request.user, selected_label_slugs=selected_label_slugs
+        )
+        queryset = apply_label_and_filter(queryset=queryset, labels=selected_labels)
+        url_filter = self.request.query_params.get("url")
+        if url_filter:
+            queryset = queryset.filter(url=url_filter)
+        return queryset
 
     def get_serializer_class(self):
         if self.request.method == "POST":

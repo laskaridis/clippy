@@ -1,11 +1,11 @@
-from uuid import UUID
-
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect
 from django.views.generic import DetailView, ListView, TemplateView
 
+from apps.clips.filtering import parse_label_slugs, parse_panel_state
 from apps.clips.models import Clip, Label
+from apps.clips.services import apply_label_and_filter, resolve_selected_labels
 
 
 class ClipListView(LoginRequiredMixin, ListView):
@@ -19,13 +19,11 @@ class ClipListView(LoginRequiredMixin, ListView):
             .select_related("user")
             .prefetch_related("labels")
         )
-        label_uuid_raw = (self.request.GET.get("label") or "").strip()
-        if label_uuid_raw:
-            try:
-                label_uuid = UUID(label_uuid_raw)
-            except ValueError:
-                return queryset.none()
-            queryset = queryset.filter(labels__uuid=label_uuid).distinct()
+        selected_label_slugs = parse_label_slugs(self.request.GET.getlist("label"))
+        selected_labels = resolve_selected_labels(
+            user=self.request.user, selected_label_slugs=selected_label_slugs
+        )
+        queryset = apply_label_and_filter(queryset=queryset, labels=selected_labels)
 
         url_filter = self.request.GET.get("url")
         if url_filter:
@@ -35,20 +33,14 @@ class ClipListView(LoginRequiredMixin, ListView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        label_uuid_raw = (self.request.GET.get("label") or "").strip()
+        selected_label_slugs = parse_label_slugs(self.request.GET.getlist("label"))
+        selected_labels = resolve_selected_labels(
+            user=self.request.user, selected_label_slugs=selected_label_slugs
+        )
         context["active_url_filter"] = self.request.GET.get("url") or ""
-        context["active_label_uuid"] = label_uuid_raw
-        context["active_label_name"] = ""
-        if label_uuid_raw:
-            try:
-                label_uuid = UUID(label_uuid_raw)
-            except ValueError:
-                return context
-            label = Label.objects.filter(
-                user=self.request.user, uuid=label_uuid
-            ).first()
-            if label is not None:
-                context["active_label_name"] = label.name
+        context["selected_label_slugs"] = [label.slug for label in selected_labels]
+        context["selected_labels"] = selected_labels
+        context["panel_state"] = parse_panel_state(self.request.GET.get("panel"))
         return context
 
 

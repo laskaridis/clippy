@@ -4,7 +4,7 @@ from typing import Any, TypedDict
 from urllib.parse import quote
 
 from django.core.exceptions import ValidationError
-from django.db.models import Count, F, FloatField, Max, Q, TextField, Value
+from django.db.models import Count, F, FloatField, Max, Q, QuerySet, TextField, Value
 from django.db.models.expressions import ExpressionWrapper
 from django.db.models.functions import Coalesce, Greatest, Left, NullIf
 
@@ -33,6 +33,42 @@ class QuickSearchResult(TypedDict):
     query: str
     total: int
     hits: QuickSearchGroups
+
+
+def resolve_selected_labels(*, user, selected_label_slugs: list[str]) -> list[Label]:
+    if not selected_label_slugs:
+        return []
+    labels = Label.objects.filter(user=user, slug__in=selected_label_slugs).only(
+        "id", "name", "slug"
+    )
+    labels_by_slug = {label.slug: label for label in labels}
+    return [
+        labels_by_slug[slug] for slug in selected_label_slugs if slug in labels_by_slug
+    ]
+
+
+def apply_label_and_filter(
+    *, queryset: QuerySet[Clip], labels: list[Label]
+) -> QuerySet[Clip]:
+    for label in labels:
+        queryset = queryset.filter(labels__id=label.id)
+    return queryset.distinct()
+
+
+def annotate_contextual_label_counts(
+    *, user, filtered_clips_queryset: QuerySet[Clip]
+) -> QuerySet[Label]:
+    return (
+        Label.objects.filter(user=user)
+        .annotate(
+            contextual_results_count=Count(
+                "clips",
+                filter=Q(clips__id__in=filtered_clips_queryset.values("id")),
+                distinct=True,
+            )
+        )
+        .order_by("name")
+    )
 
 
 def quick_search(
@@ -169,7 +205,7 @@ def _postgresql_candidates(*, user, query: str, limit: int) -> list[dict[str, An
         )
         .filter(Q(rank__gt=0) | Q(similarity__gt=0))
         .order_by("-score", "name", "id")
-        .values("uuid", "name", "clip_count", "latest_created_at", "score")[:limit]
+        .values("slug", "name", "clip_count", "latest_created_at", "score")[:limit]
     )
 
     website_qs = (
@@ -214,13 +250,13 @@ def _postgresql_candidates(*, user, query: str, limit: int) -> list[dict[str, An
             {
                 "type": "label",
                 "score": float(row["score"]),
-                "label_uuid": str(row["uuid"]),
+                "label_slug": row["slug"],
                 "name": row["name"],
                 "clip_count": row["clip_count"],
-                "target_url": f"/clips?label={row['uuid']}",
+                "target_url": f"/clips?label={row['slug']}",
                 "_recency": row["latest_created_at"],
                 "_lexical": row["name"].lower(),
-                "_identity": str(row["uuid"]),
+                "_identity": row["slug"],
             }
         )
 

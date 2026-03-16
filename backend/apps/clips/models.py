@@ -3,6 +3,7 @@ import uuid
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models
+from django.utils.text import slugify
 
 
 class Label(models.Model):
@@ -13,6 +14,7 @@ class Label(models.Model):
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="labels"
     )
     name = models.CharField(max_length=100)
+    slug = models.SlugField(max_length=120)
     description = models.TextField(blank=True, null=True)
     color = models.CharField(max_length=32, blank=True, null=True)
 
@@ -21,7 +23,43 @@ class Label(models.Model):
             models.UniqueConstraint(
                 fields=["user", "name"], name="uniq_label_name_per_user"
             ),
+            models.UniqueConstraint(
+                fields=["user", "slug"], name="uniq_label_slug_per_user"
+            ),
         ]
+
+    @staticmethod
+    def _build_slug_base(name: str) -> str:
+        base = slugify(name or "")
+        if not base:
+            return "label"
+        return base[:110]
+
+    def _generate_unique_slug(self) -> str:
+        base = self._build_slug_base(self.name)
+        candidate = base
+        suffix = 2
+        while (
+            Label.objects.filter(user=self.user, slug=candidate)
+            .exclude(pk=self.pk)
+            .exists()
+        ):
+            suffix_text = f"-{suffix}"
+            candidate = f"{base[: 120 - len(suffix_text)]}{suffix_text}"
+            suffix += 1
+        return candidate
+
+    def save(self, *args, **kwargs):
+        should_regenerate_slug = not self.slug
+        if self.pk:
+            previous_name = (
+                Label.objects.filter(pk=self.pk).values_list("name", flat=True).first()
+            )
+            if previous_name is not None and previous_name != self.name:
+                should_regenerate_slug = True
+        if should_regenerate_slug:
+            self.slug = self._generate_unique_slug()
+        return super().save(*args, **kwargs)
 
     def __str__(self) -> str:  # pragma: no cover - simple repr
         return self.name

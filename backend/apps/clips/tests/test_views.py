@@ -85,7 +85,7 @@ class ClipHtmlViewsTests(TestCase):
             html=False,
         )
 
-    def test_list_filters_by_label_uuid_for_current_user(self) -> None:
+    def test_list_filters_by_label_slug_for_current_user(self) -> None:
         matching_clip = Clip.objects.create(
             user=self.user,
             title="Matches label",
@@ -109,7 +109,7 @@ class ClipHtmlViewsTests(TestCase):
 
         self.client.force_login(self.user)
         response = self.client.get(
-            f"{reverse('clips_web:list')}?label={matching_label.uuid}"
+            f"{reverse('clips_web:list')}?label={matching_label.slug}"
         )
 
         self.assertEqual(response.status_code, 200)
@@ -134,7 +134,7 @@ class ClipHtmlViewsTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(
             response,
-            f'href="{reverse("clips_web:list")}?label={label.uuid}"',
+            f'href="{reverse("clips_web:list")}?label={label.slug}"',
             html=False,
         )
 
@@ -158,16 +158,16 @@ class ClipHtmlViewsTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(
             response,
-            f'href="{reverse("clips_web:list")}?label={label.uuid}"',
+            f'href="{reverse("clips_web:list")}?label={label.slug}"',
             html=False,
         )
         self.assertNotContains(
             response,
-            f"label={label.uuid}&amp;url=",
+            f"label={label.slug}&amp;url=",
             html=False,
         )
 
-    def test_list_label_filter_rejects_invalid_uuid(self) -> None:
+    def test_list_ignores_unknown_label_slug(self) -> None:
         Clip.objects.create(
             user=self.user,
             title="First",
@@ -178,10 +178,10 @@ class ClipHtmlViewsTests(TestCase):
         )
 
         self.client.force_login(self.user)
-        response = self.client.get(f"{reverse('clips_web:list')}?label=not-a-uuid")
+        response = self.client.get(f"{reverse('clips_web:list')}?label=unknown")
 
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(list(response.context["clips"]), [])
+        self.assertEqual(len(list(response.context["clips"])), 1)
 
     def test_list_filters_by_exact_url_for_current_user(self) -> None:
         matching_url = "https://example.com/path"
