@@ -13,6 +13,7 @@ class LabelSerializer(serializers.ModelSerializer):
         fields = [
             "id",
             "name",
+            "slug",
             "description",
             "color",
             "clip_count",
@@ -40,6 +41,8 @@ class LabelCreateCommandSerializer(serializers.Serializer):
                 "Authentication required to create labels"
             )
 
+        normalized_name = validated_data.get("name", "").strip()
+        validated_data["name"] = normalized_name
         return Label.objects.create(user=user, **validated_data)
 
 
@@ -53,6 +56,8 @@ class LabelUpdateCommandSerializer(serializers.Serializer):
     )
 
     def update(self, instance: Label, validated_data):
+        if "name" in validated_data:
+            validated_data["name"] = validated_data["name"].strip()
         for field, value in validated_data.items():
             setattr(instance, field, value)
         instance.save()

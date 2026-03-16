@@ -88,11 +88,11 @@ class QuickSearchServiceTests(TestCase):
         result = quick_search(user=self.user, query="python")
 
         clip_ids: set[str] = {item["clip_id"] for item in result["hits"]["clips"]}
-        label_ids: set[str] = {item["label_uuid"] for item in result["hits"]["labels"]}
+        label_ids: set[str] = {item["label_slug"] for item in result["hits"]["labels"]}
         website_urls: set[str] = {item["url"] for item in result["hits"]["websites"]}
 
         self.assertNotIn(str(other_clip.id), clip_ids)
-        self.assertNotIn(str(other_label.uuid), label_ids)
+        self.assertIn(own_label.slug, label_ids)
         self.assertNotIn(other_clip.url, website_urls)
         self.assertIn(str(own_clip.id), clip_ids)
 

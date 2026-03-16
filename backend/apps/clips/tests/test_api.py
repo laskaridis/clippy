@@ -462,7 +462,7 @@ class QuickSearchApiTests(TestCase):
 
         for label_hit in payload["hits"]["labels"]:
             self.assertIn("score", label_hit)
-            self.assertEqual(label_hit["label_uuid"], str(label.uuid))
+            self.assertEqual(label_hit["label_slug"], label.slug)
 
     def test_quick_search_url_routing(self) -> None:
         match = resolve("/api/clips/quick-search/")

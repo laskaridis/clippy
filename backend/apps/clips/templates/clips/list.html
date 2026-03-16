@@ -8,6 +8,13 @@
 {% endblock %}
 
 {% block content %}
+  <div
+    class="mb-3"
+    data-label-filter-sidebar-mount
+    data-selected-labels="{{ selected_label_slugs|join:',' }}"
+    data-panel-state="{{ panel_state }}"
+  ></div>
+  <div class="d-none" data-label-filter-drawer-mount></div>
 
   <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
@@ -38,15 +45,13 @@
     </div>
   </section>
 
-  {% if active_label_uuid or active_url_filter %}
+  {% if selected_labels or active_url_filter %}
     <section class="mb-4" aria-label="Active filters">
       <div class="d-flex flex-wrap align-items-center gap-2">
         <span class="small text-secondary">Active filters:</span>
-        {% if active_label_uuid %}
-          <span class="badge text-bg-primary">
-            Label: {{ active_label_name|default:active_label_uuid }}
-          </span>
-        {% endif %}
+        {% for selected_label in selected_labels %}
+          <span class="badge text-bg-primary">Label: {{ selected_label.name }}</span>
+        {% endfor %}
         {% if active_url_filter %}
           <span class="badge text-bg-primary">URL: {{ active_url_filter }}</span>
         {% endif %}
@@ -95,7 +100,7 @@
                       {% for label in labels %}
                       <a
                         class="badge rounded-pill text-bg-primary text-decoration-none"
-                        href="{% url 'clips_web:list' %}?label={{ label.uuid }}"
+                        href="{% url 'clips_web:list' %}?label={{ label.slug }}"
                       >
                         {{ label.name }}
                       </a>

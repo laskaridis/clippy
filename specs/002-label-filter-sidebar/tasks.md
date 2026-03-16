@@ -19,9 +19,9 @@
 
 **Purpose**: Create shared scaffolding for label-filter feature work.
 
-- [ ] T001 Create filter-state helper module scaffold in backend/apps/clips/filtering.py
-- [ ] T002 [P] Add reusable label-filter test fixture helpers in backend/apps/clips/tests/helpers.py
-- [ ] T003 [P] Add filter sidebar/drawer mount-point containers and data attributes in backend/apps/clips/templates/clips/list.html
+- [x] T001 Create filter-state helper module scaffold in backend/apps/clips/filtering.py
+- [x] T002 [P] Add reusable label-filter test fixture helpers in backend/apps/clips/tests/helpers.py
+- [x] T003 [P] Add filter sidebar/drawer mount-point containers and data attributes in backend/apps/clips/templates/clips/list.html
 
 ---
 
@@ -31,13 +31,13 @@
 
 **⚠️ CRITICAL**: No user story implementation starts before this phase is complete.
 
-- [ ] T004 Add Label.slug field and per-user slug uniqueness constraint in backend/apps/clips/models.py
-- [ ] T005 Create slug backfill and constraint migration in backend/apps/clips/migrations/
-- [ ] T006 [P] Expose canonical label slug in API serializers and command serializers in backend/apps/clips/api/serializers.py
-- [ ] T007 [P] Implement repeated-label and panel-state query parsing utilities in backend/apps/clips/filtering.py
-- [ ] T008 Implement shared queryset builders for AND label filtering and contextual counts in backend/apps/clips/services.py
-- [ ] T009 [P] Add model regression tests for slug generation, uniqueness, and ownership invariants in backend/apps/clips/tests/test_models.py
-- [ ] T010 Wire slug-safe label creation/update behavior across web and API entry points in backend/apps/clips/views.py and backend/apps/clips/api/serializers.py
+- [x] T004 Add Label.slug field and per-user slug uniqueness constraint in backend/apps/clips/models.py
+- [x] T005 Create slug backfill and constraint migration in backend/apps/clips/migrations/
+- [x] T006 [P] Expose canonical label slug in API serializers and command serializers in backend/apps/clips/api/serializers.py
+- [x] T007 [P] Implement repeated-label and panel-state query parsing utilities in backend/apps/clips/filtering.py
+- [x] T008 Implement shared queryset builders for AND label filtering and contextual counts in backend/apps/clips/services.py
+- [x] T009 [P] Add model regression tests for slug generation, uniqueness, and ownership invariants in backend/apps/clips/tests/test_models.py
+- [x] T010 Wire slug-safe label creation/update behavior across web and API entry points in backend/apps/clips/views.py and backend/apps/clips/api/serializers.py
 
 **Checkpoint**: Slug-backed filtering primitives are stable and all user stories can begin.
 

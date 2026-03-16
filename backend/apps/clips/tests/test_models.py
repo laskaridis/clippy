@@ -42,6 +42,36 @@ class LabelModelTests(TestCase):
         self.assertIsNotNone(second.uuid)
         self.assertNotEqual(first.uuid, second.uuid)
 
+    def test_label_slug_is_generated_from_name(self) -> None:
+        label = Label.objects.create(user=self.user, name="Deep Work")
+        self.assertEqual(label.slug, "deep-work")
+
+    def test_label_slug_is_unique_per_user(self) -> None:
+        first = Label.objects.create(user=self.user, name="Research")
+        second = Label.objects.create(user=self.user, name="research")
+
+        self.assertEqual(first.slug, "research")
+        self.assertEqual(second.slug, "research-2")
+
+    def test_same_slug_allowed_for_different_users(self) -> None:
+        User = get_user_model()
+        other_user = User.objects.create_user(
+            email="other-slug@example.com",
+            username="other-slug@example.com",
+            password="password123",
+        )
+        first = Label.objects.create(user=self.user, name="Research")
+        second = Label.objects.create(user=other_user, name="Research")
+
+        self.assertEqual(first.slug, second.slug)
+
+    def test_slug_regenerated_when_name_changes(self) -> None:
+        label = Label.objects.create(user=self.user, name="Research")
+        label.name = "Updated Research"
+        label.save()
+
+        self.assertEqual(label.slug, "updated-research")
+
 
 class ClipQuickSearchMigrationTests(TestCase):
     def test_postgres_quick_search_support_objects_exist(self) -> None:
