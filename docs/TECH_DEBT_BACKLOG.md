@@ -37,3 +37,11 @@ Keep entries actionable and current.
 - Created: 2026-02-28
 - Related: Clip model index review (models.Index(fields=["user", "domain"]))
 - Next actions: Validate with query plans/usage telemetry, then create migration to drop `clips_clip_user_id_680d9b_idx` and remove the corresponding model index declaration.
+
+### TD-003: Decide UUID-to-slug compatibility window for label filters
+- Scope: backend
+- Impact: Label filtering now relies on slugs; without a transitional UUID fallback, legacy `?label=<uuid>` links will not resolve if such links ever exist after release.
+- Status: Open
+- Created: 2026-03-16
+- Related: PR #54, review thread `discussion_r2939153392`
+- Next actions: Before first public release that includes slug filtering, decide whether to add a UUID fallback path in label resolution or explicitly reject invalid legacy filters with a visible user message.

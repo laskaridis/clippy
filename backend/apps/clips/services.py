@@ -35,7 +35,21 @@ class QuickSearchResult(TypedDict):
     hits: QuickSearchGroups
 
 
+def parse_label_slugs(values: list[str]) -> list[str]:
+    """Normalize incoming label query values into unique, stable slug tokens."""
+    normalized: list[str] = []
+    seen: set[str] = set()
+    for raw_value in values:
+        value = (raw_value or "").strip().lower()
+        if not value or value in seen:
+            continue
+        seen.add(value)
+        normalized.append(value)
+    return normalized
+
+
 def resolve_selected_labels(*, user, selected_label_slugs: list[str]) -> list[Label]:
+    """Resolve selected labels by slug preserving input order and valid ownership."""
     if not selected_label_slugs:
         return []
     labels = Label.objects.filter(user=user, slug__in=selected_label_slugs).only(

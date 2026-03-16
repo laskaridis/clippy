@@ -1,0 +1,126 @@
+plan_id: pr-54-follow-up
+pr:
+  number: 54
+  title: "Implement label slug filtering foundation for clip filters"
+  url: "https://github.com/laskaridis/clippy/pull/54"
+
+notes:
+  - "Created from latest PR review comments fetched on 2026-03-16."
+  - "Task statuses are intentionally set to todo; this artifact scopes follow-up work only."
+
+tasks:
+  - id: keep-uuid-compatibility-deferred
+    status: deferred
+    priority: P3
+    title: Keep UUID label-filter compatibility fallback out of scope for this PR
+    files:
+      - backend/apps/clips/services.py
+      - docs/plans/label-filter-sidebar/pr-54-follow-up-tasks.yaml
+    deliverable: Documented rationale for not implementing UUID fallback during pre-release phase.
+    source_review_comment_url: "https://github.com/laskaridis/clippy/pull/54#discussion_r2939153392"
+    source_review_followup_url: "https://github.com/laskaridis/clippy/pull/54#discussion_r2939972248"
+    source_review_created_at: "2026-03-16T12:10:33Z"
+    resolution_notes:
+      - "Owner explicitly requested no fix because the system has not been released yet."
+    depends_on: []
+
+  - id: align-label-rename-semantics
+    status: done
+    priority: P1
+    title: Align slug behavior with product semantics that a renamed label is a different label
+    files:
+      - backend/apps/clips/models.py
+      - backend/apps/clips/tests/test_models.py
+      - backend/apps/clips/services.py
+    deliverable: Label rename behavior is explicit in code and tests so slug changes are intentional and documented.
+    source_review_comment_url: "https://github.com/laskaridis/clippy/pull/54#discussion_r2939982850"
+    source_review_created_at: "2026-03-16T12:12:29Z"
+    depends_on: []
+
+  - id: document-filtering-helpers
+    status: done
+    priority: P1
+    title: Add intent-focused documentation for filtering helper functions
+    files:
+      - backend/apps/clips/filtering.py
+    deliverable: Each helper has concise docstrings describing inputs, outputs, assumptions, and side effects.
+    source_review_comment_urls:
+      - "https://github.com/laskaridis/clippy/pull/54#discussion_r2939205128"
+      - "https://github.com/laskaridis/clippy/pull/54#discussion_r2939206041"
+      - "https://github.com/laskaridis/clippy/pull/54#discussion_r2939206684"
+    source_review_created_at: "2026-03-16T09:41:03Z"
+    depends_on: []
+
+  - id: move-filtering-helpers-near-usage
+    status: done
+    priority: P2
+    title: Move filtering helper methods next to the call sites that use them
+    files:
+      - backend/apps/clips/filtering.py
+    deliverable: File layout follows top-down flow, with helper functions defined close to usage for readability.
+    source_review_comment_urls:
+      - "https://github.com/laskaridis/clippy/pull/54#discussion_r2939992971"
+      - "https://github.com/laskaridis/clippy/pull/54#discussion_r2939993242"
+      - "https://github.com/laskaridis/clippy/pull/54#discussion_r2939993500"
+    source_review_created_at: "2026-03-16T12:14:43Z"
+    depends_on:
+      - document-filtering-helpers
+
+  - id: split-model-tests-by-model
+    status: done
+    priority: P1
+    title: Split model tests into per-model modules under tests/models
+    files:
+      - backend/apps/clips/tests/test_models.py
+      - backend/apps/clips/tests/models/
+    deliverable: Model tests are organized as one file per model under tests/models/test_*.py.
+    source_review_comment_url: "https://github.com/laskaridis/clippy/pull/54#discussion_r2940005774"
+    source_review_created_at: "2026-03-16T12:17:23Z"
+    depends_on: []
+
+  - id: split-api-tests-by-resource
+    status: done
+    priority: P1
+    title: Split API tests into resource-focused modules under tests/api
+    files:
+      - backend/apps/clips/tests/test_api.py
+      - backend/apps/clips/tests/api/
+    deliverable: API tests are organized under tests/api with separate files per API resource.
+    source_review_comment_url: "https://github.com/laskaridis/clippy/pull/54#discussion_r2940014378"
+    source_review_created_at: "2026-03-16T12:19:14Z"
+    depends_on: []
+
+  - id: split-view-tests-by-view
+    status: done
+    priority: P1
+    title: Split view tests into view-specific modules under tests/views
+    files:
+      - backend/apps/clips/tests/test_views.py
+      - backend/apps/clips/tests/views/
+    deliverable: View tests are organized as one file per view under tests/views.
+    source_review_comment_url: "https://github.com/laskaridis/clippy/pull/54#discussion_r2940017931"
+    source_review_created_at: "2026-03-16T12:20:01Z"
+    depends_on: []
+
+  - id: validate-and-resolve-pr54-feedback
+    status: done
+    priority: P1
+    title: Implement selected follow-ups, run checks, and resolve PR review threads
+    files:
+      - backend/apps/clips/filtering.py
+      - backend/apps/clips/models.py
+      - backend/apps/clips/services.py
+      - backend/apps/clips/tests/
+      - docs/plans/label-filter-sidebar/pr-54-follow-up-tasks.yaml
+    deliverable: Relevant checks pass and each PR thread has a linked fix or explicit defer rationale.
+    validation_notes:
+      - "make backend-test"
+      - "make backend-lint"
+      - "make backend-typecheck"
+      - "make backend-format"
+    depends_on:
+      - align-label-rename-semantics
+      - move-filtering-helpers-near-usage
+      - split-model-tests-by-model
+      - split-api-tests-by-resource
+      - split-view-tests-by-view

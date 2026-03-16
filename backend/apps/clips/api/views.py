@@ -14,9 +14,12 @@ from apps.clips.api.serializers import (
     LabelUpdateCommandSerializer,
     QuickSearchQuerySerializer,
 )
-from apps.clips.filtering import parse_label_slugs
-from apps.clips.services import apply_label_and_filter, resolve_selected_labels
-from apps.clips.services import quick_search
+from apps.clips.services import (
+    apply_label_and_filter,
+    parse_label_slugs,
+    quick_search,
+    resolve_selected_labels,
+)
 from webclippings.authentication import CsrfExemptSessionAuthentication
 
 
