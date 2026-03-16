@@ -3,9 +3,22 @@ from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect
 from django.views.generic import DetailView, ListView, TemplateView
 
-from apps.clips.filtering import parse_label_slugs, parse_panel_state
 from apps.clips.models import Clip, Label
-from apps.clips.services import apply_label_and_filter, resolve_selected_labels
+from apps.clips.services import (
+    apply_label_and_filter,
+    parse_label_slugs,
+    resolve_selected_labels,
+)
+
+
+PANEL_STATES = {"expanded", "collapsed", "open", "closed"}
+
+
+def _parse_panel_state(raw_value: str | None) -> str:
+    value = (raw_value or "").strip().lower()
+    if value in PANEL_STATES:
+        return value
+    return "collapsed"
 
 
 class ClipListView(LoginRequiredMixin, ListView):
@@ -40,7 +53,7 @@ class ClipListView(LoginRequiredMixin, ListView):
         context["active_url_filter"] = self.request.GET.get("url") or ""
         context["selected_label_slugs"] = [label.slug for label in selected_labels]
         context["selected_labels"] = selected_labels
-        context["panel_state"] = parse_panel_state(self.request.GET.get("panel"))
+        context["panel_state"] = _parse_panel_state(self.request.GET.get("panel"))
         return context
 
 

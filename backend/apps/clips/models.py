@@ -50,6 +50,8 @@ class Label(models.Model):
         return candidate
 
     def save(self, *args, **kwargs):
+        # Product semantics treat a label rename as a new identity for filters,
+        # so slug values intentionally track the current label name.
         should_regenerate_slug = not self.slug
         if self.pk:
             previous_name = (
