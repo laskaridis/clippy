@@ -79,6 +79,13 @@
       <div class="d-flex flex-wrap align-items-center gap-2">
         <span class="small text-secondary">Active URL filter:</span>
         <span class="badge text-bg-primary">{{ active_url_filter }}</span>
+        <a
+          class="btn btn-outline-secondary btn-sm"
+          href="{% url 'clips_web:list' %}{{ clear_url_filter_query }}"
+          data-url-filter-clear
+        >
+          Clear URL filter
+        </a>
       </div>
     </section>
   {% endif %}

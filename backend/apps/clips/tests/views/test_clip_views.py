@@ -323,6 +323,25 @@ class ClipHtmlViewsTests(TestCase):
             html=False,
         )
 
+    def test_list_clear_url_filter_link_removes_only_url_param(self) -> None:
+        label = Label.objects.create(user=self.user, name="research")
+
+        self.client.force_login(self.user)
+        response = self.client.get(
+            f"{reverse('clips_web:list')}?url=https%3A%2F%2Fexample.com%2Fone&panel=expanded&label={label.slug}"
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            response.context["clear_url_filter_query"],
+            f"?panel=expanded&label={label.slug}",
+        )
+        self.assertContains(
+            response,
+            f'href="{reverse("clips_web:list")}?panel=expanded&amp;label={label.slug}"',
+            html=False,
+        )
+
     def test_list_renders_filtered_empty_state_when_labels_have_no_results(
         self,
     ) -> None:
