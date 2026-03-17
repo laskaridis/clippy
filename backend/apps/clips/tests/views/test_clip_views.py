@@ -303,18 +303,18 @@ class ClipHtmlViewsTests(TestCase):
             html=False,
         )
 
-    def test_list_clear_all_labels_link_removes_only_label_params(self) -> None:
+    def test_list_clear_all_link_removes_label_and_url_params(self) -> None:
         first_label = Label.objects.create(user=self.user, name="research")
         second_label = Label.objects.create(user=self.user, name="personal")
 
         self.client.force_login(self.user)
         response = self.client.get(
-            f"{reverse('clips_web:list')}?panel=expanded&group=domain&group=source&label={first_label.slug}&label={second_label.slug}"
+            f"{reverse('clips_web:list')}?panel=expanded&group=domain&group=source&url=https%3A%2F%2Fexample.com%2Fone&label={first_label.slug}&label={second_label.slug}"
         )
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(
-            response.context["clear_label_filters_query"],
+            response.context["clear_all_filters_query"],
             "?panel=expanded&group=domain&group=source",
         )
         self.assertContains(
@@ -323,24 +323,29 @@ class ClipHtmlViewsTests(TestCase):
             html=False,
         )
 
-    def test_list_clear_url_filter_link_removes_only_url_param(self) -> None:
-        label = Label.objects.create(user=self.user, name="research")
-
+    def test_list_url_filter_section_renders_clear_all_when_no_labels_selected(
+        self,
+    ) -> None:
         self.client.force_login(self.user)
         response = self.client.get(
-            f"{reverse('clips_web:list')}?url=https%3A%2F%2Fexample.com%2Fone&panel=expanded&label={label.slug}"
+            f"{reverse('clips_web:list')}?url=https%3A%2F%2Fexample.com%2Fone&panel=expanded"
         )
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(
-            response.context["clear_url_filter_query"],
-            f"?panel=expanded&label={label.slug}",
+            response.context["clear_all_filters_query"],
+            "?panel=expanded",
         )
         self.assertContains(
             response,
-            f'href="{reverse("clips_web:list")}?panel=expanded&amp;label={label.slug}"',
+            "Active URL filter:",
+        )
+        self.assertContains(
+            response,
+            f'href="{reverse("clips_web:list")}?panel=expanded"',
             html=False,
         )
+        self.assertContains(response, "Clear all")
 
     def test_list_renders_filtered_empty_state_when_labels_have_no_results(
         self,
@@ -363,7 +368,7 @@ class ClipHtmlViewsTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "No clips match the selected labels")
-        self.assertContains(response, "Clear label filters")
+        self.assertContains(response, "Clear all")
         self.assertEqual(response.context["selected_labels_count"], 1)
         self.assertEqual(
             response.context["selected_label_metadata"],

@@ -2,8 +2,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.views.generic import ListView
 
 from apps.clips.filtering import (
-    clear_label_filters_query,
-    clear_url_filter_query,
+    clear_all_filters_query,
     parse_label_slugs,
     remove_label_query,
 )
@@ -58,10 +57,7 @@ class ClipListView(LoginRequiredMixin, ListView):
         context["selected_labels"] = selected_labels
         context["selected_labels_count"] = len(selected_labels)
         context["current_query_params"] = self.request.GET
-        context["clear_label_filters_query"] = clear_label_filters_query(
-            query_params=self.request.GET
-        )
-        context["clear_url_filter_query"] = clear_url_filter_query(
+        context["clear_all_filters_query"] = clear_all_filters_query(
             query_params=self.request.GET
         )
         context["selected_label_metadata"] = [

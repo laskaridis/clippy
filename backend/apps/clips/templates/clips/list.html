@@ -66,7 +66,7 @@
         {% endfor %}
         <a
           class="btn btn-outline-secondary btn-sm"
-          href="{% url 'clips_web:list' %}{{ clear_label_filters_query }}"
+          href="{% url 'clips_web:list' %}{{ clear_all_filters_query }}"
           data-label-clear-all
         >
           Clear all
@@ -79,13 +79,15 @@
       <div class="d-flex flex-wrap align-items-center gap-2">
         <span class="small text-secondary">Active URL filter:</span>
         <span class="badge text-bg-primary">{{ active_url_filter }}</span>
-        <a
-          class="btn btn-outline-secondary btn-sm"
-          href="{% url 'clips_web:list' %}{{ clear_url_filter_query }}"
-          data-url-filter-clear
-        >
-          Clear URL filter
-        </a>
+        {% if not selected_labels %}
+          <a
+            class="btn btn-outline-secondary btn-sm"
+            href="{% url 'clips_web:list' %}{{ clear_all_filters_query }}"
+            data-label-clear-all
+          >
+            Clear all
+          </a>
+        {% endif %}
       </div>
     </section>
   {% endif %}
@@ -158,10 +160,10 @@
         <p class="mb-0">
           <a
             class="btn btn-outline-secondary btn-sm"
-            href="{% url 'clips_web:list' %}{{ clear_label_filters_query }}"
+            href="{% url 'clips_web:list' %}{{ clear_all_filters_query }}"
             data-label-clear-all
           >
-            Clear label filters
+            Clear all
           </a>
         </p>
       {% else %}
