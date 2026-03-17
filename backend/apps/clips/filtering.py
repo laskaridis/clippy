@@ -92,16 +92,16 @@ def clear_label_filters_query(*, query_params: QueryDict) -> str:
     return _build_query(query_params=query_params, selected_label_slugs=[])
 
 
-def clear_url_filter_query(*, query_params: QueryDict) -> str:
-    """Build the next query string with the URL filter removed.
+def clear_all_filters_query(*, query_params: QueryDict) -> str:
+    """Build the next query string with label and URL filters removed.
 
-    Preserve every other query parameter (including label selections and panel
-    state) so users can clear just the URL constraint without losing the rest
-    of their current filtering context.
+    Preserve non-filter query parameters (for example panel state) while
+    dropping filter-specific parameters so users can reset to an unfiltered
+    clips list view in a single action.
     """
     pairs: list[tuple[str, str]] = []
     for key, values in query_params.lists():
-        if key == "url":
+        if key in {"label", "url"}:
             continue
         for value in values:
             pairs.append((key, value))
