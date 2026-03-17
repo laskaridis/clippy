@@ -19,7 +19,7 @@ def resolve_selected_labels(*, user, selected_label_slugs: list[str]) -> list[La
     if not selected_label_slugs:
         return []
     labels = Label.objects.filter(user=user, slug__in=selected_label_slugs).only(
-        "id", "name", "slug"
+        "id", "name", "slug", "color"
     )
     labels_by_slug: dict[str, Label] = {label.slug: label for label in labels}
     return [
