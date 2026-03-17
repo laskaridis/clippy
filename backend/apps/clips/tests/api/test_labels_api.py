@@ -42,10 +42,12 @@ class LabelApiTests(TestCase):
         force_authenticate(request, user=user or self.user)
         return request
 
-    def test_list_labels_returns_only_current_user_labels(self) -> None:
-        Label.objects.create(user=self.user, name="research")
-        Label.objects.create(user=self.user, name="personal")
-        Label.objects.create(user=self.other_user, name="other-user-label")
+    def test_list_labels_returns_flat_catalog_for_current_user(self) -> None:
+        research = Label.objects.create(
+            user=self.user, name="Research", color="#ff0000"
+        )
+        Label.objects.create(user=self.user, name="Personal")
+        Label.objects.create(user=self.other_user, name="Other User Label")
 
         view = LabelListCreateView.as_view()
         request = self._auth_get("/api/labels/")
@@ -53,8 +55,23 @@ class LabelApiTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(response.data), 2)
-        names = {item["name"] for item in response.data}
-        self.assertEqual(names, {"research", "personal"})
+        self.assertEqual(
+            response.data,
+            [
+                {"name": "Personal", "slug": "personal", "color": None},
+                {"name": "Research", "slug": research.slug, "color": "#ff0000"},
+            ],
+        )
+
+    def test_list_labels_ignores_legacy_filter_params(self) -> None:
+        Label.objects.create(user=self.user, name="Research")
+        Label.objects.create(user=self.user, name="Personal")
+        view = LabelListCreateView.as_view()
+        request = self._auth_get("/api/labels/?label=research&limit=1&expanded=true")
+        response = view(request)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.data), 2)
 
     def test_create_label_creates_label_for_current_user(self) -> None:
         payload = {

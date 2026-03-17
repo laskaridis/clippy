@@ -10,6 +10,7 @@ from apps.clips.filtering import parse_label_slugs
 from apps.clips.api.serializers import (
     ClipSerializer,
     CreateClipCommandSerializer,
+    LabelCatalogItemSerializer,
     LabelCreateCommandSerializer,
     LabelSerializer,
     LabelUpdateCommandSerializer,
@@ -85,6 +86,15 @@ class LabelListCreateView(generics.ListCreateAPIView):
         if self.request.method == "POST":
             return LabelCreateCommandSerializer
         return LabelSerializer
+
+    def list(self, request, *args, **kwargs):
+        labels = (
+            Label.objects.filter(user=request.user)
+            .only("name", "slug", "color")
+            .order_by("name")
+        )
+        response_serializer = LabelCatalogItemSerializer(labels, many=True)
+        return Response(response_serializer.data, status=status.HTTP_200_OK)
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)

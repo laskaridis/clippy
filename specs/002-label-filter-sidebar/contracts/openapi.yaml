@@ -95,11 +95,12 @@ paths:
 
   /api/labels/:
     get:
-      summary: List labels with contextual counts
-      operationId: listLabelFilters
+      summary: List current user's labels
+      operationId: listLabelsCatalog
       description: |
-        Returns labels ordered with selected labels first, then remaining labels
-        alphabetically, including contextual counts under active filters.
+        Returns a full, selection-agnostic label catalog for the current user.
+        The response is a flat list intended for client-side ordering/searching.
+        Legacy query parameters (`label`, `limit`, `expanded`) are accepted but ignored.
       parameters:
         - in: query
           name: label
@@ -110,14 +111,7 @@ paths:
             type: array
             items:
               type: string
-          description: Repeated selected label slugs used for contextual counts.
-        - in: query
-          name: q
-          required: false
-          schema:
-            type: string
-            maxLength: 100
-          description: Case-insensitive label name search term.
+          description: Legacy parameter; ignored.
         - in: query
           name: limit
           required: false
@@ -126,21 +120,23 @@ paths:
             minimum: 1
             maximum: 200
             default: 10
-          description: Default visible-label limit before Show more.
+          description: Legacy parameter; ignored.
         - in: query
           name: expanded
           required: false
           schema:
             type: boolean
             default: false
-          description: Whether to return labels beyond the default visible limit.
+          description: Legacy parameter; ignored.
       responses:
         "200":
-          description: Label filter payload
+          description: Full label catalog
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/LabelFilterListResponse"
+                type: array
+                items:
+                  $ref: "#/components/schemas/LabelCatalogItem"
         "401":
           description: Authentication required
 
@@ -175,37 +171,14 @@ components:
           type: string
       required: [name, slug]
 
-    LabelFilter:
+    LabelCatalogItem:
       type: object
       properties:
         name:
           type: string
         slug:
           type: string
-        selected:
-          type: boolean
-        contextual_results_count:
-          type: integer
-          minimum: 0
-      required: [name, slug, selected, contextual_results_count]
-
-    LabelFilterListResponse:
-      type: object
-      properties:
-        selected_labels:
-          type: array
-          items:
-            $ref: "#/components/schemas/LabelFilter"
-        labels:
-          type: array
-          items:
-            $ref: "#/components/schemas/LabelFilter"
-        total_labels:
-          type: integer
-          minimum: 0
-        visible_limit:
-          type: integer
-          minimum: 1
-        has_more:
-          type: boolean
-      required: [selected_labels, labels, total_labels, visible_limit, has_more]
+        color:
+          type: string
+          nullable: true
+      required: [name, slug, color]

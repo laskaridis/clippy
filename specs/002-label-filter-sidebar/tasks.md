@@ -100,17 +100,17 @@
 
 ### Tests for User Story 3
 
-- [ ] T027 [P] [US3] Add view tests for selected-first ordering, alphabetical remainder, and default visible-limit behavior in backend/apps/clips/tests/test_views.py
-- [ ] T028 [P] [US3] Add API tests for /api/labels contextual counts, q filtering, limit, and expanded semantics in backend/apps/clips/tests/test_api.py
-- [ ] T029 [P] [US3] Add regression tests for panel query-state persistence (expanded/collapsed/open/closed) in backend/apps/clips/tests/test_views.py
+- [x] T027 [P] [US3] Add view tests for selected-first ordering, alphabetical remainder, and default visible-limit behavior in backend/apps/clips/tests/test_views.py
+- [x] T028 [P] [US3] Add API tests for `/api/labels` flat catalog response (`name`, `slug`, `color`) and ignored legacy params (`label`, `limit`, `expanded`) in backend/apps/clips/tests/test_api.py
+- [x] T029 [P] [US3] Add regression tests for panel query-state persistence (expanded/collapsed/open/closed) in backend/apps/clips/tests/test_views.py
 - [ ] T030 [P] [US3] Add template/accessibility assertions mapped to the Accessibility Verification Checklist (keyboard flow, focus return, accessible naming/state, truncation semantics, and no-horizontal-scroll) in backend/apps/clips/tests/test_views.py
 - [ ] T043 [P] [US3] Add tests verifying the small-screen Filters trigger displays selected-label count and updates after select, de-select, and Clear all in backend/apps/clips/tests/test_views.py
 - [ ] T045 [P] [US3] Add accessibility tests ensuring truncated drawer labels and selected pills expose full label text to assistive technologies in backend/apps/clips/tests/test_views.py
 
 ### Implementation for User Story 3
 
-- [ ] T031 [US3] Implement label list query pipeline with selected-first sorting, contextual counts, and search filtering in backend/apps/clips/services.py
-- [ ] T032 [US3] Extend /api/labels response payload to match contract fields (selected_labels, labels, total_labels, visible_limit, has_more) in backend/apps/clips/api/views.py and backend/apps/clips/api/serializers.py
+- [x] T031 [US3] Implement web-only label dataset pipeline (flat labels + color + contextual counts), with selection/ordering handled in UI, in backend/apps/clips/services.py
+- [x] T032 [US3] Simplify `/api/labels` to a selection-agnostic flat catalog response (`name`, `slug`, `color`) in backend/apps/clips/api/views.py and backend/apps/clips/api/serializers.py
 - [ ] T033 [US3] Add desktop sidebar collapse/expand controls and panel-state wiring in backend/apps/clips/templates/clips/list.html
 - [ ] T034 [US3] Add small-screen filters trigger, off-canvas drawer, drawer close actions, and drawer clear-all action in backend/apps/clips/templates/clips/list.html
 - [ ] T044 [US3] Render and synchronize selected-label count in the small-screen Filters trigger in backend/apps/clips/templates/clips/list.html and backend/apps/clips/static/clips/js/list.js
@@ -188,7 +188,7 @@
 ## Parallel Example: User Story 3
 
 - Task T027 [P] [US3] Add view tests for selected-first ordering, alphabetical remainder, and default visible-limit behavior in backend/apps/clips/tests/test_views.py
-- Task T028 [P] [US3] Add API tests for /api/labels contextual counts, q filtering, limit, and expanded semantics in backend/apps/clips/tests/test_api.py
+- Task T028 [P] [US3] Add API tests for `/api/labels` flat catalog response (`name`, `slug`, `color`) and ignored legacy params (`label`, `limit`, `expanded`) in backend/apps/clips/tests/test_api.py
 - Task T029 [P] [US3] Add regression tests for panel query-state persistence (expanded/collapsed/open/closed) in backend/apps/clips/tests/test_views.py
 - Task T030 [P] [US3] Add template/accessibility assertions mapped to the Accessibility Verification Checklist (keyboard flow, focus return, accessible naming/state, truncation semantics, and no-horizontal-scroll) in backend/apps/clips/tests/test_views.py
 - Task T043 [P] [US3] Add tests verifying the small-screen Filters trigger displays selected-label count and updates after select, de-select, and Clear all in backend/apps/clips/tests/test_views.py

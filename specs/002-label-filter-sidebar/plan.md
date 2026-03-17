@@ -9,7 +9,7 @@
 
 Deliver a fully accessible label-filtering experience on the clips list page with multi-select AND matching, repeated `label=<slug>` query-string persistence, selected-label pills with individual removal and clear-all actions, and responsive filter controls that switch from a collapsible left sidebar to an off-canvas drawer at viewport widths of 1024px and below.
 
-The implementation keeps the current modular-monolith architecture and extends the existing clips web interface using server-rendered Django templates plus focused vanilla JavaScript for interaction behavior (drawer open/close, focus return, live label list search filtering, and query-string updates).
+The implementation keeps the current modular-monolith architecture and extends the existing clips web interface using server-rendered Django templates plus focused vanilla JavaScript for interaction behavior (drawer open/close, focus return, client-side label list search filtering from the initial payload, and query-string updates).
 
 ## Technical Context
 
