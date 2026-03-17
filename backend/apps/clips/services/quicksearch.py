@@ -3,11 +3,6 @@ from __future__ import annotations
 from typing import Any, TypedDict
 from urllib.parse import quote
 
-from django.core.exceptions import ValidationError
-from django.db.models import Count, F, FloatField, Max, Q, QuerySet, TextField, Value
-from django.db.models.expressions import ExpressionWrapper
-from django.db.models.functions import Coalesce, Greatest, Left, NullIf
-
 from django.contrib.postgres.search import (
     SearchHeadline,
     SearchQuery,
@@ -15,6 +10,10 @@ from django.contrib.postgres.search import (
     SearchVector,
     TrigramSimilarity,
 )
+from django.core.exceptions import ValidationError
+from django.db.models import Count, F, FloatField, Max, Q, TextField, Value
+from django.db.models.expressions import ExpressionWrapper
+from django.db.models.functions import Coalesce, Greatest, Left, NullIf
 
 from apps.clips.models import Clip, Label
 
@@ -33,43 +32,6 @@ class QuickSearchResult(TypedDict):
     query: str
     total: int
     hits: QuickSearchGroups
-
-
-def resolve_selected_labels(*, user, selected_label_slugs: list[str]) -> list[Label]:
-    """Resolve selected labels by slug preserving input order and valid ownership."""
-    if not selected_label_slugs:
-        return []
-    labels = Label.objects.filter(user=user, slug__in=selected_label_slugs).only(
-        "id", "name", "slug"
-    )
-    labels_by_slug = {label.slug: label for label in labels}
-    return [
-        labels_by_slug[slug] for slug in selected_label_slugs if slug in labels_by_slug
-    ]
-
-
-def apply_label_and_filter(
-    *, queryset: QuerySet[Clip], labels: list[Label]
-) -> QuerySet[Clip]:
-    for label in labels:
-        queryset = queryset.filter(labels__id=label.id)
-    return queryset.distinct()
-
-
-def annotate_contextual_label_counts(
-    *, user, filtered_clips_queryset: QuerySet[Clip]
-) -> QuerySet[Label]:
-    return (
-        Label.objects.filter(user=user)
-        .annotate(
-            contextual_results_count=Count(
-                "clips",
-                filter=Q(clips__id__in=filtered_clips_queryset.values("id")),
-                distinct=True,
-            )
-        )
-        .order_by("name")
-    )
 
 
 def quick_search(

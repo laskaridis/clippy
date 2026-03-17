@@ -137,3 +137,9 @@ class QuickSearchQuerySerializer(serializers.Serializer):
     q = serializers.CharField(
         min_length=3, max_length=50, trim_whitespace=False, required=True
     )
+
+
+class LabelCatalogItemSerializer(serializers.Serializer):
+    name = serializers.CharField()
+    slug = serializers.CharField()
+    color = serializers.CharField(allow_blank=True, allow_null=True, required=False)

@@ -348,8 +348,123 @@ class ClipHtmlViewsTests(TestCase):
         self.assertEqual(response.context["selected_labels_count"], 1)
         self.assertEqual(
             response.context["selected_label_metadata"],
-            [{"id": selected_label.id, "name": "research", "slug": "research"}],
+            [
+                {
+                    "id": selected_label.id,
+                    "name": "research",
+                    "slug": "research",
+                    "color": None,
+                }
+            ],
         )
+
+    def test_list_context_exposes_flat_label_filters_dataset_with_counts_and_color(
+        self,
+    ) -> None:
+        selected_label = Label.objects.create(user=self.user, name="Zulu")
+        selected_clip = Clip.objects.create(
+            user=self.user,
+            title="Selected clip",
+            url="https://example.com/selected",
+            domain="example.com",
+            raw_content="Selected clip",
+            normalized_text="selected clip",
+        )
+        selected_clip.labels.add(selected_label)
+
+        for name in [
+            "Alpha",
+            "Beta",
+            "Charlie",
+            "Delta",
+            "Echo",
+            "Foxtrot",
+            "Golf",
+            "Hotel",
+            "India",
+            "Juliet",
+            "Kilo",
+        ]:
+            Label.objects.create(user=self.user, name=name)
+
+        self.client.force_login(self.user)
+        response = self.client.get(
+            f"{reverse('clips_web:list')}?label={selected_label.slug}"
+        )
+
+        self.assertEqual(response.status_code, 200)
+        dataset = response.context["label_filters_dataset"]
+        self.assertEqual(len(dataset), 12)
+        self.assertEqual(
+            [item["name"] for item in dataset],
+            [
+                "Alpha",
+                "Beta",
+                "Charlie",
+                "Delta",
+                "Echo",
+                "Foxtrot",
+                "Golf",
+                "Hotel",
+                "India",
+                "Juliet",
+                "Kilo",
+                "Zulu",
+            ],
+        )
+        self.assertEqual(
+            [item for item in dataset if item["slug"] == selected_label.slug][0][
+                "color"
+            ],
+            None,
+        )
+        self.assertEqual(
+            [item for item in dataset if item["slug"] == selected_label.slug][0][
+                "contextual_results_count"
+            ],
+            1,
+        )
+
+    def test_list_context_dataset_is_alphabetical_independent_of_selected_order(
+        self,
+    ) -> None:
+        first = Label.objects.create(user=self.user, name="Research")
+        second = Label.objects.create(user=self.user, name="Personal")
+        clip = Clip.objects.create(
+            user=self.user,
+            title="Both labels",
+            url="https://example.com/both",
+            domain="example.com",
+            raw_content="Both labels",
+            normalized_text="both labels",
+        )
+        clip.labels.add(first, second)
+
+        self.client.force_login(self.user)
+        response = self.client.get(
+            f"{reverse('clips_web:list')}?label={second.slug}&label={first.slug}"
+        )
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.context["label_filters_dataset"]
+        self.assertEqual(
+            [item["slug"] for item in payload],
+            [second.slug, first.slug],
+        )
+
+    def test_list_panel_state_defaults_and_accepts_supported_values(self) -> None:
+        self.client.force_login(self.user)
+        base_url = reverse("clips_web:list")
+
+        default_response = self.client.get(base_url)
+        self.assertEqual(default_response.context["panel_state"], "collapsed")
+
+        invalid_response = self.client.get(f"{base_url}?panel=invalid")
+        self.assertEqual(invalid_response.context["panel_state"], "collapsed")
+
+        for value in ("expanded", "collapsed", "open", "closed"):
+            response = self.client.get(f"{base_url}?panel={value}")
+            self.assertEqual(response.context["panel_state"], value)
 
     def test_list_filters_by_exact_url_for_current_user(self) -> None:
         matching_url = "https://example.com/path"

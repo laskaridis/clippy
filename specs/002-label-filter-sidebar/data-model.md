@@ -120,30 +120,44 @@ State transitions:
 
 ---
 
-### LabelFilterView (Derived View Model)
+### WebLabelFilterItem (Derived View Model)
 
-Represents each label row rendered in sidebar/drawer.
+Represents each label row rendered in the clips sidebar/drawer.
 
 Key fields:
 - `label_id`
 - `label_name`
 - `label_slug`
-- `is_selected`
+- `label_color` (nullable)
 - `contextual_results_count`
-- `is_visible_in_current_search`
 
 Validation and invariants:
-- Selected labels always sort first.
-- Non-selected labels sort alphabetically by name.
-- Selected labels remain visible even when count is zero.
-- Search filtering is case-insensitive on label name.
+- Selection/order/visibility are owned by web/UI state.
+- Search filtering is case-insensitive on label name and executed client-side.
+
+---
+
+### ApiLabelCatalogItem (API DTO)
+
+Represents each label entry returned by `/api/labels`.
+
+Key fields:
+- `name`
+- `slug`
+- `color` (nullable)
+
+Validation and invariants:
+- Selection-agnostic: no selected-state fields.
+- Count-agnostic: no clip-count or contextual-count fields.
+- Ordered deterministically by label name.
 
 ---
 
 ## Query and Count Semantics
 
 - Clip result set for selected labels uses AND semantics.
-- Contextual counts are computed against the currently active filtered clip set (faceted behavior).
+- Contextual counts are computed only for web filter rendering.
+- `/api/labels` does not return counts.
 - Empty states:
   - No matching labels in search: show no-match labels state.
   - No clips for active filters: show no-results state while preserving selected labels/pills.

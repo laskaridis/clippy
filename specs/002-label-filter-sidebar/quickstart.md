@@ -68,6 +68,9 @@ You can use existing admin tools or fixtures in backend tests for deterministic 
 9. At 1024px and below, open filters via trigger, verify selected count on trigger, and confirm drawer remains open while toggling labels.
 10. Dismiss drawer via backdrop tap, Escape, and Close button; verify filter state remains and focus returns to trigger.
 11. Validate long labels and pills render as one line with ellipsis while full text remains available to assistive tech.
+12. Confirm label search and Show more interactions do not call `/api/labels/` and work from the initial page payload.
+13. Call `/api/labels/` and verify it returns a flat list of all user labels with `name`, `slug`, and `color` only.
+14. Confirm `/api/labels/` returns the same payload when legacy params are present (for example `?label=work&limit=3&expanded=true`).
 
 ---
 

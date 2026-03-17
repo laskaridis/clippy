@@ -21,6 +21,9 @@
 - Q: How should the small-screen filter drawer be dismissed? -> A: Allow dismissal via backdrop tap, Escape key, or explicit Close action.
 - Q: How should long label names render in the drawer list and selected pills? -> A: Truncate both drawer labels and selected pills to a single line with ellipsis.
 - Q: Where should users get a Clear all action for selected labels? -> A: Show Clear all above result pills and inside the small-screen drawer header.
+- Q: Should label-name search be handled by backend API filtering? -> A: No. Search is UI-only against the label dataset loaded at page render.
+- Q: Should `/api/labels` be aware of selected labels? -> A: No. Selection state is web/UI-owned.
+- Q: Should `/api/labels` expose counts? -> A: No. `/api/labels` returns only flat label catalog data.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -117,7 +120,7 @@ As a user with many labels, I want a searchable, collapsible filter sidebar that
 - **FR-011**: Each label in the sidebar MUST display a contextual clip count that updates as active filters change.
 - **FR-012**: The sidebar MUST show only a default fixed number of labels initially and provide a "Show more" control to reveal additional labels.
 - **FR-013**: The sidebar MUST provide a label search input directly above the label list.
-- **FR-014**: As users type in the search input, the label list MUST update to labels whose names match the entered text.
+- **FR-014**: As users type in the search input, the label list MUST update client-side to labels whose names match the entered text.
 - **FR-015**: Selected labels MUST be displayed above the results area as removable pills.
 - **FR-016**: Users MUST be able to remove a selected label by either de-selecting it in the sidebar or using the remove action on its pill.
 - **FR-017**: Any label selection or de-selection action MUST update results, filter-panel state, pills, and query string consistently.
@@ -140,6 +143,8 @@ As a user with many labels, I want a searchable, collapsible filter sidebar that
 - **FR-035**: When one or more labels are selected, the UI MUST expose a Clear all action above selected-label pills in the results area.
 - **FR-036**: On viewport widths of 1024px and below, when one or more labels are selected, the small-screen drawer header MUST expose a Clear all action.
 - **FR-037**: Activating Clear all MUST remove all selected labels, update results and URL query-string label parameters consistently, and MUST NOT auto-close the small-screen drawer.
+- **FR-038**: `/api/labels` MUST return a complete, selection-agnostic flat label catalog for the current user with `name`, `slug`, and `color`.
+- **FR-039**: `/api/labels` MUST ignore legacy query parameters (`label`, `limit`, `expanded`) and return the same complete flat label catalog.
 
 ### Accessibility Verification Checklist
 
@@ -154,8 +159,9 @@ As a user with many labels, I want a searchable, collapsible filter sidebar that
 
 - Multi-label filtering within the label group uses AND matching: a clip is shown only if it has all selected labels.
 - The initial visible label limit is 10 before users choose "Show more".
-- Label search matching is case-insensitive and based on label name text.
+- Label search matching is case-insensitive and based on label name text in the client-rendered label dataset.
 - Label counts are faceted/contextual and reflect the currently active filter state.
+- Label counts are a web filtering concern and are not part of `/api/labels`.
 - Query-string persistence uses canonical label slugs rather than display names.
 - Multiple selected labels in the URL use repeated label parameters rather than comma-separated or JSON-encoded values.
 - Filter-panel visibility state is encoded in the query string and survives reload/share flows.
@@ -177,7 +183,7 @@ As a user with many labels, I want a searchable, collapsible filter sidebar that
 - **Clip**: A saved web clipping item shown in results; each clip can have zero or more labels.
 - **Label**: A user-visible categorization value applied to clips; includes display name and associated clip count.
 - **Label Filter State**: The current set of selected labels represented in both UI controls and query string.
-- **Filter Panel State**: The view state of the filter container across breakpoints, including sidebar collapsed/expanded or drawer closed/open state (query-string persisted), search term, and whether the full label list is expanded.
+- **Filter Panel State**: The view state of the filter container across breakpoints, including sidebar collapsed/expanded or drawer closed/open state (query-string persisted), and whether the full label list is expanded.
 
 ## Success Criteria *(mandatory)*
 
