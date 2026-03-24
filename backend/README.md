@@ -10,7 +10,7 @@ Backend application publishing an API and a web application to manage clippings.
 
 ## Prerequisites
 
-- Python 3.11+
+- Python 3.12+
 - `pip`
 
 ## Install dependencies
@@ -22,7 +22,7 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-## Configure current git environment 
+## Configure current worktree environment
 
 ```bash
 cd backend
@@ -42,9 +42,15 @@ cd backend
 ./scripts/start-server.sh
 ```
 
-Default URL: `http://127.0.0.1:8000`
+Resolved URL is worktree-specific and deterministic (port can fall forward if busy).
+Check the active URL with:
 
-Also ensures that the current environment is confitured (similarly to `--bootstrap-only`)
+```bash
+cd backend
+./scripts/check-server.sh
+```
+
+This also ensures that the current environment is configured (similarly to `--bootstrap-only`).
 
 Stop server:
 
@@ -82,8 +88,8 @@ metadata for the worktree environment:
 cd backend
 cat ./.local/worktree-runtime-<worktree-id>.json
 ```
-Here, <worktree-id> is the SHA1 hash of the worktree root directory
-(also emitted by `--print-json` option)
+Here, `<worktree-id>` is `<worktree-basename>-<sha1-prefix>` derived from the
+worktree root directory path (also emitted by the `--print-json` option).
 
 For full options:
 
@@ -107,11 +113,49 @@ For more options:
 
 ## Tests
 
-Run backend tests:
+Run backend non-E2E tests (default local backend test path):
+
+```bash
+make backend-test-unit
+```
+
+Run backend browser E2E tests (Playwright):
+
+```bash
+make backend-test-e2e
+```
+
+Run all backend checks (tests + lint + typecheck + format check):
+
+```bash
+make backend-verify
+```
+
+## API behavior notes
+
+The authenticated clips list endpoint (`/api/clips/`) supports:
+
+- repeated `label` query parameters (AND semantics across selected labels)
+- `url` query parameter for exact URL filtering
+
+The authenticated quick search endpoint (`/api/clips/quick-search/`) supports:
+
+- required `q` query parameter
+- `q` length between 3 and 50 characters
+- grouped result payload (`clips`, `labels`, `websites`) with top-ranked hits
+
+The label catalog endpoint (`/api/labels/`) returns a flat user-scoped list of:
+
+- `name`
+- `slug`
+- `color`
+
+Filtering/query parameters are ignored for label catalog listing.
+
+For direct script usage without Make targets:
 
 ```bash
 cd backend
-./scripts/bootsrap.sh --bootstrap-only
-source ./scripts/env.sh --setup
-python manage.py test
+./scripts/test.sh
+./scripts/test-e2e.sh
 ```
