@@ -84,6 +84,20 @@
     window.location.assign(nextUrl);
   }
 
+  function navigateToAnchorHref(anchorElement) {
+    if (!anchorElement) {
+      return false;
+    }
+
+    var targetHref = anchorElement.getAttribute("href");
+    if (!targetHref) {
+      return false;
+    }
+
+    window.location.assign(targetHref);
+    return true;
+  }
+
   function setPanelState(panelState) {
     var params = new URLSearchParams(window.location.search);
     var nextSearch = buildSearchPreservingNonPanel(params, panelState);
@@ -345,7 +359,9 @@
       var clearButton = event.target.closest("[data-label-clear-all]");
       if (clearButton) {
         event.preventDefault();
-        mutateLabelQuery("clear");
+        if (!navigateToAnchorHref(clearButton)) {
+          mutateLabelQuery("clear");
+        }
         return;
       }
 

@@ -1,0 +1,29 @@
+plan_id: pr-61-review-comment-tasks-2026-03-24
+pr:
+  number: 61
+  title: "feat(clips): label filter sidebar + extension unit target rename"
+  url: "https://github.com/laskaridis/clippy/pull/61"
+
+notes:
+  - "Verification loop attempt #3: scoped fix implemented for JS clear-all to follow server-rendered anchor href so both label and url filters are cleared while preserving panel."
+  - "Added browser E2E coverage for JS-enabled clear-all from combined label+url filtered state."
+  - "Dropped unrelated local ahead commits from this worktree by resetting to origin/feature/label-filter-sidebar before implementing this review-task fix."
+
+tasks:
+  - id: task-pr61-clear-all-drops-url-filter
+    status: done
+    priority: P1
+    title: "Ensure clear-all UI actions remove both label and URL filters when JS is enabled"
+    files:
+      - backend/apps/clips/static/clips/js/list.js
+      - backend/apps/clips/tests/e2e/test_quick_search_e2e.py
+      - docs/plans/label-filter-sidebar/pr-61-review-comment-tasks-2026-03-24.yaml
+    deliverable: >
+      Clicking a clear-all control with JavaScript enabled must preserve server-intended clear behavior,
+      removing both label and url query parameters while preserving panel state.
+    source_review_comment_urls:
+      - "https://github.com/laskaridis/clippy/pull/61#discussion_r2980795724"
+    depends_on: []
+    implementation_notes:
+      - "Updated list.js clear-all click handling to navigate to the clicked anchor href (server-provided clear_all_filters_query) instead of mutating label-only query state."
+      - "Added E2E test coverage validating JS-enabled clear-all from /clips/?label=...&url=...&panel=expanded lands on /clips/?panel=expanded."

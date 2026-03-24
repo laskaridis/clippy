@@ -1,18 +1,29 @@
 from __future__ import annotations
 
 import time
+import unittest
 from collections.abc import Callable
 from typing import Any
 
 from django.contrib.auth import get_user_model
 from django.contrib.staticfiles.testing import StaticLiveServerTestCase
 from django.test import tag
-from playwright.sync_api import Browser, BrowserContext, Page, sync_playwright
+
+try:
+    from playwright.sync_api import Browser, BrowserContext, Page, sync_playwright
+
+    PLAYWRIGHT_AVAILABLE = True
+except ModuleNotFoundError:
+    PLAYWRIGHT_AVAILABLE = False
 
 from apps.clips.models import Clip, Label
 
 
 @tag("e2e")
+@unittest.skipUnless(
+    PLAYWRIGHT_AVAILABLE,
+    "Playwright is not installed. Install backend dev dependencies to run e2e tests.",
+)
 class QuickSearchE2ETests(StaticLiveServerTestCase):
     def setUp(self) -> None:
         user_model = get_user_model()
@@ -124,6 +135,56 @@ class QuickSearchE2ETests(StaticLiveServerTestCase):
                 results.locator("text=orionlabel-fixture").first.wait_for(
                     state="visible",
                     timeout=10_000,
+                )
+            finally:
+                context.close()
+                browser.close()
+
+    def test_clear_all_clears_label_and_url_filters_with_javascript_enabled(
+        self,
+    ) -> None:
+        with sync_playwright() as playwright:
+            try:
+                browser: Browser = playwright.chromium.launch(
+                    channel="chromium",
+                    headless=True,
+                )
+            except Exception:
+                browser = playwright.chromium.launch(headless=True)
+            context: BrowserContext = browser.new_context()
+            page: Page = context.new_page()
+            try:
+                self._login(page)
+                page.wait_for_function(
+                    "() => typeof window.ClipsListLabelFilters !== 'undefined'",
+                    timeout=10_000,
+                )
+
+                page.goto(
+                    (
+                        f"{self.live_server_url}/clips/"
+                        "?label=orionlabel-fixture"
+                        "&url=https%3A%2F%2Fexample.com%2Forion-fixture"
+                        "&panel=expanded"
+                    ),
+                    wait_until="domcontentloaded",
+                )
+                page.wait_for_function(
+                    "() => typeof window.ClipsListLabelFilters !== 'undefined'",
+                    timeout=10_000,
+                )
+
+                clear_all_button = page.locator("[data-label-clear-all]").first
+                clear_all_button.wait_for(state="visible", timeout=10_000)
+                clear_all_button.click()
+
+                page.wait_for_url(
+                    f"{self.live_server_url}/clips/?panel=expanded",
+                    timeout=10_000,
+                )
+                self.assertEqual(
+                    page.url,
+                    f"{self.live_server_url}/clips/?panel=expanded",
                 )
             finally:
                 context.close()
