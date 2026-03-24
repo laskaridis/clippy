@@ -56,6 +56,8 @@ help:
 	@echo "  make all-clean                 - Remove local build and cache artifacts"
 	@echo "  make all-verify                - Run all checks (test, lint, typecheck, format)"
 	@echo "  make worktree-start            - Create a feature worktree (slug required)"
+	@echo ""
+	@echo "Local environment targets:"
 	@echo "  make local-env-start           - Start worktree-scoped local Docker services"
 	@echo "  make local-env-stop            - Stop worktree-scoped local Docker services"
 	@echo "  make local-env-status          - Show worktree-scoped local Docker service status"
