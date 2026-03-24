@@ -45,3 +45,11 @@ Keep entries actionable and current.
 - Created: 2026-03-16
 - Related: PR #54, review thread `discussion_r2939153392`
 - Next actions: Before first public release that includes slug filtering, decide whether to add a UUID fallback path in label resolution or explicitly reject invalid legacy filters with a visible user message.
+
+### TD-004: Resolve overlapping `Escape` handlers in clips list UI
+- Scope: backend
+- Impact: `Escape` key handling can close both quick search and drawer layers in one keypress, causing surprising keyboard UX and potential state inconsistency when multiple overlays are open.
+- Status: Open
+- Created: 2026-03-24
+- Related: `docs/plans/label-filter-sidebar/code-review-findings-2026-03-24.md` (ISSUE-01)
+- Next actions: Update `backend/apps/clips/static/clips/js/list.js` to enforce top-layer-first Escape behavior (e.g., stop propagation in quick search Escape handler and/or guard document-level drawer Escape handler when quick search is open), then add/extend tests for overlay keyboard interaction.

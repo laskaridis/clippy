@@ -103,22 +103,22 @@
 - [x] T027 [P] [US3] Add view tests for selected-first ordering, alphabetical remainder, and default visible-limit behavior in backend/apps/clips/tests/test_views.py
 - [x] T028 [P] [US3] Add API tests for `/api/labels` flat catalog response (`name`, `slug`, `color`) and ignored legacy params (`label`, `limit`, `expanded`) in backend/apps/clips/tests/test_api.py
 - [x] T029 [P] [US3] Add regression tests for panel query-state persistence (expanded/collapsed/open/closed) in backend/apps/clips/tests/test_views.py
-- [ ] T030 [P] [US3] Add template/accessibility assertions mapped to the Accessibility Verification Checklist (keyboard flow, focus return, accessible naming/state, truncation semantics, and no-horizontal-scroll) in backend/apps/clips/tests/test_views.py
-- [ ] T043 [P] [US3] Add tests verifying the small-screen Filters trigger displays selected-label count and updates after select, de-select, and Clear all in backend/apps/clips/tests/test_views.py
-- [ ] T045 [P] [US3] Add accessibility tests ensuring truncated drawer labels and selected pills expose full label text to assistive technologies in backend/apps/clips/tests/test_views.py
+- [x] T030 [P] [US3] Add template/accessibility assertions mapped to the Accessibility Verification Checklist (keyboard flow, focus return, accessible naming/state, truncation semantics, and no-horizontal-scroll) in backend/apps/clips/tests/test_views.py
+- [x] T043 [P] [US3] Add tests verifying the small-screen Filters trigger displays selected-label count and updates after select, de-select, and Clear all in backend/apps/clips/tests/test_views.py
+- [x] T045 [P] [US3] Add accessibility tests ensuring truncated drawer labels and selected pills expose full label text to assistive technologies in backend/apps/clips/tests/test_views.py
 
 ### Implementation for User Story 3
 
 - [x] T031 [US3] Implement web-only label dataset pipeline (flat labels + color + contextual counts), with selection/ordering handled in UI, in backend/apps/clips/services.py
 - [x] T032 [US3] Simplify `/api/labels` to a selection-agnostic flat catalog response (`name`, `slug`, `color`) in backend/apps/clips/api/views.py and backend/apps/clips/api/serializers.py
-- [ ] T033 [US3] Add desktop sidebar collapse/expand controls and panel-state wiring in backend/apps/clips/templates/clips/list.html
-- [ ] T034 [US3] Add small-screen filters trigger, off-canvas drawer, drawer close actions, and drawer clear-all action in backend/apps/clips/templates/clips/list.html
-- [ ] T044 [US3] Render and synchronize selected-label count in the small-screen Filters trigger in backend/apps/clips/templates/clips/list.html and backend/apps/clips/static/clips/js/list.js
-- [ ] T035 [US3] Implement drawer open/close, Escape/backdrop dismissal, focus return, and no-auto-close-on-select behavior in backend/apps/clips/static/clips/js/list.js
-- [ ] T036 [US3] Implement label search, show-more toggle, and selected-label priority rendering behavior in backend/apps/clips/static/clips/js/list.js
-- [ ] T037 [US3] Add responsive and accessibility-focused styles for drawer, sidebar, one-line ellipsis labels/pills, and focus-visible states in backend/apps/clips/static/clips/css/list.css
-- [ ] T046 [US3] Ensure truncated drawer labels and selected pills expose full text via accessible naming and metadata in backend/apps/clips/templates/clips/list.html and backend/apps/clips/static/clips/js/list.js
-- [ ] T038 [US3] Persist filter panel state in query string without mutating label selections in backend/apps/clips/views.py and backend/apps/clips/static/clips/js/list.js
+- [x] T033 [US3] Add desktop sidebar collapse/expand controls and panel-state wiring in backend/apps/clips/templates/clips/list.html
+- [x] T034 [US3] Add small-screen filters trigger, off-canvas drawer, drawer close actions, and drawer clear-all action in backend/apps/clips/templates/clips/list.html
+- [x] T044 [US3] Render and synchronize selected-label count in the small-screen Filters trigger in backend/apps/clips/templates/clips/list.html and backend/apps/clips/static/clips/js/list.js
+- [x] T035 [US3] Implement drawer open/close, Escape/backdrop dismissal, focus return, and no-auto-close-on-select behavior in backend/apps/clips/static/clips/js/list.js
+- [x] T036 [US3] Implement label search, show-more toggle, and selected-label priority rendering behavior in backend/apps/clips/static/clips/js/list.js
+- [x] T037 [US3] Add responsive and accessibility-focused styles for drawer, sidebar, one-line ellipsis labels/pills, and focus-visible states in backend/apps/clips/static/clips/css/list.css
+- [x] T046 [US3] Ensure truncated drawer labels and selected pills expose full text via accessible naming and metadata in backend/apps/clips/templates/clips/list.html and backend/apps/clips/static/clips/js/list.js
+- [x] T038 [US3] Persist filter panel state in query string without mutating label selections in backend/apps/clips/views.py and backend/apps/clips/static/clips/js/list.js
 
 **Checkpoint**: All three user stories are independently functional and accessible across breakpoints.
 
