@@ -7,7 +7,7 @@ VENV_DIR := backend/.venv
 PIP := $(VENV_DIR)/bin/pip
 
 .PHONY: help all-init all-build all-test all-lint all-format all-typecheck all-run all-clean \
-	worktree-start \
+	worktree-start local-env-start local-env-stop local-env-status local-env-teardown \
 	backend-init backend-test-unit backend-test backend-test-e2e backend-lint backend-format backend-format-check backend-typecheck backend-run backend-stop backend-status backend-clean \
 	extension-init extension-build extension-build-worktree extension-test-unit extension-test-e2e extension-test-a11y extension-lint extension-format extension-format-check extension-typecheck extension-clean \
 	all-verify backend-verify extension-verify
@@ -57,6 +57,10 @@ help:
 	@echo "  make all-clean                 - Remove local build and cache artifacts"
 	@echo "  make all-verify                - Run all checks (test, lint, typecheck, format)"
 	@echo "  make worktree-start            - Create a feature worktree (slug required)"
+	@echo "  make local-env-start           - Start worktree-scoped local Docker services"
+	@echo "  make local-env-stop            - Stop worktree-scoped local Docker services"
+	@echo "  make local-env-status          - Show worktree-scoped local Docker service status"
+	@echo "  make local-env-teardown        - Remove worktree-scoped local Docker services and volumes"
 
 # Install dependencies/hooks for all sub-projects
 all-init:
@@ -102,6 +106,22 @@ all-verify:
 # Create a feature worktree without GitHub issue integration (slug required)
 worktree-start:
 	@./scripts/start-worktree-task.sh $(slug) $(base)
+
+# Start worktree-scoped local Docker services
+local-env-start:
+	@./infra/local/scripts/manage-worktree-compose.sh start
+
+# Stop worktree-scoped local Docker services
+local-env-stop:
+	@./infra/local/scripts/manage-worktree-compose.sh stop
+
+# Show worktree-scoped local Docker service status
+local-env-status:
+	@./infra/local/scripts/manage-worktree-compose.sh status
+
+# Remove worktree-scoped local Docker services and volumes
+local-env-teardown:
+	@./infra/local/scripts/manage-worktree-compose.sh teardown
 
 # Runs all backend checks (test, lint, typecheck, format) to verify that the backend is releasable.
 backend-verify:

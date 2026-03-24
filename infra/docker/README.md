@@ -19,19 +19,47 @@ cp .env.example .env
 
 ### Starting the stack
 
+Preferred (worktree-aware) command from repository root:
+
+```bash
+make local-env-start
+```
+
+Direct compose invocation (fallback):
+
 ```bash
 cd infra/docker
 docker compose up -d
 ```
 
-### Tearing down the stack 
+### Stopping the stack
+
+Preferred (worktree-aware) command from repository root:
 
 ```bash
-cd infra/docker
-docker compose down
+make local-env-stop
 ```
 
-To remove all volumes too:
+### Checking stack status
+
+Preferred (worktree-aware) command from repository root:
+
+```bash
+make local-env-status
+```
+
+### Tearing down the stack
+
+Preferred (worktree-aware, destructive) command from repository root:
+
+```bash
+make local-env-teardown
+```
+
+This command is destructive for the local database because it removes compose
+volumes for the active worktree.
+
+Direct compose invocation (fallback):
 
 ```bash
 cd infra/docker
