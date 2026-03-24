@@ -36,6 +36,27 @@
       <div id="nav" class="collapse navbar-collapse justify-content-end">
         <ul class="navbar-nav align-items-center gap-2">
           {% if user.is_authenticated %}
+          <li class="nav-item clips-nav-search-item">
+            <label class="visually-hidden" for="quick-search-input">Quick search</label>
+            <div class="position-relative clips-nav-search-wrap">
+              <input
+                id="quick-search-input"
+                class="form-control"
+                type="text"
+                placeholder="Search clips, labels, and websites"
+                autocomplete="off"
+                role="combobox"
+                aria-autocomplete="list"
+                aria-expanded="false"
+                aria-controls="quick-search-results"
+              >
+              <div id="quick-search-panel" class="card border-0 shadow-sm mt-2 d-none position-absolute start-0 end-0 z-3 quick-search-panel">
+                <div id="quick-search-results" class="list-group list-group-flush" role="listbox" aria-label="Quick search results">
+                  <div id="quick-search-results-items"></div>
+                </div>
+              </div>
+            </div>
+          </li>
           <li class="nav-item">
             <a class="nav-link" href="{% url 'clips_web:list' %}">My clips</a>
           </li>
@@ -103,6 +124,10 @@
 
   <!-- Bootstrap JS -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+  {% if user.is_authenticated %}
+    <script src="{% static 'clips/js/list.js' %}"></script>
+  {% endif %}
 
   {% block extra_js %}{% endblock %}
 </body>

@@ -15,7 +15,6 @@
     data-selected-labels="{{ selected_label_slugs|join:',' }}"
     data-panel-state="{{ panel_state }}"
   ></div>
-  <div class="d-none" data-label-filter-drawer-mount></div>
 
   <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
@@ -24,158 +23,346 @@
     </div>
   </div>
 
-  <section class="mb-4" aria-label="Quick search">
-    <label class="form-label fw-semibold" for="quick-search-input">Quick search</label>
-    <div class="position-relative">
-      <input
-        id="quick-search-input"
-        class="form-control"
-        type="text"
-        placeholder="Search clips, labels, and websites"
-        autocomplete="off"
-        role="combobox"
-        aria-autocomplete="list"
-        aria-expanded="false"
-        aria-controls="quick-search-results"
-      >
-      <div id="quick-search-feedback" class="form-text text-danger mt-1" aria-live="polite"></div>
-      <div id="quick-search-status" class="form-text mt-1" role="status" aria-live="polite"></div>
-      <div id="quick-search-panel" class="card border-0 shadow-sm mt-2 d-none position-absolute start-0 end-0 z-3 quick-search-panel">
-        <div id="quick-search-results" class="list-group list-group-flush" role="listbox" aria-label="Quick search results"></div>
-      </div>
-    </div>
-  </section>
-
-  {% if selected_labels %}
-    <section class="mb-4" aria-label="Selected labels">
-      <div class="d-flex flex-wrap align-items-center gap-2">
-        <span class="small text-secondary">Selected labels:</span>
-        {% for selected_label in selected_label_pills %}
-          <span class="badge text-bg-primary d-inline-flex align-items-center gap-2" data-selected-label-pill>
-            <span>{{ selected_label.name }}</span>
-            <a
-              href="{% url 'clips_web:list' %}{{ selected_label.remove_query }}"
-              class="link-light text-decoration-none"
-              aria-label="Remove label {{ selected_label.name }}"
-              data-label-pill-remove
-              data-label-slug="{{ selected_label.slug }}"
-            >
-              ×
-            </a>
-          </span>
-        {% endfor %}
-        <a
-          class="btn btn-outline-secondary btn-sm"
-          href="{% url 'clips_web:list' %}{{ clear_all_filters_query }}"
-          data-label-clear-all
+  <div class="clips-layout" data-filter-no-horizontal-scroll>
+    <aside
+      class="label-filter-sidebar{% if panel_state == 'collapsed' %} is-collapsed{% endif %}"
+      data-filter-sidebar-shell
+      aria-label="Clip filters"
+    >
+      <header class="label-filter-sidebar-header">
+        <h2 class="h6 mb-0">Filters</h2>
+        <button
+          type="button"
+          class="btn btn-sm btn-outline-secondary"
+          data-filter-panel-toggle
+          data-expanded-label="Collapse"
+          data-collapsed-label="Expand"
+          aria-controls="label-filter-sidebar-panel"
+          aria-expanded="{% if panel_state == 'expanded' %}true{% else %}false{% endif %}"
         >
-          Clear all
-        </a>
+          {% if panel_state == 'expanded' %}Collapse{% else %}Expand{% endif %}
+        </button>
+      </header>
+
+      <div
+        id="label-filter-sidebar-panel"
+        class="label-filter-sidebar-panel{% if panel_state != 'expanded' %} d-none{% endif %}"
+        data-filter-panel-body
+      >
+        <div class="mb-2">
+          <label class="form-label small fw-semibold mb-1" for="label-filter-search-sidebar">Search labels</label>
+          <input
+            id="label-filter-search-sidebar"
+            type="search"
+            class="form-control form-control-sm"
+            placeholder="Search labels"
+            autocomplete="off"
+            data-label-search-input
+            data-target-list="sidebar"
+          >
+        </div>
+
+        <div
+          class="label-filter-options"
+          data-label-options-list
+          data-target-list="sidebar"
+          data-visible-limit="10"
+          role="list"
+          aria-label="Filter labels"
+        >
+          {% if label_filters_dataset %}
+            {% for label_filter in label_filters_dataset %}
+              <button
+                type="button"
+                class="label-filter-option{% if label_filter.slug in selected_label_slugs %} is-selected{% endif %}"
+                data-label-toggle
+                data-target-list="sidebar"
+                data-label-slug="{{ label_filter.slug }}"
+                data-label-name="{{ label_filter.name }}"
+                data-label-full-name="{{ label_filter.name }}"
+                data-label-selected="{% if label_filter.slug in selected_label_slugs %}true{% else %}false{% endif %}"
+                data-label-default-hidden="{% if label_filter.slug not in selected_label_slugs and forloop.counter > 10 %}true{% else %}false{% endif %}"
+                aria-pressed="{% if label_filter.slug in selected_label_slugs %}true{% else %}false{% endif %}"
+                aria-label="Toggle label {{ label_filter.name }}"
+                title="{{ label_filter.name }}"
+              >
+                <span
+                  class="label-filter-option-name text-truncate"
+                  title="{{ label_filter.name }}"
+                  data-full-label="{{ label_filter.name }}"
+                >{{ label_filter.name }}</span>
+                <span class="label-filter-option-count">{{ label_filter.contextual_results_count }}</span>
+              </button>
+            {% endfor %}
+          {% else %}
+            <p class="small text-secondary mb-0" data-label-empty-state>No labels yet.</p>
+          {% endif %}
+        </div>
+
+        <p class="small text-secondary mt-2 mb-0 d-none" data-label-no-match data-target-list="sidebar">
+          No matching labels.
+        </p>
+
+        <button
+          type="button"
+          class="btn btn-sm btn-outline-secondary mt-2{% if label_filters_dataset|length <= 10 %} d-none{% endif %}"
+          data-label-show-more
+          data-target-list="sidebar"
+          data-expanded="false"
+        >
+          Show more
+        </button>
       </div>
-    </section>
-  {% endif %}
-  {% if active_url_filter %}
-    <section class="mb-4" aria-label="Active URL filter">
-      <div class="d-flex flex-wrap align-items-center gap-2">
-        <span class="small text-secondary">Active URL filter:</span>
-        <span class="badge text-bg-primary">{{ active_url_filter }}</span>
-        {% if not selected_labels %}
+    </aside>
+
+    <div class="clips-results" data-results-region>
+      <section class="mb-3 filter-trigger-row">
+        <button
+          id="filters-trigger"
+          type="button"
+          class="btn btn-outline-secondary"
+          data-filter-drawer-trigger
+          aria-controls="label-filter-drawer"
+          aria-haspopup="dialog"
+          aria-expanded="{% if panel_state == 'open' %}true{% else %}false{% endif %}"
+        >
+          Filters (<span data-selected-label-count>{{ selected_labels_count }}</span>)
+        </button>
+      </section>
+
+      {% if selected_labels %}
+        <section class="mb-4" aria-label="Selected labels">
+          <div class="d-flex flex-wrap align-items-center gap-2">
+            <span class="small text-secondary">Selected labels:</span>
+            {% for selected_label in selected_label_pills %}
+              <span class="badge text-bg-primary d-inline-flex align-items-center gap-2 selected-label-pill" data-selected-label-pill>
+                <span
+                  class="selected-label-text text-truncate"
+                  title="{{ selected_label.name }}"
+                  data-full-label="{{ selected_label.name }}"
+                >{{ selected_label.name }}</span>
+                <a
+                  href="{% url 'clips_web:list' %}{{ selected_label.remove_query }}"
+                  class="link-light text-decoration-none"
+                  aria-label="Remove label {{ selected_label.name }}"
+                  data-label-pill-remove
+                  data-label-slug="{{ selected_label.slug }}"
+                >
+                  ×
+                </a>
+              </span>
+            {% endfor %}
+            <a
+              class="btn btn-outline-secondary btn-sm"
+              href="{% url 'clips_web:list' %}{{ clear_all_filters_query }}"
+              data-label-clear-all
+            >
+              Clear all
+            </a>
+          </div>
+        </section>
+      {% endif %}
+
+      {% if active_url_filter %}
+        <section class="mb-4" aria-label="Active URL filter">
+          <div class="d-flex flex-wrap align-items-center gap-2">
+            <span class="small text-secondary">Active URL filter:</span>
+            <span class="badge text-bg-primary">{{ active_url_filter }}</span>
+            {% if not selected_labels %}
+              <a
+                class="btn btn-outline-secondary btn-sm"
+                href="{% url 'clips_web:list' %}{{ clear_all_filters_query }}"
+                data-label-clear-all
+              >
+                Clear all
+              </a>
+            {% endif %}
+          </div>
+        </section>
+      {% endif %}
+
+      {% if clips %}
+        <div class="row row-cols-1 row-cols-lg-2 g-3">
+          {% for clip in clips %}
+            <div class="col d-flex">
+              <article class="card border-0 shadow-sm w-100 h-100" data-clip-row>
+                <div class="card-body d-flex flex-column">
+                  <div class="d-flex justify-content-between align-items-start gap-3 mb-1">
+                    <div class="min-w-0">
+                      <div class="d-flex align-items-start gap-2 mb-2">
+                        <a href="{% url 'clips_web:detail' clip.id %}" class="h5 d-block mb-0 text-decoration-none clip-title flex-grow-1">
+                          {{ clip.title|default:clip.url }}
+                        </a>
+                        <a
+                          href="{{ clip.url }}"
+                          class="clip-source-link text-decoration-none flex-shrink-0"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          aria-label="Open source link in new tab"
+                          title="Open source"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true">
+                            <path fill-rule="evenodd" d="M4.5 2A2.5 2.5 0 0 0 2 4.5v7A2.5 2.5 0 0 0 4.5 14h7a2.5 2.5 0 0 0 2.5-2.5v-3a.5.5 0 0 0-1 0v3A1.5 1.5 0 0 1 11.5 13h-7A1.5 1.5 0 0 1 3 11.5v-7A1.5 1.5 0 0 1 4.5 3h3a.5.5 0 0 0 0-1z"/>
+                            <path fill-rule="evenodd" d="M15 1.5a.5.5 0 0 0-.5-.5h-4a.5.5 0 0 0 0 1h2.793L8.146 7.146a.5.5 0 1 0 .708.708L14 2.707V5.5a.5.5 0 0 0 1 0z"/>
+                          </svg>
+                        </a>
+                      </div>
+                    </div>
+                    <button type="button" class="btn btn-outline-danger btn-sm clip-delete flex-shrink-0" data-delete-url="{% url 'clips_web:detail' clip.id %}">
+                      Delete
+                    </button>
+                  </div>
+
+                  <p class="mb-2 fs-6 text-secondary clip-preview">{{ clip.raw_content|truncatechars:180 }}</p>
+
+                  <div class="d-flex flex-wrap gap-2 mb-2" aria-label="Clip labels">
+                    {% with labels=clip.labels.all %}
+                      {% if labels %}
+                        {% for label in labels %}
+                          <a
+                            class="badge rounded-pill text-bg-primary text-decoration-none"
+                            href="{% url 'clips_web:list' %}{{ current_query_params|label_filter_query:label.slug }}"
+                            data-label-add-link
+                            data-label-slug="{{ label.slug }}"
+                          >
+                            {{ label.name }}
+                          </a>
+                        {% endfor %}
+                      {% else %}
+                        <span class="small text-secondary">No labels</span>
+                      {% endif %}
+                    {% endwith %}
+                  </div>
+
+                  <p class="small text-secondary mb-0 mt-auto">{{ clip.created_at|date:"M. j, Y \\a\\t g:i A" }}</p>
+                </div>
+              </article>
+            </div>
+          {% endfor %}
+        </div>
+        <p class="text-secondary mt-4 mb-0">{{ clips|length }} clip{{ clips|length|pluralize }} total</p>
+      {% else %}
+        <div class="card p-4 text-center">
+          {% if selected_labels %}
+            <h2 class="h5 mb-2">No clips match the selected labels</h2>
+            <p class="text-secondary mb-3">Try removing one or more labels to broaden your results.</p>
+            <p class="mb-0">
+              <a
+                class="btn btn-outline-secondary btn-sm"
+                href="{% url 'clips_web:list' %}{{ clear_all_filters_query }}"
+                data-label-clear-all
+              >
+                Clear all
+              </a>
+            </p>
+          {% else %}
+            <h2 class="h5 mb-2">No clips yet</h2>
+            <p class="text-secondary mb-3">Use the Clippy browser extension to start capturing the web.</p>
+            <p class="mb-0 small text-secondary">Once you save your first clip, it will appear here automatically.</p>
+          {% endif %}
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="label-filter-drawer-backdrop d-none" data-filter-drawer-backdrop aria-hidden="true"></div>
+  <aside
+    id="label-filter-drawer"
+    class="label-filter-drawer d-none"
+    data-filter-drawer
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="label-filter-drawer-title"
+    aria-hidden="true"
+  >
+    <header class="label-filter-drawer-header">
+      <h2 id="label-filter-drawer-title" class="h6 mb-0">Filters</h2>
+      <div class="d-flex align-items-center gap-2">
+        {% if selected_labels %}
           <a
-            class="btn btn-outline-secondary btn-sm"
+            class="btn btn-sm btn-outline-secondary"
             href="{% url 'clips_web:list' %}{{ clear_all_filters_query }}"
             data-label-clear-all
+            data-drawer-clear-all
           >
             Clear all
           </a>
         {% endif %}
+        <button
+          type="button"
+          class="btn btn-sm btn-outline-secondary"
+          data-filter-drawer-close
+          aria-label="Close filters"
+        >
+          Close
+        </button>
       </div>
-    </section>
-  {% endif %}
+    </header>
 
-  {% if clips %}
-    <div class="row row-cols-1 row-cols-lg-2 g-3">
-      {% for clip in clips %}
-        <div class="col d-flex">
-          <article class="card border-0 shadow-sm w-100 h-100" data-clip-row>
-            <div class="card-body d-flex flex-column">
-              <div class="d-flex justify-content-between align-items-start gap-3 mb-1">
-                <div class="min-w-0">
-                  <div class="d-flex align-items-start gap-2 mb-2">
-                    <a href="{% url 'clips_web:detail' clip.id %}" class="h5 d-block mb-0 text-decoration-none clip-title flex-grow-1">
-                      {{ clip.title|default:clip.url }}
-                    </a>
-                    <a
-                      href="{{ clip.url }}"
-                      class="clip-source-link text-decoration-none flex-shrink-0"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      aria-label="Open source link in new tab"
-                      title="Open source"
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true">
-                        <path fill-rule="evenodd" d="M4.5 2A2.5 2.5 0 0 0 2 4.5v7A2.5 2.5 0 0 0 4.5 14h7a2.5 2.5 0 0 0 2.5-2.5v-3a.5.5 0 0 0-1 0v3A1.5 1.5 0 0 1 11.5 13h-7A1.5 1.5 0 0 1 3 11.5v-7A1.5 1.5 0 0 1 4.5 3h3a.5.5 0 0 0 0-1z"/>
-                        <path fill-rule="evenodd" d="M15 1.5a.5.5 0 0 0-.5-.5h-4a.5.5 0 0 0 0 1h2.793L8.146 7.146a.5.5 0 1 0 .708.708L14 2.707V5.5a.5.5 0 0 0 1 0z"/>
-                      </svg>
-                    </a>
-                  </div>
-                </div>
-                <button type="button" class="btn btn-outline-danger btn-sm clip-delete flex-shrink-0" data-delete-url="{% url 'clips_web:detail' clip.id %}">
-                  Delete
-                </button>
-              </div>
+    <div class="label-filter-drawer-body">
+      <div class="mb-2">
+        <label class="form-label small fw-semibold mb-1" for="label-filter-search-drawer">Search labels</label>
+        <input
+          id="label-filter-search-drawer"
+          type="search"
+          class="form-control form-control-sm"
+          placeholder="Search labels"
+          autocomplete="off"
+          data-label-search-input
+          data-target-list="drawer"
+        >
+      </div>
 
-              <p class="mb-2 fs-6 text-secondary clip-preview">{{ clip.raw_content|truncatechars:180 }}</p>
+      <div
+        class="label-filter-options"
+        data-label-options-list
+        data-target-list="drawer"
+        data-visible-limit="10"
+        role="list"
+        aria-label="Drawer filter labels"
+      >
+        {% if label_filters_dataset %}
+          {% for label_filter in label_filters_dataset %}
+            <button
+              type="button"
+              class="label-filter-option{% if label_filter.slug in selected_label_slugs %} is-selected{% endif %}"
+              data-label-toggle
+              data-target-list="drawer"
+              data-label-slug="{{ label_filter.slug }}"
+              data-label-name="{{ label_filter.name }}"
+              data-label-full-name="{{ label_filter.name }}"
+              data-label-selected="{% if label_filter.slug in selected_label_slugs %}true{% else %}false{% endif %}"
+              data-label-default-hidden="{% if label_filter.slug not in selected_label_slugs and forloop.counter > 10 %}true{% else %}false{% endif %}"
+              aria-pressed="{% if label_filter.slug in selected_label_slugs %}true{% else %}false{% endif %}"
+              aria-label="Toggle label {{ label_filter.name }}"
+              title="{{ label_filter.name }}"
+            >
+              <span
+                class="label-filter-option-name text-truncate"
+                title="{{ label_filter.name }}"
+                data-full-label="{{ label_filter.name }}"
+              >{{ label_filter.name }}</span>
+              <span class="label-filter-option-count">{{ label_filter.contextual_results_count }}</span>
+            </button>
+          {% endfor %}
+        {% else %}
+          <p class="small text-secondary mb-0" data-label-empty-state>No labels yet.</p>
+        {% endif %}
+      </div>
 
-                <div class="d-flex flex-wrap gap-2 mb-2" aria-label="Clip labels">
-                  {% with labels=clip.labels.all %}
-                    {% if labels %}
-                      {% for label in labels %}
-                      <a
-                        class="badge rounded-pill text-bg-primary text-decoration-none"
-                        href="{% url 'clips_web:list' %}{{ current_query_params|label_filter_query:label.slug }}"
-                        data-label-add-link
-                        data-label-slug="{{ label.slug }}"
-                      >
-                        {{ label.name }}
-                      </a>
-                      {% endfor %}
-                    {% else %}
-                      <span class="small text-secondary">No labels</span>
-                    {% endif %}
-                  {% endwith %}
-              </div>
+      <p class="small text-secondary mt-2 mb-0 d-none" data-label-no-match data-target-list="drawer">
+        No matching labels.
+      </p>
 
-              <p class="small text-secondary mb-0 mt-auto">{{ clip.created_at|date:"M. j, Y \\a\\t g:i A" }}</p>
-            </div>
-          </article>
-        </div>
-      {% endfor %}
+      <button
+        type="button"
+        class="btn btn-sm btn-outline-secondary mt-2{% if label_filters_dataset|length <= 10 %} d-none{% endif %}"
+        data-label-show-more
+        data-target-list="drawer"
+        data-expanded="false"
+      >
+        Show more
+      </button>
     </div>
-    <p class="text-secondary mt-4 mb-0">{{ clips|length }} clip{{ clips|length|pluralize }} total</p>
-  {% else %}
-    <div class="card p-4 text-center">
-      {% if selected_labels %}
-        <h2 class="h5 mb-2">No clips match the selected labels</h2>
-        <p class="text-secondary mb-3">Try removing one or more labels to broaden your results.</p>
-        <p class="mb-0">
-          <a
-            class="btn btn-outline-secondary btn-sm"
-            href="{% url 'clips_web:list' %}{{ clear_all_filters_query }}"
-            data-label-clear-all
-          >
-            Clear all
-          </a>
-        </p>
-      {% else %}
-        <h2 class="h5 mb-2">No clips yet</h2>
-        <p class="text-secondary mb-3">Use the Clippy browser extension to start capturing the web.</p>
-        <p class="mb-0 small text-secondary">Once you save your first clip, it will appear here automatically.</p>
-      {% endif %}
-    </div>
-  {% endif %}
-
-{% endblock %}
-
-{% block extra_js %}
-  <script src="{% static 'clips/js/list.js' %}"></script>
+  </aside>
 {% endblock %}
