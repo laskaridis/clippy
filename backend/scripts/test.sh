@@ -2,10 +2,10 @@
 set -euo pipefail
 
 #
-# Intent: Run backend Django tests in a worktree-aware runtime context.
+# Intent: Run backend Django non-E2E tests in a worktree-aware runtime context.
 # Preconditions: Infra ensure script and env helper script must be present and executable.
 # Invariants: Always ensures runtime readiness before loading env exports and invoking manage.py test.
-# Outcomes: Returns backend test results using the active worktree configuration.
+# Outcomes: Returns backend non-E2E test results using the active worktree configuration.
 # Artifacts:
 # - Sources exported env payload from `backend/scripts/env.sh --print` into test process scope — establishes worktree runtime variables for test execution.
 #
@@ -18,12 +18,12 @@ ENV_SCRIPT="${BACKEND_DIR}/scripts/env.sh"
 
 help() {
   cat <<'EOF'
-Run backend tests in a worktree-aware environment.
+Run backend non-E2E tests in a worktree-aware environment.
 
 Flow:
   1) Ensure local infra is ready (starts dockerized PostgreSQL if needed)
   2) Load current worktree runtime variables via backend/scripts/env.sh
-  3) Execute python manage.py test with passthrough arguments
+  3) Execute python manage.py test excluding E2E-tagged tests
 
 Usage:
   backend/scripts/test.sh [manage.py test args...]
@@ -55,8 +55,8 @@ set -a
 source /dev/stdin <<<"${ENV_EXPORTS}"
 set +a
 
-echo "[backend-test] running: python manage.py test $*"
+echo "[backend-test] running: python manage.py test --exclude-tag=e2e $*"
 (
   cd "${BACKEND_DIR}"
-  python manage.py test "$@"
+  python manage.py test --exclude-tag=e2e "$@"
 )

@@ -6,11 +6,13 @@ from typing import Any
 
 from django.contrib.auth import get_user_model
 from django.contrib.staticfiles.testing import StaticLiveServerTestCase
+from django.test import tag
 from playwright.sync_api import Browser, BrowserContext, Page, sync_playwright
 
 from apps.clips.models import Clip, Label
 
 
+@tag("e2e")
 class QuickSearchE2ETests(StaticLiveServerTestCase):
     def setUp(self) -> None:
         user_model = get_user_model()
