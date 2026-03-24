@@ -29,14 +29,20 @@ if [[ ! -f "${ENV_FILE}" ]]; then
   exit 1
 fi
 
-echo "[test-worktree] running backend tests"
+echo "[test-worktree] running backend unit/integration tests"
 (
   cd "${BACKEND_DIR}"
   set -a
   # shellcheck disable=SC1090
   source "${ENV_FILE}"
   set +a
-  python manage.py test --noinput
+  python manage.py test --exclude-tag=e2e --noinput
+)
+
+echo "[test-worktree] running backend browser e2e tests"
+(
+  cd "${BACKEND_DIR}"
+  ./scripts/test-e2e.sh
 )
 
 echo "[test-worktree] running extension unit tests"

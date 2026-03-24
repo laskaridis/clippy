@@ -8,7 +8,7 @@ PIP := $(VENV_DIR)/bin/pip
 
 .PHONY: help all-init all-build all-test all-lint all-format all-typecheck all-run all-clean \
 	worktree-start \
-	backend-init backend-test backend-test-e2e backend-lint backend-format backend-format-check backend-typecheck backend-run backend-stop backend-status backend-clean \
+	backend-init backend-test-unit backend-test backend-test-e2e backend-lint backend-format backend-format-check backend-typecheck backend-run backend-stop backend-status backend-clean \
 	extension-init extension-build extension-build-worktree extension-test extension-test-e2e extension-test-a11y extension-lint extension-format extension-format-check extension-typecheck extension-clean \
 	all-verify backend-verify extension-verify
 
@@ -19,7 +19,8 @@ help:
 	@echo ""
 	@echo "Backend development targets:"
 	@echo "  make backend-init              - Install backend dependencies in backend/.venv"
-	@echo "  make backend-test              - Run backend tests (worktree-aware)"
+	@echo "  make backend-test-unit         - Run backend non-E2E tests (worktree-aware)"
+	@echo "  make backend-test              - Alias of backend-test-unit"
 	@echo "  make backend-test-e2e          - Run backend browser E2E tests (Playwright, opt-in)"
 	@echo "  make backend-lint              - Run backend lint checks (ruff)"
 	@echo "  make backend-format            - Format backend source (black)"
@@ -104,7 +105,8 @@ worktree-start:
 
 # Runs all backend checks (test, lint, typecheck, format) to verify that the backend is releasable.
 backend-verify:
-	@$(MAKE) backend-test
+	@$(MAKE) backend-test-unit
+	@$(MAKE) backend-test-e2e
 	@$(MAKE) backend-lint
 	@$(MAKE) backend-typecheck
 	@$(MAKE) backend-format-check
@@ -115,9 +117,13 @@ backend-init:
 	@$(PIP) install -r backend/requirements.txt
 	@$(PIP) install -r backend/requirements-dev.txt
 
-# Run backend tests (worktree-aware)
-backend-test:
+# Run backend non-E2E tests (worktree-aware)
+backend-test-unit:
 	@cd backend && ./scripts/test.sh
+
+# Alias for backend-test-unit
+backend-test:
+	@$(MAKE) backend-test-unit
 
 # Run backend browser E2E tests (Playwright, opt-in)
 backend-test-e2e:

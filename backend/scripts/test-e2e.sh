@@ -80,8 +80,8 @@ else
   TEST_ARGS=("apps.clips.tests.e2e.test_quick_search_e2e")
 fi
 
-echo "[backend-e2e] running: python manage.py test ${TEST_ARGS[*]}"
+echo "[backend-e2e] running: python manage.py test --tag=e2e ${TEST_ARGS[*]}"
 (
   cd "${BACKEND_DIR}"
-  "${BACKEND_PYTHON}" manage.py test "${TEST_ARGS[@]}"
+  "${BACKEND_PYTHON}" manage.py test --tag=e2e "${TEST_ARGS[@]}"
 )
