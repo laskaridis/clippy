@@ -3,17 +3,25 @@
 Run relevant tests after changes. Minimum commands:
 
 ```bash
-./scripts/test_worktree.sh
+make all-test
 ```
 
 Equivalent manual commands:
 
 ```bash
+make backend-test-unit
+make backend-test-e2e
+make extension-test-unit
+make extension-test-e2e
+make extension-test-a11y
+```
+
+Equivalent script-level commands:
+
+```bash
 cd backend
-./scripts/bootsrap.sh --bootstrap-only
-ENV_FILE="$(./scripts/bootsrap.sh --print-env-path)"
-set -a && source "${ENV_FILE}" && set +a
-python manage.py test
+./scripts/test.sh
+./scripts/test-e2e.sh
 cd ../extension
 pnpm test
 pnpm run test:e2e

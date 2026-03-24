@@ -15,11 +15,11 @@
   * Django REST Framework 
   * PostgreSQL (required runtime database)
 - Web app (`backend/`):
-  * boostrap css
+  * Bootstrap CSS
 - Browser extensions (`extension/`)
   * Chrome Manifest V3
-  * typescript
-  * playwrtight (for e2e tests)
+  * TypeScript
+  * Playwright (for e2e tests)
   * pnpm
 
 ## Main Architectural Components
@@ -59,7 +59,7 @@
 ## Backend Layering Rules (Per Module)
 
 Use this dependency direction inside each module:
-1. Interface layer (`views.py`, `api/views.py`, serializers/forms/template adapters)
+1. Interface layer (`views/`, `api/views.py`, serializers/forms/template adapters)
 2. Application layer (`services.py` or `use_cases/`)
 3. Domain layer (`models.py`, domain policies/validators)
 4. Infrastructure adapters (optional; external integrations)
@@ -73,7 +73,7 @@ Rules:
 ## Dependency and Interaction Rules
 
 - No circular dependencies across modules.
-- Do not import another module's interface layer (`views`, `api/views`, templates).
+- Do not import another module's interface layer (`views/`, `api/views`, templates).
 - Cross-module business interactions should go through explicit service/use-case APIs.
 - Keep cross-module data exchange narrow (IDs/DTO-like payloads preferred over passing ORM objects).
 - Keep API and HTML interfaces behaviorally consistent for auth/ownership semantics.
