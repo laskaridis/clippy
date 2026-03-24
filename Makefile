@@ -9,7 +9,7 @@ PIP := $(VENV_DIR)/bin/pip
 .PHONY: help all-init all-build all-test all-lint all-format all-typecheck all-run all-clean \
 	worktree-start \
 	backend-init backend-test-unit backend-test backend-test-e2e backend-lint backend-format backend-format-check backend-typecheck backend-run backend-stop backend-status backend-clean \
-	extension-init extension-build extension-build-worktree extension-test extension-test-e2e extension-test-a11y extension-lint extension-format extension-format-check extension-typecheck extension-clean \
+	extension-init extension-build extension-build-worktree extension-test-unit extension-test-e2e extension-test-a11y extension-lint extension-format extension-format-check extension-typecheck extension-clean \
 	all-verify backend-verify extension-verify
 
 # Show available commands
@@ -36,7 +36,7 @@ help:
 	@echo "  make extension-init            - Install extension dependencies"
 	@echo "  make extension-build           - Build extension artifacts"
 	@echo "  make extension-build-worktree  - Build extension for current worktree runtime"
-	@echo "  make extension-test            - Run extension unit tests"
+	@echo "  make extension-test-unit       - Run extension unit tests"
 	@echo "  make extension-test-e2e        - Run extension end-to-end tests"
 	@echo "  make extension-test-a11y       - Run extension/frontend accessibility audits (WCAG 2.1 A/AA)"
 	@echo "  make extension-lint            - Run extension lint checks (eslint)"
@@ -175,7 +175,7 @@ extension-build-worktree:
 
 # Runs all extension checks (test, lint, typecheck, format) to verify that the extension is releasable.
 extension-verify:
-	@$(MAKE) extension-test
+	@$(MAKE) extension-test-unit
 	@$(MAKE) extension-lint
 	@$(MAKE) extension-typecheck
 	@$(MAKE) extension-format-check
@@ -183,7 +183,7 @@ extension-verify:
 	@$(MAKE) extension-test-e2e
 
 # Run extension unit tests
-extension-test:
+extension-test-unit:
 	@cd extension && pnpm test
 
 # Run extension end-to-end tests
