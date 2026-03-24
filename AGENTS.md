@@ -13,7 +13,7 @@ Before writing code of any kind **ALWAYS** read the core principles, rules and g
 ## Canonical task entrypoints
 When working with the codebase use `Makefile` as the primary surface for local workflows and automation such as testing, launching servers, initializing environments, running guardrail checks, etc:
 - For the live command list, run `make help`.
-- `make all-*` targets are the cahnonical cross-project entrypoints.
+- `make all-*` targets are the canonical cross-project entrypoints.
 - `make backend-*` and `make extension-*` targets are project-scoped entrypoints.
 
 If you need to do something **ALWAYS** check first if there is a Makefile target that you could use to complete your task. If you can't find one, consider creating one.
