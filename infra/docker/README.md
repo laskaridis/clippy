@@ -1,4 +1,4 @@
-# Docker setup for local development 
+# Docker setup for local development
 
 This directory contains container assets for local development.
 
@@ -8,13 +8,14 @@ The local stack is defined in `infra/docker/docker-compose.yml` and includes:
 
 - `postgres` with persistent volume and healthchecks
 
-### Configuring a local environment
+### How to configure the local environment
 
-Copy the example env file and adjust values accordingly:
-
+Use the worktree-aware bootstrap flow from repository root.
+`make local-env-start` resolves deterministic per-worktree runtime metadata through `backend/scripts/bootsrap.sh`:
 ```bash
-cd infra/docker
-cp .env.example .env
+cd backend
+./scripts/bootsrap.sh --print-json
+./scripts/bootsrap.sh --print-env-path
 ```
 
 ### Starting the stack
@@ -23,13 +24,6 @@ Preferred (worktree-aware) command from repository root:
 
 ```bash
 make local-env-start
-```
-
-Direct compose invocation (fallback):
-
-```bash
-cd infra/docker
-docker compose up -d
 ```
 
 ### Stopping the stack
@@ -58,13 +52,6 @@ make local-env-teardown
 
 This command is destructive for the local database because it removes compose
 volumes for the active worktree.
-
-Direct compose invocation (fallback):
-
-```bash
-cd infra/docker
-docker compose down -v
-```
 
 ## Next Services
 
