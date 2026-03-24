@@ -15,7 +15,6 @@ When working with the codebase use `Makefile` as the primary surface for local w
 - For the live command list, run `make help`.
 - `make all-*` targets are the cahnonical cross-project entrypoints.
 - `make backend-*` and `make extension-*` targets are project-scoped entrypoints.
-- Legacy short aliases (`make init`, `make build`, etc.) map to the `all-*` targets.
 
 If you need to do something **ALWAYS** check first if there is a Makefile target that you could use to complete your task. If you can't find one, consider creating one.
 
@@ -40,6 +39,7 @@ If you need to do something **ALWAYS** check first if there is a Makefile target
 - Code quality standards: [docs/CODE_QUALITY.md](docs/CODE_QUALITY.md)
 - Tech debt backlog: [docs/TECH_DEBT_BACKLOG.md](docs/TECH_DEBT_BACKLOG.md)
 - Development workflow (including worktree location/deletion policy): [docs/DEVELOPMENT_WORKFLOW.md](docs/DEVELOPMENT_WORKFLOW.md)
+- Core review findings template: [docs/plans/templates/code-review-findings.md](docs/plans/templates/code-review-findings.md)
 
 # ExecPlans
 

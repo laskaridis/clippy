@@ -7,125 +7,168 @@ VENV_DIR := backend/.venv
 PIP := $(VENV_DIR)/bin/pip
 
 .PHONY: help all-init all-build all-test all-lint all-format all-typecheck all-run all-clean \
-	init build test lint format typecheck run clean verify \
 	worktree-start \
-	backend-init backend-test backend-lint backend-format backend-format-check backend-typecheck backend-run backend-stop backend-status backend-clean \
+	backend-init backend-test backend-test-e2e backend-lint backend-format backend-format-check backend-typecheck backend-run backend-stop backend-status backend-clean \
 	extension-init extension-build extension-build-worktree extension-test extension-test-e2e extension-test-a11y extension-lint extension-format extension-format-check extension-typecheck extension-clean \
 	all-verify backend-verify extension-verify
 
-help: ## Show available commands
-	@awk 'BEGIN {FS = ":.*##"; printf "Usage: make <target>\n\nTargets:\n"} /^[a-zA-Z0-9_.-]+:.*##/ {printf "  %-10s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
+# Show available commands
+help:
+	@echo "Project Makefile Targets"
+	@echo "========================"
+	@echo ""
+	@echo "Backend development targets:"
+	@echo "  make backend-init              - Install backend dependencies in backend/.venv"
+	@echo "  make backend-test              - Run backend tests (worktree-aware)"
+	@echo "  make backend-test-e2e          - Run backend browser E2E tests (Playwright, opt-in)"
+	@echo "  make backend-lint              - Run backend lint checks (ruff)"
+	@echo "  make backend-format            - Format backend source (black)"
+	@echo "  make backend-format-check      - Check backend formatting compliance (black --check)"
+	@echo "  make backend-typecheck         - Run backend type checks (mypy)"
+	@echo "  make backend-run               - Start backend server for current worktree"
+	@echo "  make backend-stop              - Stop backend server for current worktree"
+	@echo "  make backend-status            - Check backend server status/url for current worktree"
+	@echo "  make backend-clean             - Remove backend cache artifacts"
+	@echo "  make backend-verify            - Run all backend releasability checks"
+	@echo ""
+	@echo "Extension development targets:"
+	@echo "  make extension-init            - Install extension dependencies"
+	@echo "  make extension-build           - Build extension artifacts"
+	@echo "  make extension-build-worktree  - Build extension for current worktree runtime"
+	@echo "  make extension-test            - Run extension unit tests"
+	@echo "  make extension-test-e2e        - Run extension end-to-end tests"
+	@echo "  make extension-test-a11y       - Run extension/frontend accessibility audits (WCAG 2.1 A/AA)"
+	@echo "  make extension-lint            - Run extension lint checks (eslint)"
+	@echo "  make extension-format          - Format extension source (prettier)"
+	@echo "  make extension-format-check    - Check extension formatting compliance (prettier --check)"
+	@echo "  make extension-typecheck       - Run extension type checks (tsc --noEmit)"
+	@echo "  make extension-clean           - Remove extension build/worktree artifacts"
+	@echo "  make extension-verify          - Run all extension releasability checks"
+	@echo ""
+	@echo "Project targets:"
+	@echo "  make all-init                  - Install dependencies/hooks for all sub-projects"
+	@echo "  make all-build                 - Build artifacts for all sub-projects"
+	@echo "  make all-test                  - Run backend + extension test suites"
+	@echo "  make all-lint                  - Run lint checks across backend and extension"
+	@echo "  make all-format                - Format backend and extension source"
+	@echo "  make all-typecheck             - Run type checks across backend and extension"
+	@echo "  make all-run                   - Start local worktree stack (backend + extension build)"
+	@echo "  make all-clean                 - Remove local build and cache artifacts"
+	@echo "  make all-verify                - Run all checks (test, lint, typecheck, format)"
+	@echo "  make worktree-start            - Create a feature worktree (slug required)"
 
-all-init: ## Install dependencies/hooks for all sub-projects
+# Install dependencies/hooks for all sub-projects
+all-init:
 	@./scripts/setup-git-hooks.sh
 	@$(MAKE) backend-init
 	@$(MAKE) extension-init
 
-init: ## DEPRECATED: Use all-init instead, kept for backward compatibility
-	@$(MAKE) all-init
-
-all-build: ## Build artifacts for all sub-projects
+# Build artifacts for all sub-projects
+all-build:
 	@$(MAKE) extension-build
 
-build: ## DEPRECATED: Use all-build instead, kept for backward compatibility
-	@$(MAKE) all-build
-
-all-test: ## Run backend + extension test suites
+# Run backend + extension test suites
+all-test:
 	@./scripts/test_worktree.sh
 
-test: ## DEPRECATED: Use all-test instead, kept for backward compatibility
-	@$(MAKE) all-test
-
-all-lint: ## Run lint checks across backend and extension
+# Run lint checks across backend and extension
+all-lint:
 	@./scripts/lint.sh
 
-lint: ## DEPRECATED: Use all-lint instead, kept for backward compatibility
-	@$(MAKE) all-lint
-
-all-format: ## Format backend and extension source
+# Format backend and extension source
+all-format:
 	@./scripts/format.sh
 
-format: ## DEPRECATED: Use all-format instead, kept for backward compatibility
-	@$(MAKE) all-format
-
-all-typecheck: ## Run type checks across backend and extension
+# Run type checks across backend and extension
+all-typecheck:
 	@./scripts/typecheck.sh
 
-typecheck: ## DEPRECATED: Use all-typecheck instead, kept for backward compatibility
-	@$(MAKE) all-typecheck
-
-all-run: ## Start local worktree stack (backend + extension build)
+# Start local worktree stack (backend + extension build)
+all-run:
 	@./scripts/run_worktree_stack.sh
 
-run: ## DEPRECATED: Use all-run instead, kept for backward compatibility
-	@$(MAKE) all-run
-
-all-clean: ## Remove local build and cache artifacts
+# Remove local build and cache artifacts
+all-clean:
 	@$(MAKE) backend-clean
 	@$(MAKE) extension-clean
 	@find backend extension -type d -name '__pycache__' -prune -exec rm -rf {} +
 
-clean: ## DEPRECATED: Use all-clean instead, kept for backward compatibility
-	@$(MAKE) all-clean
-
-all-verify: ## Runs all checks (test, lint, typecheck, format) to verify that the project is releasable.
+# Runs all checks (test, lint, typecheck, format) to verify that the project is releasable.
+all-verify:
 	@$(MAKE) backend-verify
 	@$(MAKE) extension-verify
 
-verify: ## DEPRECATED: Use all-verify instead, kept for backward compatibility
-	@$(MAKE) all-verify
-
-worktree-start: ## Create a feature worktree without GitHub issue integration (slug required)
+# Create a feature worktree without GitHub issue integration (slug required)
+worktree-start:
 	@./scripts/start-worktree-task.sh $(slug) $(base)
 
-backend-verify: ## Runs all backend checks (test, lint, typecheck, format) to verify that the backend is releasable.
+# Runs all backend checks (test, lint, typecheck, format) to verify that the backend is releasable.
+backend-verify:
 	@$(MAKE) backend-test
 	@$(MAKE) backend-lint
 	@$(MAKE) backend-typecheck
 	@$(MAKE) backend-format-check
 
-backend-init: ## Install backend dependencies in backend/.venv
+# Install backend dependencies in backend/.venv
+backend-init:
 	@$(PYTHON) -m venv $(VENV_DIR)
 	@$(PIP) install -r backend/requirements.txt
 	@$(PIP) install -r backend/requirements-dev.txt
 
-backend-test: ## Run backend tests (worktree-aware)
+# Run backend tests (worktree-aware)
+backend-test:
 	@cd backend && ./scripts/test.sh
 
-backend-lint: ## Run backend lint checks (ruff)
+# Run backend browser E2E tests (Playwright, opt-in)
+backend-test-e2e:
+	@cd backend && ./scripts/test-e2e.sh
+
+# Run backend lint checks (ruff)
+backend-lint:
 	@cd backend && python -m ruff check .
 
-backend-format: ## Format backend source (black)
+# Format backend source (black)
+backend-format:
 	@cd backend && python -m black .
 
-backend-format-check: ## Check backend formatting compliance (black --check)
+# Check backend formatting compliance (black --check)
+backend-format-check:
 	@cd backend && python -m black --check .
 
-backend-typecheck: ## Run backend type checks (mypy)
+# Run backend type checks (mypy)
+backend-typecheck:
 	@cd backend && python -m mypy .
 
-backend-run: ## Start backend server for current worktree
+# Start backend server for current worktree
+backend-run:
 	@cd backend && ./scripts/start-server.sh
 
-backend-stop: ## Stop backend server for current worktree
+# Stop backend server for current worktree
+backend-stop:
 	@cd backend && ./scripts/stop-server.sh
 
-backend-status: ## Check backend server status/url for current worktree
+# Check backend server status/url for current worktree
+backend-status:
 	@cd backend && ./scripts/check-server.sh
 
-backend-clean: ## Remove backend cache artifacts
+# Remove backend cache artifacts
+backend-clean:
 	@rm -rf backend/.mypy_cache backend/.pytest_cache
 
-extension-init: ## Install extension dependencies
+# Install extension dependencies
+extension-init:
 	@cd extension && pnpm install --frozen-lockfile
 
-extension-build: ## Build extension artifacts
+# Build extension artifacts
+extension-build:
 	@cd extension && pnpm run build
 
-extension-build-worktree: ## Build extension for current worktree runtime
+# Build extension for current worktree runtime
+extension-build-worktree:
 	@cd extension && pnpm run build:worktree
 
-extension-verify: ## Runs all extension checks (test, lint, typecheck, format) to verify that the extension is releasable.
+# Runs all extension checks (test, lint, typecheck, format) to verify that the extension is releasable.
+extension-verify:
 	@$(MAKE) extension-test
 	@$(MAKE) extension-lint
 	@$(MAKE) extension-typecheck
@@ -133,27 +176,35 @@ extension-verify: ## Runs all extension checks (test, lint, typecheck, format) t
 	@$(MAKE) extension-test-a11y
 	@$(MAKE) extension-test-e2e
 
-extension-test: ## Run extension unit tests
+# Run extension unit tests
+extension-test:
 	@cd extension && pnpm test
 
-extension-test-e2e: ## Run extension end-to-end tests
+# Run extension end-to-end tests
+extension-test-e2e:
 	@cd extension && pnpm run test:e2e
 
-extension-test-a11y: ## Run extension/frontend accessibility audits (WCAG 2.1 A/AA)
+# Run extension/frontend accessibility audits (WCAG 2.1 A/AA)
+extension-test-a11y:
 	@cd extension && pnpm run test:a11y
 
-extension-lint: ## Run extension lint checks (eslint)
+# Run extension lint checks (eslint)
+extension-lint:
 	@cd extension && pnpm run lint
 
-extension-format: ## Format extension source (prettier)
+# Format extension source (prettier)
+extension-format:
 	@cd extension && pnpm run format
 
-extension-format-check: ## Check extension formatting compliance (prettier --check)
+# Check extension formatting compliance (prettier --check)
+extension-format-check:
 	@cd extension && pnpm run format:check
 
-extension-typecheck: ## Run extension type checks (tsc --noEmit)
+# Run extension type checks (tsc --noEmit)
+extension-typecheck:
 	@cd extension && pnpm run typecheck
 
-extension-clean: ## Remove extension build/worktree artifacts
+# Remove extension build/worktree artifacts
+extension-clean:
 	@rm -rf extension/chrome/dist
 	@rm -rf extension/.local/worktrees
