@@ -118,6 +118,10 @@ jobs:
         run: pip install -r requirements-dev.txt
         working-directory: backend
 
+      - name: Install Playwright Chromium for backend browser tests
+        run: python -m playwright install chromium
+        working-directory: backend
+
       - name: Wait for PostgreSQL
         run: |
           python - <<'PY'
