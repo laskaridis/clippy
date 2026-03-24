@@ -8,7 +8,7 @@ PIP := $(VENV_DIR)/bin/pip
 
 .PHONY: help all-init all-build all-test all-lint all-format all-typecheck all-run all-clean \
 	worktree-start local-env-start local-env-stop local-env-status local-env-teardown \
-	backend-init backend-test-unit backend-test backend-test-e2e backend-lint backend-format backend-format-check backend-typecheck backend-run backend-stop backend-status backend-clean \
+	backend-init backend-test-unit backend-test-e2e backend-lint backend-format backend-format-check backend-typecheck backend-run backend-stop backend-status backend-clean \
 	extension-init extension-build extension-build-worktree extension-test-unit extension-test-e2e extension-test-a11y extension-lint extension-format extension-format-check extension-typecheck extension-clean \
 	all-verify backend-verify extension-verify
 
@@ -20,7 +20,6 @@ help:
 	@echo "Backend development targets:"
 	@echo "  make backend-init              - Install backend dependencies in backend/.venv"
 	@echo "  make backend-test-unit         - Run backend non-E2E tests (worktree-aware)"
-	@echo "  make backend-test              - Alias of backend-test-unit"
 	@echo "  make backend-test-e2e          - Run backend browser E2E tests (Playwright, opt-in)"
 	@echo "  make backend-lint              - Run backend lint checks (ruff)"
 	@echo "  make backend-format            - Format backend source (black)"
@@ -139,10 +138,6 @@ backend-init:
 # Run backend non-E2E tests (worktree-aware)
 backend-test-unit:
 	@cd backend && ./scripts/test.sh
-
-# Alias for backend-test-unit
-backend-test:
-	@$(MAKE) backend-test-unit
 
 # Run backend browser E2E tests (Playwright, opt-in)
 backend-test-e2e:
