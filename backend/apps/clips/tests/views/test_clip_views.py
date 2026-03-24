@@ -490,6 +490,174 @@ class ClipHtmlViewsTests(TestCase):
             response = self.client.get(f"{base_url}?panel={value}")
             self.assertEqual(response.context["panel_state"], value)
 
+    def test_list_navbar_renders_quick_search_input_and_not_inert_label(
+        self,
+    ) -> None:
+        self.client.force_login(self.user)
+        response = self.client.get(reverse("clips_web:list"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(
+            response,
+            'class="nav-item clips-nav-search-item"',
+            html=False,
+        )
+        self.assertContains(
+            response,
+            'id="quick-search-input"',
+            html=False,
+        )
+        self.assertContains(
+            response,
+            '<label class="visually-hidden" for="quick-search-input">Quick search</label>',
+            html=False,
+        )
+        self.assertNotContains(
+            response,
+            "data-nav-quick-search-label",
+            html=False,
+        )
+        self.assertNotContains(
+            response,
+            '<section class="mb-4" aria-label="Quick search">',
+            html=False,
+        )
+
+    def test_labels_page_renders_clips_navbar_quick_search(self) -> None:
+        self.client.force_login(self.user)
+        response = self.client.get(reverse("clips_web:labels"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'id="quick-search-input"', html=False)
+        self.assertContains(
+            response,
+            '<label class="visually-hidden" for="quick-search-input">Quick search</label>',
+            html=False,
+        )
+        self.assertNotContains(response, "data-nav-quick-search-label", html=False)
+
+    def test_list_renders_accessible_sidebar_and_drawer_filter_controls(self) -> None:
+        for index in range(12):
+            Label.objects.create(user=self.user, name=f"Label {index:02d}")
+
+        self.client.force_login(self.user)
+        response = self.client.get(reverse("clips_web:list"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(
+            response,
+            "data-filter-panel-toggle",
+            html=False,
+        )
+        self.assertContains(
+            response,
+            'aria-controls="label-filter-sidebar-panel"',
+            html=False,
+        )
+        self.assertContains(
+            response,
+            'aria-expanded="false"',
+            html=False,
+        )
+        self.assertContains(
+            response,
+            "data-filter-drawer-trigger",
+            html=False,
+        )
+        self.assertContains(
+            response,
+            'aria-controls="label-filter-drawer"',
+            html=False,
+        )
+        self.assertContains(
+            response,
+            'aria-haspopup="dialog"',
+            html=False,
+        )
+        self.assertContains(
+            response,
+            'id="label-filter-drawer"',
+            html=False,
+        )
+        self.assertContains(
+            response,
+            'class="label-filter-drawer d-none"',
+            html=False,
+        )
+        self.assertContains(response, 'role="dialog"', html=False)
+        self.assertContains(response, 'aria-modal="true"', html=False)
+        self.assertContains(response, "data-filter-drawer-close", html=False)
+        self.assertContains(response, "data-filter-drawer-backdrop", html=False)
+        self.assertContains(response, "data-label-search-input", count=2, html=False)
+        self.assertContains(response, "data-label-show-more", count=2, html=False)
+        self.assertContains(response, "data-filter-no-horizontal-scroll", html=False)
+
+    def test_list_small_screen_filters_trigger_shows_selected_labels_count(
+        self,
+    ) -> None:
+        first_label = Label.objects.create(user=self.user, name="research")
+        second_label = Label.objects.create(user=self.user, name="personal")
+
+        self.client.force_login(self.user)
+        base_url = reverse("clips_web:list")
+
+        unselected_response = self.client.get(base_url)
+        self.assertEqual(unselected_response.status_code, 200)
+        self.assertContains(
+            unselected_response,
+            "<span data-selected-label-count>0</span>",
+            html=False,
+        )
+
+        selected_response = self.client.get(
+            f"{base_url}?label={first_label.slug}&label={second_label.slug}"
+        )
+        self.assertEqual(selected_response.status_code, 200)
+        self.assertContains(
+            selected_response,
+            "<span data-selected-label-count>2</span>",
+            html=False,
+        )
+
+        deselected_response = self.client.get(f"{base_url}?label={first_label.slug}")
+        self.assertEqual(deselected_response.status_code, 200)
+        self.assertContains(
+            deselected_response,
+            "<span data-selected-label-count>1</span>",
+            html=False,
+        )
+
+    def test_list_truncation_exposes_full_label_text_for_assistive_tech(self) -> None:
+        long_name = (
+            "Label with a very long descriptive name that must remain fully available"
+        )
+        label = Label.objects.create(user=self.user, name=long_name)
+
+        self.client.force_login(self.user)
+        response = self.client.get(f"{reverse('clips_web:list')}?label={label.slug}")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(
+            response,
+            f'data-full-label="{long_name}"',
+            html=False,
+        )
+        self.assertContains(
+            response,
+            f'title="{long_name}"',
+            html=False,
+        )
+        self.assertContains(
+            response,
+            f'data-label-full-name="{long_name}"',
+            html=False,
+        )
+        self.assertContains(
+            response,
+            f'aria-label="Toggle label {long_name}"',
+            html=False,
+        )
+
     def test_list_filters_by_exact_url_for_current_user(self) -> None:
         matching_url = "https://example.com/path"
         matching_clip = Clip.objects.create(
