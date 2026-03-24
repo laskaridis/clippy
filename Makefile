@@ -134,7 +134,6 @@ backend-verify:
 # Install backend dependencies in backend/.venv
 backend-init:
 	@$(PYTHON) -m venv $(VENV_DIR)
-	@$(PIP) install -r backend/requirements.txt
 	@$(PIP) install -r backend/requirements-dev.txt
 
 # Run backend non-E2E tests (worktree-aware)
