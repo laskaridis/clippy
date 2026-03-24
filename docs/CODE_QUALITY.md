@@ -1,9 +1,9 @@
 # Code Quality
-This documents how to write corect, clean, highly maintainable code that fulfills the quality standards for this project.
+This document describes how to write correct, clean, highly maintainable code that fulfills the quality standards for this project.
 
 ## Core principles 
 - Prioritise writing clean, easily maintainable code.
-- Keep it simple; Allways prefer the simplest possible implementation that solves the problem and is the easier to understand and reason about.
+- Keep it simple; always prefer the simplest possible implementation that solves the problem and is easiest to understand and reason about.
 - YAGNI; refrain from adding features or code for hypothetical future needs.
 - Bias heavily towards high cohesion and low coupling.
 - Refrain from introducing new dependencies without clear and strong justification.
@@ -25,7 +25,7 @@ This documents how to write corect, clean, highly maintainable code that fulfill
 
 ## Write good git commits
 - Limit the subject line to 72 characters.
-- Separate the subject from the body with a blanc line.
+- Separate the subject from the body with a blank line.
 - **Keep commits logically scoped**:
   - One logical change per commit
   - Avoid mixing unrelated changes
@@ -48,9 +48,9 @@ This documents how to write corect, clean, highly maintainable code that fulfill
 ## Code safety
 - Prefer immutability where practical.
 - Use optionals when possible instead of NULL values.
-- For non-statically typed languages (e.g. python) **ALWAYS** use type hints and typechecks to avoid embarrasing bugs.
+- For non-statically typed languages (e.g. Python) **ALWAYS** use type hints and type checks to avoid embarrassing bugs.
 
 ## Scripting
-- Allways use color coding for messages (green=ok, yellow=warn, red=error)
-- Allways include documentation to explain purpose and independent usage and expected outcomes.
+- Always use color coding for messages (green=ok, yellow=warn, red=error)
+- Always include documentation to explain purpose, independent usage, and expected outcomes.
 - Modularise script files to improve clarity and maintainability (i.e. avoid monolithic scripts)

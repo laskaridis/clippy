@@ -1,11 +1,11 @@
 # WebClippings Chrome Extension
 
-This module includes browser extensions (currently only for chrome) that clip 
+This module includes browser extensions (currently only for Chrome) that clip
 texts and save them using the API published by the backend.
 
 ## Contents
 `.local`  # local environment artifacts
-`chrome`  # source code for chorme browser exetnsion
+`chrome`  # source code for Chrome browser extension
 `scripts` # helper scripts used to assist development workflow
 
 ## Prerequisites

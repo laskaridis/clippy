@@ -11,7 +11,8 @@ The local stack is defined in `infra/docker/docker-compose.yml` and includes:
 ### How to configure the local environment
 
 Use the worktree-aware bootstrap flow from repository root.
-`make local-env-start` resolves deterministic per-worktree runtime metadata through `backend/scripts/bootsrap.sh`:
+`make local-env-start` resolves deterministic per-worktree runtime metadata through `backend/scripts/bootsrap.sh`.
+You can inspect the resolved runtime directly from `backend/`:
 ```bash
 cd backend
 ./scripts/bootsrap.sh --print-json

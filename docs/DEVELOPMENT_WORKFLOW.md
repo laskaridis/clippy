@@ -7,7 +7,7 @@ Upon a request from the user the coding agent *ALWAYS* follows the following ste
 *STEP 1*: Create a feature branch from latest `master`.
 *STEP 2*: Create a git worktree for that branch under `.worktrees`.
 *STEP 3*: Implement changes and run relevant tests.
-*STEP 4*: Review your code locally and fix any issues (make sure all tests pass) to avoid the embarassment of shipping bugs to production - run `make all-verify` and to make sure your code is releasable.
+*STEP 4*: Review your code locally and fix any issues (make sure all tests pass) to avoid the embarrassment of shipping bugs to production. Run `make all-verify` to make sure your code is releasable.
 *STEP 5*: After you finish always open a pull request into `master` to hand-over your work - it's *CRITICAL* to not forget this since nobody will know you finished.
 
 ### Enforced preflight gate
@@ -98,10 +98,10 @@ Consider all the following as **hard gates**:
 - Run exactly one backend server instance per worktree at a time. If the server
   must pick up changes, restart that instance instead of starting an additional
   runserver process on another port.
-- Do NOt delete any worktree unless the task is explicitly confirmed complete
+- Do NOT delete any worktree unless the task is explicitly confirmed complete
   by the user and the user explicitly asks for worktree deletion.
 
-Guidelines to work with the codebase effectively in a worktreee: 
+Guidelines to work with the codebase effectively in a worktree: 
 - Use `backend/scripts/bootsrap.sh` to start Django in local development.
 - Treat `backend/scripts/bootsrap.sh` as the single backend lifecycle contract 
   for local tooling/tests (bootstrap, migrations/admin setup, runtime metadata,
@@ -139,7 +139,7 @@ Guidelines to work with the codebase effectively in a worktreee:
   - E2E uses the generated runtime metadata `extension/.local/worktree-runtime-<worktree-id>.json`.
 - Convenience entrypoints:
   - Full local stack (extension build + backend run): `./scripts/run_worktree_stack.sh`
-  - Full test run (backend + extension unit + extension e2e): `./scripts/test_worktree.sh`
+  - Full test run (backend unit + backend e2e + extension unit + extension e2e): `./scripts/test_worktree.sh`
 - Keep local environment values worktree-scoped where possible (for example, avoid sharing one mutable database across worktrees).
 
 ## Work hand-off
@@ -151,20 +151,20 @@ Treat the following as **hard gates**:
 
 ## Release policy
 
-- Releases are 
+- Create versioned releases from `master` only.
 - `master` must remain in a releasable state at all times.
 - Create release tags from `master` only.
 - Do not tag releases from non-`master` branches.
 
 # Definition of done checklist 
 
-Before handing work back ensure all the following is ture:
-[ ] Code compiles/runs.
-[ ] Relevant tests and quality gates pass locally.
-[ ] Work was completed in a dedicated `.worktrees/` worktree (not in the user's active directory).
-[ ] A pull request is opened (or ready to open) as the required sign-off path for the task.
-[ ] Edge cases for auth and ownership are covered.
-[ ] Migrations are included if needed.
-[ ] Docs/specs are updated for behavior changes.
-[ ] If an existing ExecSpec plan exists under `docs/plans/` for this task, its progress/living sections are updated before handoff (do not create a new plan just for this checklist item).
-[ ] No unrelated files were changed.
+Before handing work back ensure all the following is true:
+- [ ] Code compiles/runs.
+- [ ] Relevant tests and quality gates pass locally.
+- [ ] Work was completed in a dedicated `.worktrees/` worktree (not in the user's active directory).
+- [ ] A pull request is opened (or ready to open) as the required sign-off path for the task.
+- [ ] Edge cases for auth and ownership are covered.
+- [ ] Migrations are included if needed.
+- [ ] Docs/specs are updated for behavior changes.
+- [ ] If an existing ExecSpec plan exists under `docs/plans/` for this task, its progress/living sections are updated before handoff (do not create a new plan just for this checklist item).
+- [ ] No unrelated files were changed.
