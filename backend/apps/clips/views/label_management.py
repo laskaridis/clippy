@@ -6,7 +6,7 @@ from apps.clips.models import Label
 
 
 class LabelManagementView(LoginRequiredMixin, TemplateView):
-    template_name = "clips/labels.html"
+    template_name = "clips/pages/labels.html"
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)

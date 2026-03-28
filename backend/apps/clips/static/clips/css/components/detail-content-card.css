@@ -1,0 +1,7 @@
+.detail-content-card__pre,
+.detail-content-pre {
+  white-space: pre-wrap;
+  background: transparent;
+  border: 0;
+  color: inherit;
+}

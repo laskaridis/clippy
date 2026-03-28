@@ -1,0 +1,43 @@
+.global-auth-quick-search,
+.clips-nav-search-wrap {
+  width: 100%;
+}
+
+.global-auth-quick-search__panel,
+.quick-search-panel {
+  max-height: var(--global-auth-quick-search-max-height);
+  overflow-y: auto;
+}
+
+.global-auth-quick-search__group-title,
+.quick-search-group-title {
+  font-size: 0.75rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--bs-secondary-color);
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+.global-auth-quick-search__item.global-auth-quick-search__item--active,
+.global-auth-quick-search__item:focus-visible,
+.quick-search-item.active,
+.quick-search-item:focus-visible {
+  color: var(--bs-body-color);
+  background: var(--bs-primary-bg-subtle);
+  outline: none;
+}
+
+.global-auth-quick-search__clip-headline,
+.quick-search-clip-headline {
+  color: var(--bs-emphasis-color);
+  font-size: 0.95rem;
+  line-height: 1.35;
+}
+
+.global-auth-quick-search__clip-meta,
+.quick-search-clip-meta {
+  color: var(--bs-secondary-color);
+  font-size: 0.78rem;
+  line-height: 1.3;
+}

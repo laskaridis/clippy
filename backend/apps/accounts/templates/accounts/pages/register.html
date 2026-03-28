@@ -1,0 +1,11 @@
+{% extends "accounts/layouts/auth-page.html" %}
+
+{% block title %}Create your Clippy account{% endblock %}
+
+{% block auth_intro %}
+  {% include "accounts/components/auth-page-intro.html" with title="Create your account" subtitle="Use the same email as your browser extension." only %}
+{% endblock %}
+
+{% block auth_card %}
+  {% include "accounts/components/auth-card-shell.html" with card_body_template="accounts/components/register-form.html" show_form_error=form.errors form_error_message="Please fix the errors below and try again." form=form csrf_token=csrf_token only %}
+{% endblock %}

@@ -1,0 +1,42 @@
+<!--
+component: auth-card-shell
+inputs:
+  - card_title(optional)
+  - card_description(optional)
+  - form(optional)
+  - show_form_error(optional)
+  - form_error_message(optional)
+  - card_body_template(optional)
+  - text_center(optional)
+actions:
+  - render auth-card body template
+hooks:
+  - none
+block: none
+elements:
+  - none
+modifiers:
+  - none
+-->
+<div
+  class="card p-4 p-lg-5{% if text_center %} text-center{% endif %}"
+  data-component="auth-card-shell"
+>
+  {% if card_title %}
+    <h1 class="h4 fw-bold mb-3">{{ card_title }}</h1>
+  {% endif %}
+
+  {% if card_description %}
+    <p class="text-secondary mb-4">{{ card_description }}</p>
+  {% endif %}
+
+  {% if show_form_error %}
+    <div class="alert alert-danger mb-4">
+      {{ form_error_message }}
+    </div>
+  {% endif %}
+
+  {% if card_body_template %}
+    {% include card_body_template with form=form validlink=validlink success=success csrf_token=csrf_token only %}
+  {% endif %}
+</div>

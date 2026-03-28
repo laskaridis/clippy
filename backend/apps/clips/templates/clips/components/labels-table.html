@@ -1,0 +1,52 @@
+<!--
+component: labels-table
+inputs:
+  - labels
+actions:
+  - submit -> update label
+  - submit -> delete label
+hooks:
+  - none
+block: none
+elements:
+  - none
+modifiers:
+  - none
+-->
+<div class="table-responsive card overflow-hidden mb-3" data-component="labels-table">
+  <table class="table table-sm align-middle mb-0">
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Color</th>
+        <th>Clips</th>
+        <th class="text-end">Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for label in labels %}
+        <tr>
+          <td>{{ label.name }}</td>
+          <td class="text-secondary small">{{ label.description|default:"" }}</td>
+          <td class="small">{{ label.clips.count }}</td>
+          <td class="text-end">
+            <form method="post" class="d-inline-flex gap-2 align-items-center">
+              {% csrf_token %}
+              <input type="hidden" name="action" value="update">
+              <input type="hidden" name="id" value="{{ label.id }}">
+              <input type="text" name="name" value="{{ label.name }}" class="form-control form-control-sm" placeholder="Name">
+              <input type="text" name="color" value="{{ label.color|default:"" }}" class="form-control form-control-sm" placeholder="#HEX">
+              <button type="submit" class="btn btn-outline-light btn-sm">Save</button>
+            </form>
+            <form method="post" class="d-inline-block ms-2">
+              {% csrf_token %}
+              <input type="hidden" name="action" value="delete">
+              <input type="hidden" name="id" value="{{ label.id }}">
+              <button type="submit" class="btn btn-outline-danger btn-sm">Delete</button>
+            </form>
+          </td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>

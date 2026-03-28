@@ -1,0 +1,51 @@
+<!--
+component: filter-sidebar
+inputs:
+  - panel_state
+  - label_filters_dataset
+  - selected_label_slugs
+actions:
+  - click -> panel toggle
+  - input/click -> label filter updates
+hooks:
+  - data-action="toggle-filter-panel"
+  - data-role="filter-panel-body"
+block: filter-sidebar
+elements:
+  - filter-sidebar__header
+  - filter-sidebar__title
+  - filter-sidebar__toggle
+  - filter-sidebar__panel
+modifiers:
+  - filter-sidebar--collapsed
+-->
+<aside
+  class="filter-sidebar{% if panel_state == 'collapsed' %} filter-sidebar--collapsed{% endif %}"
+  data-component="filter-sidebar"
+  aria-label="Clip filters"
+>
+  <header class="filter-sidebar__header">
+    <h2 class="filter-sidebar__title h6 mb-0">Filters</h2>
+    <button
+      type="button"
+      class="filter-sidebar__toggle btn btn-sm btn-outline-secondary"
+      data-action="toggle-filter-panel"
+      data-filter-panel-toggle
+      data-expanded-label="Collapse"
+      data-collapsed-label="Expand"
+      aria-controls="label-filter-sidebar-panel"
+      aria-expanded="{% if panel_state == 'expanded' %}true{% else %}false{% endif %}"
+    >
+      {% if panel_state == 'expanded' %}Collapse{% else %}Expand{% endif %}
+    </button>
+  </header>
+
+  <div
+    id="label-filter-sidebar-panel"
+    class="filter-sidebar__panel{% if panel_state != 'expanded' %} d-none{% endif %}"
+    data-role="filter-panel-body"
+    data-filter-panel-body
+  >
+    {% include "clips/components/label-filter-options.html" with target_list="sidebar" search_input_id="label-filter-search-sidebar" list_aria_label="Filter labels" label_filters_dataset=label_filters_dataset selected_label_slugs=selected_label_slugs only %}
+  </div>
+</aside>

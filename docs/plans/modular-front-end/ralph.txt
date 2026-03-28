@@ -1,0 +1,536 @@
+## Codebase Patterns
+- Use `scripts/agent-preflight.sh` before edits; branch/worktree compliance is a hard gate and also enforced by git hooks.
+- Use Makefile entrypoints (`make backend-test-unit`, `make backend-lint`, `make backend-typecheck`, `make all-verify`) as canonical quality gates for backend/frontend refactor work.
+- For BEM compliance spot-audits, scan component CSS with `rg` to enforce no `[data-component="..."]` styling anchors and keep styling on explicit class contracts.
+- For clips list behavior, URL query state (`label`, `panel`, `url`) is the source of truth; UI controls mutate URL parameters and trigger reload/parity through server-rendered context.
+- Global style loading order is defined in `backend/webclippings/templates/base.html`: load `static/css/tokens.css` before `static/css/base.css` so shared tokens are available to base and component styles.
+- Keep `backend/webclippings/templates/base.html` as a compatibility shim that extends `templates/layouts/base-shell.html` while legacy pages still reference `base.html`; this enables incremental migration without route template rewiring.
+- Keep quick-search behavior in a global authenticated component script (`backend/static/js/components/global-auth-quick-search.js`) loaded from `base-shell`, while clips list logic lives in `clips/js/pages/list-page.js` orchestrating clips-scoped component modules.
+- Keep clips component JS module basenames aligned with template component basenames (for example `clip-card.html` <-> `clip-card.js`, `label-filter-options.html` <-> `label-filter-options.js`) and wire initialization from `js/pages/list-page.js`.
+- When removing legacy root aliases, keep `data-component="<name>"` as the canonical JS ownership hook and remove alias fallbacks in component JS/tests in the same change to avoid split contracts.
+- For list-page component JS, pass explicit root elements into component initializers (`init({ root, ... })`) and keep setup-time DOM queries scoped to those roots to avoid document-global coupling.
+- Keep clips list cross-component orchestration (drawer/sidebar state wiring and page-level label actions) in `clips/js/pages/list-page.js`; keep `clips/js/components/label-filter-options.js` scoped to label-option-root behavior and expose only minimal query mutation helpers via `window.ClipsListLabelFilters`.
+- Keep global authenticated quick-search styling in `backend/static/css/components/global-auth-quick-search.css` loaded from `base-shell`, while clips list route styles are loaded from `clips/pages/list.html` via app `css/components/*` includes.
+- When migrating route templates into app `pages/` folders, update all `template_name` references and template assertions together in the same change to avoid silent route/template drift.
+- When a Django component partial uses custom filters/tags, add its own `{% load ... %}` in that partial; parent template loads are not guaranteed for isolated component includes.
+- For page-specific style extraction, move inline template styles into `static/<app>/css/components/<component-name>.css` scoped by `[data-component="<component-name>"]`, then load that stylesheet via the page template `extra_head` block.
+- When composing form templates via `{% include ... with ... only %}`, propagate `csrf_token` explicitly to nested includes so CSRF-protected POST flows continue to work in browser/E2E runs.
+- For CSRF regression coverage on server-rendered form pages, use Django `Client(enforce_csrf_checks=True)` and validate both token rendering (`name="csrfmiddlewaretoken"`) and successful token-backed POST flows.
+- For frontend parity sign-off, keep a route-by-route Playwright smoke report under `docs/plans/<feature>/manual-smoke-checklist.md` covering desktop/mobile load checks, primary navigation actions, and console/network sanity.
+- For incremental BEM rollout, migrate CSS to canonical `<block>__<element>` / `<block>--<modifier>` selectors first and keep temporary legacy class aliases in the same rules until template/JS follow-up tasks land.
+- When migrating JS behavior to BEM, toggle canonical modifier classes (for example `--active`, `--collapsed`) instead of legacy `.active`/`.is-*` state classes, or stale legacy classes can keep components visually out of sync after interaction.
+- Component template headers are a required contract surface: every migrated component must document `component`, `inputs`, `actions`, `block`, `elements`, and `modifiers`; if a component has no custom BEM contract, set `block/elements/modifiers` to `none`.
+- For duplicated component instances on one page (for example sidebar + drawer label options), use instance markers like `data-target-list` in browser tests/selectors so interactions are asserted against the intended root.
+- Before removing non-root `data-*` hooks, run an `rg` consumer sweep across templates, JS, CSS, and tests; remove only zero-consumer hooks and preserve active interaction hooks as stable JS contracts.
+
+## [2026-03-27 13:47:39 EET]
+- Task id: T014
+- What was implemented: Updated frontend state-handling JS to use canonical BEM modifiers (`filter-sidebar--collapsed`, `global-auth-quick-search__item--active`) instead of legacy `.is-collapsed`/`.active`, aligned dynamic quick-search result markup with BEM classes, and updated list-view template assertions to match the migrated class contracts.
+- Files changed:
+  - `backend/apps/clips/static/clips/js/components/label-filters.js`
+  - `backend/static/js/components/global-auth-quick-search.js`
+  - `backend/apps/clips/templates/clips/components/filter-sidebar.html`
+  - `backend/apps/clips/tests/views/test_clip_views.py`
+  - `docs/plans/modular-front-end/tasks.md`
+  - `docs/plans/modular-front-end/ralph.txt`
+  - `AGENTS.md`
+- **Learnings for future iterations:**
+  - Patterns discovered: quick-search result rows are rendered in JavaScript, so BEM class-contract migrations must update both JS-rendered markup class names and JS class toggles together.
+  - Gotchas encountered: backend HTML tests with hard-coded full `class="..."` strings are brittle during BEM migrations; update assertions to the canonical class contract as markup evolves.
+- Useful context: verification passed with `make backend-test-unit`, `make backend-lint`, `make backend-typecheck`, `make backend-test-e2e`, and `make all-verify` (Playwright browser download warnings remained non-fatal due system-browser fallback).
+---
+
+## [2026-03-27 13:59:49 EET]
+- Task id: T016
+- What was implemented: Re-ran required verification gates (`make backend-test-unit`, `make backend-lint`, `make backend-typecheck`, `make all-verify`), revalidated manual smoke evidence from `manual-smoke-checklist.md` for desktop/mobile route parity coverage, and performed a BEM spot-audit confirming component CSS is not anchored to `[data-component]`.
+- Files changed:
+  - `docs/plans/modular-front-end/tasks.md`
+  - `docs/plans/modular-front-end/ralph.txt`
+- **Learnings for future iterations:**
+  - Patterns discovered: use a fast `rg` compliance sweep on component CSS to catch accidental selector regressions before handoff.
+  - Gotchas encountered: `make all-verify` may log Playwright browser download certificate warnings in this environment, but verification can still pass via available system browser channels.
+  - Useful context: all quality gates passed in this run, and the existing manual smoke checklist already covers home, accounts, and clips routes across desktop/mobile with primary-action checks.
+---
+
+## [2026-03-27 11:18:21 EET]
+- Task id: T001
+- What was implemented: Added the migration source-of-truth matrix covering full template/static inventory, exact route-to-page target mapping, and interaction ownership boundaries for modularization sequencing.
+- Files changed:
+  - `docs/plans/modular-front-end/migration-matrix.md`
+  - `docs/plans/modular-front-end/tasks.md`
+  - `docs/plans/modular-front-end/ralph.txt`
+- **Learnings for future iterations:**
+  - Patterns discovered: quick-search behavior currently lives in `clips/static/clips/js/list.js` but is mounted from global nav in `base.html`; this should be extracted as a global component module during base shell modularization.
+  - Gotchas encountered: accounts includes `.txt` email templates that are template assets but not route pages; keep them outside `pages/` while migrating HTML page templates.
+- Useful context: clips list filter UX relies on `panel` URL states (`expanded`, `collapsed`, `open`, `closed`) parsed in `ClipListView`; preserve these when splitting page vs component JS.
+---
+
+## [2026-03-27 11:46:31 EET]
+- Task id: T005
+- What was implemented: Decomposed `clips/pages/list.html` into focused reusable components (page header, sidebar/drawer filters, selected filters, active URL filter, clip card, and empty states) with explicit include contracts using `with ... only`, while preserving parity of list UI structure and interactions.
+- Files changed:
+  - `backend/apps/clips/templates/clips/pages/list.html`
+  - `backend/apps/clips/templates/clips/components/list-page-header.html`
+  - `backend/apps/clips/templates/clips/components/filter-sidebar.html`
+  - `backend/apps/clips/templates/clips/components/filter-drawer.html`
+  - `backend/apps/clips/templates/clips/components/label-filter-options.html`
+  - `backend/apps/clips/templates/clips/components/selected-label-pills.html`
+  - `backend/apps/clips/templates/clips/components/active-url-filter.html`
+  - `backend/apps/clips/templates/clips/components/clip-card.html`
+  - `backend/apps/clips/templates/clips/components/list-empty-state.html`
+  - `docs/plans/modular-front-end/tasks.md`
+  - `docs/plans/modular-front-end/ralph.txt`
+  - `AGENTS.md`
+- **Learnings for future iterations:**
+  - Patterns discovered: the label-filter option list is reusable across sidebar and drawer when parameterized by `target_list`, input id, and aria label, which keeps DOM hooks stable for shared JS behavior.
+  - Gotchas encountered: after extracting clip card markup to a component partial, missing `{% load clips_filters %}` in that partial causes `Invalid filter: 'label_filter_query'` runtime errors.
+  - Useful context: parity checks passed with `make backend-test-unit`, `make backend-lint`, `make backend-typecheck`, `make backend-test-e2e`, and `make all-verify`.
+---
+
+## [2026-03-27 11:26:04 EET]
+- Task id: T002
+- What was implemented: Added the global modular scaffold directories (`templates/layouts`, `templates/components`, `static/js/components`, `static/css/components`), introduced `static/css/tokens.css`, and wired `base.html` to load `tokens.css` before `base.css` with no behavior logic changes.
+- Files changed:
+  - `backend/webclippings/templates/base.html`
+  - `backend/webclippings/templates/layouts/.gitkeep`
+  - `backend/webclippings/templates/components/.gitkeep`
+  - `backend/static/js/components/.gitkeep`
+  - `backend/static/css/components/.gitkeep`
+  - `backend/static/css/tokens.css`
+  - `docs/plans/modular-front-end/tasks.md`
+  - `docs/plans/modular-front-end/ralph.txt`
+- **Learnings for future iterations:**
+  - Patterns discovered: keep global style layering explicit by loading `tokens.css` before `base.css` in the root shell to preserve deterministic overrides as component CSS is introduced.
+  - Gotchas encountered: `make backend-test-e2e` may emit Playwright browser download certificate-chain warnings in this environment, but tests can still pass using available browser channels.
+- Useful context: scaffolding directories are intentionally tracked via `.gitkeep` so the modular layout exists before component migrations begin.
+---
+
+## [2026-03-27 11:31:20 EET]
+- Task id: T003
+- What was implemented: Split the global shell into `layouts/base-shell.html` plus reusable global components (`global-nav`, `global-auth-quick-search`, `global-theme-toggle`, `global-footer`) with component input/action contracts; converted `base.html` to extend the layout; removed inline nav badge sizing style into `static/css/components/global-nav.css`.
+- Files changed:
+  - `backend/webclippings/templates/base.html`
+  - `backend/webclippings/templates/layouts/base-shell.html`
+  - `backend/webclippings/templates/components/global-nav.html`
+  - `backend/webclippings/templates/components/global-auth-quick-search.html`
+  - `backend/webclippings/templates/components/global-theme-toggle.html`
+  - `backend/webclippings/templates/components/global-footer.html`
+  - `backend/static/css/components/global-nav.css`
+  - `docs/plans/modular-front-end/tasks.md`
+  - `docs/plans/modular-front-end/ralph.txt`
+- **Learnings for future iterations:**
+  - Patterns discovered: preserve existing DOM IDs (`quick-search-*`, `themeToggle`) when extracting base components so existing JS modules keep working during phased JS modularization.
+  - Gotchas encountered: using `{% include ... with ... only %}` in shell/layout templates prevents accidental ambient variable coupling and enforces explicit component contracts.
+- Useful context: `clips/js/list.js` still mounts from the global layout for authenticated users; defer splitting this global behavior to the dedicated JS modularization task (`T006`).
+---
+
+## [2026-03-27 11:38:44 EET]
+- Task id: T004
+- What was implemented: Added app-level modular directories for `clips` and `accounts` templates/static assets, moved all clips/accounts route templates to `templates/.../pages/`, and rewired Django views/tests to the new page template paths without route behavior changes.
+- Files changed:
+  - `backend/apps/clips/views/clip_list.py`
+  - `backend/apps/clips/views/clip_detail.py`
+  - `backend/apps/clips/views/label_management.py`
+  - `backend/apps/clips/templates/clips/pages/list.html`
+  - `backend/apps/clips/templates/clips/pages/detail.html`
+  - `backend/apps/clips/templates/clips/pages/labels.html`
+  - `backend/apps/clips/templates/clips/components/.gitkeep`
+  - `backend/apps/clips/templates/clips/layouts/.gitkeep`
+  - `backend/apps/clips/static/clips/js/pages/.gitkeep`
+  - `backend/apps/clips/static/clips/js/components/.gitkeep`
+  - `backend/apps/clips/static/clips/css/components/.gitkeep`
+  - `backend/apps/accounts/views.py`
+  - `backend/apps/accounts/tests.py`
+  - `backend/apps/accounts/templates/accounts/pages/login.html`
+  - `backend/apps/accounts/templates/accounts/pages/register.html`
+  - `backend/apps/accounts/templates/accounts/pages/activation-complete.html`
+  - `backend/apps/accounts/templates/accounts/pages/password-reset-form.html`
+  - `backend/apps/accounts/templates/accounts/pages/password-reset-done.html`
+  - `backend/apps/accounts/templates/accounts/pages/password-reset-confirm.html`
+  - `backend/apps/accounts/templates/accounts/pages/password-reset-complete.html`
+  - `backend/apps/accounts/templates/accounts/components/.gitkeep`
+  - `backend/apps/accounts/templates/accounts/layouts/.gitkeep`
+  - `backend/apps/accounts/static/accounts/js/pages/.gitkeep`
+  - `backend/apps/accounts/static/accounts/js/components/.gitkeep`
+  - `backend/apps/accounts/static/accounts/css/components/.gitkeep`
+  - `docs/plans/modular-front-end/tasks.md`
+  - `docs/plans/modular-front-end/ralph.txt`
+- **Learnings for future iterations:**
+  - Patterns discovered: route page templates can use kebab-case filenames under `templates/.../pages/` with direct `template_name` references; Django resolves them reliably.
+  - Gotchas encountered: `make backend-test-e2e` may warn on Playwright browser downloads due to certificate chain constraints, but the suite still executes using available browser channels.
+  - Useful context: this task intentionally moved files/paths only; clips list JS (`clips/static/clips/js/list.js`) and CSS (`clips/static/clips/css/list.css`) remain untouched and are pending dedicated modularization tasks (`T006`, `T007`).
+---
+
+## [2026-03-27 11:53:38 EET]
+- Task id: T006
+- What was implemented: Split the legacy clips list script into modular entrypoints: clips page orchestration (`list-page.js`), clips component modules for label filtering and delete actions, and a global authenticated quick-search component script loaded from the base shell.
+- Files changed:
+  - `backend/apps/clips/static/clips/js/components/label-filters.js`
+  - `backend/apps/clips/static/clips/js/components/clip-delete.js`
+  - `backend/apps/clips/static/clips/js/pages/list-page.js`
+  - `backend/static/js/components/global-auth-quick-search.js`
+  - `backend/apps/clips/static/clips/js/list.js`
+  - `backend/apps/clips/templates/clips/pages/list.html`
+  - `backend/webclippings/templates/layouts/base-shell.html`
+  - `docs/plans/modular-front-end/tasks.md`
+  - `docs/plans/modular-front-end/ralph.txt`
+  - `AGENTS.md`
+- **Learnings for future iterations:**
+  - Patterns discovered: keep global authenticated UI behavior (quick search) in `backend/static/js/components/*` and route behavior in app `js/pages/*` entrypoints that initialize app `js/components/*` modules.
+  - Gotchas encountered: backend Playwright browser install may warn with certificate-chain errors in this environment; `make all-verify` still runs e2e with the available system browser channel.
+  - Useful context: clips list interactions remained parity-stable after split and were validated by `make backend-test-unit`, `make backend-lint`, `make backend-typecheck`, and `make all-verify` (including quick-search e2e coverage).
+---
+
+## [2026-03-27 11:59:51 EET]
+- Task id: T008
+- What was implemented: Decomposed `clips` detail and labels pages into reusable components with explicit include contracts (`with ... only`), moved detail content `<pre>` inline styling into scoped component CSS (`detail-content-card.css`), and preserved existing forms/workflows for labels create/update/delete and detail label editing.
+- Files changed:
+  - `backend/apps/clips/templates/clips/pages/detail.html`
+  - `backend/apps/clips/templates/clips/pages/labels.html`
+  - `backend/apps/clips/templates/clips/components/detail-page-header.html`
+  - `backend/apps/clips/templates/clips/components/detail-notes-card.html`
+  - `backend/apps/clips/templates/clips/components/detail-content-card.html`
+  - `backend/apps/clips/templates/clips/components/detail-labels-panel.html`
+  - `backend/apps/clips/templates/clips/components/labels-page-header.html`
+  - `backend/apps/clips/templates/clips/components/labels-table.html`
+  - `backend/apps/clips/templates/clips/components/labels-empty-state.html`
+  - `backend/apps/clips/templates/clips/components/label-create-form.html`
+  - `backend/apps/clips/static/clips/css/components/detail-content-card.css`
+  - `docs/plans/modular-front-end/tasks.md`
+  - `docs/plans/modular-front-end/ralph.txt`
+- **Learnings for future iterations:**
+  - Patterns discovered: page-specific styles can stay modular without global spillover by anchoring selectors to `[data-component="<name>"]` and loading only on pages that include that component.
+  - Gotchas encountered: running `make backend-test-e2e` concurrently with `make all-verify` can collide on the same Django test database name; run one end-to-end gate at a time.
+- Useful context: validation passed with `make backend-lint`, `make backend-typecheck`, `make backend-test-unit`, and `make all-verify` (including backend e2e plus extension checks).
+---
+
+## [2026-03-27 12:08:26 EET]
+- Task id: T007
+- What was implemented: Split `clips/static/clips/css/list.css` into component-scoped stylesheets (`clip-card`, `filter-sidebar`, `filter-drawer`, `label-filter-options`, `selected-label-pills`, `list-page-layout`), moved global quick-search/nav styles into global component CSS, promoted shared constants to `tokens.css`, and removed the legacy monolithic list stylesheet.
+- Files changed:
+  - `backend/apps/clips/templates/clips/pages/list.html`
+  - `backend/apps/clips/templates/clips/components/label-filter-options.html`
+  - `backend/apps/clips/static/clips/css/components/list-page-layout.css`
+  - `backend/apps/clips/static/clips/css/components/clip-card.css`
+  - `backend/apps/clips/static/clips/css/components/filter-sidebar.css`
+  - `backend/apps/clips/static/clips/css/components/filter-drawer.css`
+  - `backend/apps/clips/static/clips/css/components/label-filter-options.css`
+  - `backend/apps/clips/static/clips/css/components/selected-label-pills.css`
+  - `backend/apps/clips/static/clips/css/list.css`
+  - `backend/static/css/components/global-auth-quick-search.css`
+  - `backend/static/css/components/global-nav.css`
+  - `backend/static/css/tokens.css`
+  - `backend/webclippings/templates/layouts/base-shell.html`
+  - `docs/plans/modular-front-end/tasks.md`
+  - `docs/plans/modular-front-end/ralph.txt`
+  - `AGENTS.md`
+- **Learnings for future iterations:**
+  - Patterns discovered: use `[data-component=\"...\"]` selector scoping and explicit page-level stylesheet includes in `extra_head` to keep route CSS modular without global leakage.
+  - Gotchas encountered: if a component template emits multiple top-level nodes (like `label-filter-options`), wrap them in a single `data-component` container so component CSS scoping works consistently.
+- Useful context: quality gates passed with `make backend-test-unit`, `make backend-lint`, `make backend-typecheck`, and `make all-verify` (including backend/extension Playwright suites).
+---
+
+## [2026-03-27 12:23:08 EET]
+- Task id: T009
+- What was implemented: Modularized all accounts auth pages onto a shared auth layout and reusable components (intro, card shell, and form/CTA partials), migrated home to `pages/home.html` with reusable hero/feature components, updated the home route to use the page path, and preserved CSRF/auth UX parity by explicitly passing `csrf_token` through component include contracts.
+- Files changed:
+  - `backend/apps/accounts/templates/accounts/layouts/auth-page.html`
+  - `backend/apps/accounts/templates/accounts/pages/login.html`
+  - `backend/apps/accounts/templates/accounts/pages/register.html`
+  - `backend/apps/accounts/templates/accounts/pages/password-reset-form.html`
+  - `backend/apps/accounts/templates/accounts/pages/password-reset-done.html`
+  - `backend/apps/accounts/templates/accounts/pages/password-reset-confirm.html`
+  - `backend/apps/accounts/templates/accounts/pages/password-reset-complete.html`
+  - `backend/apps/accounts/templates/accounts/pages/activation-complete.html`
+  - `backend/apps/accounts/templates/accounts/components/auth-page-intro.html`
+  - `backend/apps/accounts/templates/accounts/components/auth-card-shell.html`
+  - `backend/apps/accounts/templates/accounts/components/login-form.html`
+  - `backend/apps/accounts/templates/accounts/components/register-form.html`
+  - `backend/apps/accounts/templates/accounts/components/password-reset-form-fields.html`
+  - `backend/apps/accounts/templates/accounts/components/password-reset-confirm-form.html`
+  - `backend/apps/accounts/templates/accounts/components/password-reset-done-copy.html`
+  - `backend/apps/accounts/templates/accounts/components/password-reset-complete-cta.html`
+  - `backend/apps/accounts/templates/accounts/components/activation-result-cta.html`
+  - `backend/webclippings/templates/pages/home.html`
+  - `backend/webclippings/templates/components/home-hero.html`
+  - `backend/webclippings/templates/components/home-feature-grid.html`
+  - `backend/webclippings/templates/components/home-feature-card.html`
+  - `backend/webclippings/templates/home.html`
+  - `backend/webclippings/urls.py`
+  - `docs/plans/modular-front-end/tasks.md`
+  - `docs/plans/modular-front-end/ralph.txt`
+  - `AGENTS.md`
+- **Learnings for future iterations:**
+  - Patterns discovered: a shared auth page layout plus `auth-card-shell` + per-flow body partials keeps accounts templates small and parity-safe while still allowing explicit include contracts.
+  - Gotchas encountered: `with ... only` drops ambient template context, including CSRF token state; forms rendered through nested includes must receive `csrf_token` explicitly.
+  - Useful context: browser verification and quality gates passed via `make backend-test-e2e`, `make backend-test-unit`, `make backend-lint`, `make backend-typecheck`, and `make all-verify`.
+---
+
+## [2026-03-27 12:40:16 EET]
+- Task id: T010
+- What was implemented: Added parity regression coverage for migrated home/accounts/clips templates, executed required quality gates, and produced a browser-based manual smoke checklist (`desktop` + `mobile`) for migrated routes with primary navigation-path validation.
+- Files changed:
+  - `backend/apps/accounts/tests.py`
+  - `backend/apps/clips/tests/views/test_clip_views.py`
+  - `backend/apps/clips/tests/views/test_label_views.py`
+  - `docs/plans/modular-front-end/manual-smoke-checklist.md`
+  - `docs/plans/modular-front-end/tasks.md`
+  - `docs/plans/modular-front-end/ralph.txt`
+- **Learnings for future iterations:**
+  - Patterns discovered: page-template migration parity is best protected by asserting template paths in route tests (for example `clips/pages/*`, `accounts/pages/*`, `pages/home.html`) so future refactors cannot silently drift template wiring.
+  - Gotchas encountered: Playwright-driven manual smoke checks can surface expected noise from favicon or token-reuse activation links; filter those known non-regression signals and focus on actionable console/network failures.
+  - Useful context: required gates passed in this iteration (`make backend-test-unit`, `make backend-lint`, `make backend-typecheck`, `make backend-test-e2e`, `make all-verify`).
+---
+## [2026-03-27 12:46:06 EET]
+- Task id: T011
+- What was implemented: Executed final compliance/quality gates for handoff and closed the last pending task by marking `T011` complete.
+- Files changed:
+  - `docs/plans/modular-front-end/tasks.md`
+  - `docs/plans/modular-front-end/ralph.txt`
+- **Learnings for future iterations:**
+  - Patterns discovered: final handoff for this repo should run the explicit gate sequence (`make backend-test-unit`, `make backend-lint`, `make backend-typecheck`, then `make all-verify`) to satisfy task-level and project-level completion criteria.
+  - Gotchas encountered: `make all-verify` may log Playwright browser download certificate-chain warnings in this environment, but the gate can still pass by falling back to the configured available browser channel.
+- Useful context: all mandatory gates passed in this run, including backend unit/e2e, extension unit/e2e, lint, typecheck, formatting, and a11y checks via `make all-verify`.
+---
+
+## [2026-03-27 13:14:23 EET]
+- Task id: T012
+- What was implemented: Replaced component CSS selector coupling on migrated clips/global components with explicit BEM class contracts (block/element/modifier), removed all `[data-component="..."]` CSS anchors in scoped stylesheets, and preserved parity using temporary legacy class aliases pending template/JS alignment tasks.
+- Files changed:
+  - `backend/apps/clips/static/clips/css/components/clip-card.css`
+  - `backend/apps/clips/static/clips/css/components/detail-content-card.css`
+  - `backend/apps/clips/static/clips/css/components/filter-drawer.css`
+  - `backend/apps/clips/static/clips/css/components/filter-sidebar.css`
+  - `backend/apps/clips/static/clips/css/components/label-filter-options.css`
+  - `backend/apps/clips/static/clips/css/components/list-page-layout.css`
+  - `backend/apps/clips/static/clips/css/components/selected-label-pills.css`
+  - `backend/static/css/components/global-auth-quick-search.css`
+  - `backend/static/css/components/global-nav.css`
+  - `docs/plans/modular-front-end/tasks.md`
+  - `docs/plans/modular-front-end/ralph.txt`
+  - `AGENTS.md`
+- **Learnings for future iterations:**
+  - Patterns discovered: introducing BEM selectors with side-by-side legacy class aliases allows CSS contract migration without blocking behavioral parity while templates/JS catch up in subsequent tasks.
+  - Gotchas encountered: keep the quality gate sequence non-overlapping (`make backend-test-unit`, `make backend-lint`, `make backend-typecheck`, then `make all-verify`) because `all-verify` already runs backend e2e and should not overlap with separate e2e commands.
+  - Useful context: this run passed all required checks including `make all-verify`; Playwright browser download certificate warnings are non-fatal here because verification falls back to available browser channels.
+---
+## [2026-03-27 13:36:26 EET]
+- Task id: T013
+- What was implemented: Aligned the targeted clips/global templates with canonical BEM class contracts (root + element/modifier classes) while preserving existing `data-*` JS hooks and temporary legacy class aliases for upcoming JS state migration.
+- Files changed:
+  - `backend/apps/clips/templates/clips/components/clip-card.html`
+  - `backend/apps/clips/templates/clips/components/detail-content-card.html`
+  - `backend/apps/clips/templates/clips/components/filter-drawer.html`
+  - `backend/apps/clips/templates/clips/components/filter-sidebar.html`
+  - `backend/apps/clips/templates/clips/components/label-filter-options.html`
+  - `backend/apps/clips/templates/clips/components/selected-label-pills.html`
+  - `backend/apps/clips/templates/clips/pages/list.html`
+  - `backend/webclippings/templates/components/global-auth-quick-search.html`
+  - `backend/webclippings/templates/components/global-nav.html`
+  - `docs/plans/modular-front-end/tasks.md`
+  - `docs/plans/modular-front-end/ralph.txt`
+- **Learnings for future iterations:**
+  - Patterns discovered: when migrating to BEM templates, keep canonical block classes on component roots and pair modifier classes with their base class in markup to match CSS contracts deterministically.
+  - Gotchas encountered: `label-filter-options` requires preserving legacy list-level class aliases during this step because current CSS still applies list layout spacing there; removing that alias now causes visible spacing regressions.
+  - Useful context: frontend/browser verification and all required quality gates passed with `make backend-test-unit`, `make backend-lint`, `make backend-typecheck`, `make backend-test-e2e`, and `make all-verify`.
+---
+
+## [2026-03-27 13:54:05 EET]
+- Task id: T015
+- What was implemented: Extended header contracts for all migrated component templates to include `block`, `elements`, and `modifiers`, and aligned BEM-heavy components (`clip-card`, `detail-content-card`, `filter-drawer`, `filter-sidebar`, `label-filter-options`, `selected-label-pills`, `global-auth-quick-search`, `global-nav`) with their actual class contracts while documenting `none` for Bootstrap-only components.
+- Files changed:
+  - `backend/apps/accounts/templates/accounts/components/activation-result-cta.html`
+  - `backend/apps/accounts/templates/accounts/components/auth-card-shell.html`
+  - `backend/apps/accounts/templates/accounts/components/auth-page-intro.html`
+  - `backend/apps/accounts/templates/accounts/components/login-form.html`
+  - `backend/apps/accounts/templates/accounts/components/password-reset-complete-cta.html`
+  - `backend/apps/accounts/templates/accounts/components/password-reset-confirm-form.html`
+  - `backend/apps/accounts/templates/accounts/components/password-reset-done-copy.html`
+  - `backend/apps/accounts/templates/accounts/components/password-reset-form-fields.html`
+  - `backend/apps/accounts/templates/accounts/components/register-form.html`
+  - `backend/apps/clips/templates/clips/components/active-url-filter.html`
+  - `backend/apps/clips/templates/clips/components/clip-card.html`
+  - `backend/apps/clips/templates/clips/components/detail-content-card.html`
+  - `backend/apps/clips/templates/clips/components/detail-labels-panel.html`
+  - `backend/apps/clips/templates/clips/components/detail-notes-card.html`
+  - `backend/apps/clips/templates/clips/components/detail-page-header.html`
+  - `backend/apps/clips/templates/clips/components/filter-drawer.html`
+  - `backend/apps/clips/templates/clips/components/filter-sidebar.html`
+  - `backend/apps/clips/templates/clips/components/label-create-form.html`
+  - `backend/apps/clips/templates/clips/components/label-filter-options.html`
+  - `backend/apps/clips/templates/clips/components/labels-empty-state.html`
+  - `backend/apps/clips/templates/clips/components/labels-page-header.html`
+  - `backend/apps/clips/templates/clips/components/labels-table.html`
+  - `backend/apps/clips/templates/clips/components/list-empty-state.html`
+  - `backend/apps/clips/templates/clips/components/list-page-header.html`
+  - `backend/apps/clips/templates/clips/components/selected-label-pills.html`
+  - `backend/webclippings/templates/components/global-auth-quick-search.html`
+  - `backend/webclippings/templates/components/global-footer.html`
+  - `backend/webclippings/templates/components/global-nav.html`
+  - `backend/webclippings/templates/components/global-theme-toggle.html`
+  - `backend/webclippings/templates/components/home-feature-card.html`
+  - `backend/webclippings/templates/components/home-feature-grid.html`
+  - `backend/webclippings/templates/components/home-hero.html`
+  - `docs/plans/modular-front-end/tasks.md`
+  - `docs/plans/modular-front-end/ralph.txt`
+  - `AGENTS.md`
+- **Learnings for future iterations:**
+  - Patterns discovered: treat component header metadata as a first-class contract and keep it synchronized with template/CSS/JS class contracts, including JS-rendered BEM elements/modifiers.
+  - Gotchas encountered: many components intentionally rely only on Bootstrap/utilities; explicitly documenting `block/elements/modifiers: none` avoids inventing non-existent BEM contracts.
+- Useful context: required gates all passed in this iteration: `make backend-test-unit`, `make backend-lint`, `make backend-typecheck`, and `make all-verify` (with expected non-fatal Playwright browser download certificate warnings and system-browser fallback).
+---
+
+## [2026-03-27 14:28:14 EET]
+- Task id: T017
+- What was implemented: Renamed clips list component JS modules to align with template component naming triplets (`clip-card.js`, `label-filter-options.js`), updated page script includes, and updated list-page orchestration to initialize the renamed component modules without stale references.
+- Files changed:
+  - `backend/apps/clips/static/clips/js/components/clip-card.js`
+  - `backend/apps/clips/static/clips/js/components/label-filter-options.js`
+  - `backend/apps/clips/static/clips/js/pages/list-page.js`
+  - `backend/apps/clips/templates/clips/pages/list.html`
+  - `docs/plans/modular-front-end/tasks.md`
+  - `docs/plans/modular-front-end/ralph.txt`
+  - `AGENTS.md`
+- **Learnings for future iterations:**
+  - Patterns discovered: keep list page component module names synchronized with template component filenames so ownership boundaries remain explicit and predictable for agent-driven edits.
+  - Gotchas encountered: when renaming component module files, update both template static includes and page-entrypoint global initializer names in the same change to avoid silent no-op initializers.
+- Useful context: behavior parity remains unchanged for filter/query controls and clip delete flow; this task is naming/ownership alignment before T018 root-scoping refactor.
+---
+
+## [2026-03-27 14:41:11 EET]
+- Task id: T018
+- What was implemented: Refactored clips list component initialization to root-scoped APIs by wiring list-page orchestration with explicit roots, updating `clip-card.js` to bind delete behavior per card root, updating `label-filter-options.js` to initialize sidebar/drawer option panels from explicit roots, and updating global quick-search to initialize from its component root with `data-js` hooks instead of global id-only lookups.
+- Files changed:
+  - `backend/apps/clips/static/clips/js/components/clip-card.js`
+  - `backend/apps/clips/static/clips/js/components/label-filter-options.js`
+  - `backend/apps/clips/static/clips/js/pages/list-page.js`
+  - `backend/static/js/components/global-auth-quick-search.js`
+  - `backend/webclippings/templates/components/global-auth-quick-search.html`
+  - `docs/plans/modular-front-end/tasks.md`
+  - `docs/plans/modular-front-end/ralph.txt`
+  - `AGENTS.md`
+- **Learnings for future iterations:**
+  - Patterns discovered: page entrypoints should own root discovery and pass roots into component `init(...)` calls so each component can keep strict DOM ownership boundaries.
+  - Gotchas encountered: quick-search relies on outside-click dismissal; after root-scoping selectors, keep a document-level click listener but guard it with `root.contains(...)` checks so panel close behavior stays parity-safe.
+- Useful context: browser-facing verification passed with `make backend-test-e2e` (quick-search e2e), and full quality gates passed with `make backend-test-unit`, `make backend-lint`, `make backend-typecheck`, and `make all-verify`.
+---
+
+## [2026-03-27 14:51:07 EET]
+- Task id: T019
+- What was implemented: Added E2E regression coverage for multi-instance component-root behavior by toggling a label from the drawer `label-filter-options` instance and asserting URL/query updates plus synchronized selected state across drawer and sidebar instances; re-ran all required gates and updated PR review findings to resolved/non-blocking.
+- Files changed:
+  - `backend/apps/clips/tests/e2e/test_quick_search_e2e.py`
+  - `docs/plans/modular-front-end/pr62-review-findings.md`
+  - `docs/plans/modular-front-end/tasks.md`
+  - `docs/plans/modular-front-end/ralph.txt`
+- **Learnings for future iterations:**
+  - Patterns discovered: multi-instance component regressions are best validated by selecting instance-specific hooks (`data-target-list`) and asserting both URL-state changes and mirrored server-rendered state after navigation.
+  - Gotchas encountered: drawer controls can be hidden in desktop viewport; for drawer-specific browser paths use a mobile viewport and open via `data-filter-drawer-trigger` to keep E2E interactions deterministic.
+  - Useful context: required gates passed in this iteration: `make backend-test-unit`, `make backend-lint`, `make backend-typecheck`, and `make all-verify` (including backend e2e + extension verify suites).
+---
+
+## [2026-03-27 16:03:06 EET]
+- Task id: T020
+- What was implemented: Passed `csrf_token` explicitly through `with ... only` include chains on `clips/pages/labels.html` so both labels table POST forms (update/delete) and label create POST form render valid CSRF hidden inputs under isolated include context.
+- Files changed:
+  - `backend/apps/clips/templates/clips/pages/labels.html`
+  - `docs/plans/modular-front-end/tasks.md`
+  - `docs/plans/modular-front-end/ralph.txt`
+- **Learnings for future iterations:**
+  - Patterns discovered: for Django partials rendered with `{% include ... only %}`, every form-rendering include must receive `csrf_token` explicitly even when the parent page has standard request context.
+  - Gotchas encountered: CSRF-sensitive regressions can hide in componentized templates because `{% csrf_token %}` in a child partial silently fails when include-context isolation drops the token.
+- Useful context: full gates passed (`make backend-test-unit`, `make backend-lint`, `make backend-typecheck`, `make all-verify`); Playwright Chromium download still logs certificate-chain warnings but e2e runs pass with available browser channels.
+---
+
+## [2026-03-27 16:07:55 EET]
+- Task id: T021
+- What was implemented: Forwarded `csrf_token` through the `clips/pages/detail.html` include contract for `detail-labels-panel` while keeping `only` isolation, and updated the component header contract inputs so the CSRF dependency is explicit for future template refactors.
+- Files changed:
+  - `backend/apps/clips/templates/clips/pages/detail.html`
+  - `backend/apps/clips/templates/clips/components/detail-labels-panel.html`
+  - `docs/plans/modular-front-end/tasks.md`
+  - `docs/plans/modular-front-end/ralph.txt`
+- **Learnings for future iterations:**
+  - Patterns discovered: when a page uses `{% include ... only %}` for a form partial, treat `csrf_token` as an explicit include-contract input and document it in the component header to prevent silent CSRF regressions.
+  - Gotchas encountered: componentized detail-form flows can appear healthy until submit time; missing token propagation manifests only as runtime 403 POST failures, so browser-level gates are needed for confidence.
+- Useful context: required gates passed (`make backend-test-unit`, `make backend-lint`, `make backend-typecheck`, `make all-verify`), and browser verification in `all-verify` covered clip detail route accessibility/e2e checks.
+---
+
+## [2026-03-27 16:12:57 EET]
+- Task id: T022
+- What was implemented: Added CSRF regression coverage for labels and detail include-chain form flows by asserting CSRF token rendering in page responses and validating CSRF-enforced owner POST success using Django `Client(enforce_csrf_checks=True)` on both `clips_web:labels` and `clips_web:detail`.
+- Files changed:
+  - `backend/apps/clips/tests/views/test_label_views.py`
+  - `backend/apps/clips/tests/views/test_clip_views.py`
+  - `docs/plans/modular-front-end/tasks.md`
+  - `docs/plans/modular-front-end/ralph.txt`
+  - `AGENTS.md`
+- **Learnings for future iterations:**
+  - Patterns discovered: CSRF include-chain fixes should be locked with paired regression tests that cover both token presence in HTML and runtime POST acceptance under CSRF-enforced clients.
+  - Gotchas encountered: default Django test clients do not enforce CSRF checks, so POST tests can pass even when template include chains drop CSRF context.
+  - Useful context: all required gates passed in this iteration (`make backend-test-unit`, `make backend-lint`, `make backend-typecheck`, `make all-verify`); Playwright Chromium download warnings remained non-fatal with system-browser fallback.
+---
+## [2026-03-28 18:03:33 EET]
+- Task id: T023
+- What was implemented: Canonicalized clips-list component root contracts by removing redundant root aliases (`data-clip-row`, `data-filter-drawer`, `data-filter-sidebar-shell`, `data-filter-drawer-backdrop`), removed temporary legacy class/state aliases (`clip-title`, `clip-preview`, `clip-source-link`, `label-filter-*`, `is-selected`) from templates/CSS, and aligned clip-card delete behavior to remove the canonical component root directly.
+- Files changed:
+  - `backend/apps/clips/templates/clips/components/clip-card.html`
+  - `backend/apps/clips/templates/clips/components/filter-drawer.html`
+  - `backend/apps/clips/templates/clips/components/filter-sidebar.html`
+  - `backend/apps/clips/templates/clips/components/label-filter-options.html`
+  - `backend/apps/clips/templates/clips/pages/list.html`
+  - `backend/apps/clips/static/clips/css/components/clip-card.css`
+  - `backend/apps/clips/static/clips/css/components/filter-drawer.css`
+  - `backend/apps/clips/static/clips/css/components/filter-sidebar.css`
+  - `backend/apps/clips/static/clips/css/components/label-filter-options.css`
+  - `backend/apps/clips/static/clips/js/components/clip-card.js`
+  - `backend/apps/clips/tests/views/test_clip_views.py`
+  - `docs/plans/modular-front-end/tasks.md`
+  - `docs/plans/modular-front-end/ralph.txt`
+- **Learnings for future iterations:**
+  - Patterns discovered: when removing legacy aliases, update template markup, component CSS selectors, JS fallback selectors, and view assertions together so canonical contracts stay consistent.
+  - Gotchas encountered: exact-string class assertions in template tests are sensitive to alias cleanup; assert only the canonical class contract that should remain.
+- Useful context: quality gates passed with `make backend-test-unit`, `make backend-lint`, `make backend-typecheck`, and `make all-verify` (including backend Playwright e2e and extension Playwright suites).
+---
+## [2026-03-28 18:08:09 EET]
+- Task id: T024
+- What was implemented: Removed unused non-root hooks from clips list templates (`data-results-region`, `data-selected-labels`, `data-drawer-clear-all`, `data-visible-limit`, `data-label-empty-state`) after confirming zero JS/CSS/test consumers, and replaced remaining clips component CSS `data-*` focus selectors with class-based selectors.
+- Files changed:
+  - `backend/apps/clips/templates/clips/pages/list.html`
+  - `backend/apps/clips/templates/clips/components/filter-drawer.html`
+  - `backend/apps/clips/templates/clips/components/label-filter-options.html`
+  - `backend/apps/clips/static/clips/css/components/list-page-layout.css`
+  - `backend/apps/clips/static/clips/css/components/filter-sidebar.css`
+  - `backend/apps/clips/static/clips/css/components/selected-label-pills.css`
+  - `docs/plans/modular-front-end/tasks.md`
+  - `docs/plans/modular-front-end/ralph.txt`
+  - `AGENTS.md`
+- **Learnings for future iterations:**
+  - Patterns discovered: non-root `data-*` attributes should remain behavior/test contracts only; styling should stay on canonical class selectors.
+  - Gotchas encountered: remove hook attributes only after a full cross-surface `rg` sweep (templates, JS, CSS, tests), otherwise hidden selector/assertion consumers can regress.
+  - Useful context: full verification passed in this iteration via `make backend-test-unit`, `make backend-lint`, `make backend-typecheck`, and `make all-verify` (includes backend Playwright e2e and extension Playwright suites).
+---
+## [2026-03-28 18:17:29 EET]
+- Task id: T025
+- What was implemented: Refactored clips list JS ownership boundaries by moving page orchestration (drawer/sidebar state wiring, page-level label add/remove/clear handling, panel URL sync, and Escape handling) into `clips/js/pages/list-page.js`, while narrowing `label-filter-options.js` to component-root behavior only; standardized touched hooks toward `data-action`/`data-role` and updated component header `hooks` contracts to match JS consumers.
+- Files changed:
+  - `backend/apps/clips/static/clips/js/pages/list-page.js`
+  - `backend/apps/clips/static/clips/js/components/label-filter-options.js`
+  - `backend/apps/clips/static/clips/js/components/clip-card.js`
+  - `backend/apps/clips/templates/clips/pages/list.html`
+  - `backend/apps/clips/templates/clips/components/filter-sidebar.html`
+  - `backend/apps/clips/templates/clips/components/filter-drawer.html`
+  - `backend/apps/clips/templates/clips/components/label-filter-options.html`
+  - `backend/apps/clips/templates/clips/components/clip-card.html`
+  - `backend/apps/clips/templates/clips/components/selected-label-pills.html`
+  - `backend/apps/clips/templates/clips/components/list-empty-state.html`
+  - `backend/apps/clips/templates/clips/components/active-url-filter.html`
+  - `backend/apps/clips/tests/views/test_clip_views.py`
+  - `docs/plans/modular-front-end/tasks.md`
+  - `docs/plans/modular-front-end/ralph.txt`
+  - `AGENTS.md`
+- **Learnings for future iterations:**
+  - Patterns discovered: when label-filter behavior spans both component roots and page-wide UI (selected pills, clear-all links, drawer/sidebar shells), keep local list/search behavior in the component module and handle cross-component orchestration in the page entrypoint.
+  - Gotchas encountered: HTML assertion counts can overcount when hook names are also present inside template header comments; use resilient assertions (or scoped snippets) when validating `data-action`/`data-role` rollout.
+  - Useful context: browser parity and quality gates passed with `make backend-test-unit`, `make backend-lint`, `make backend-typecheck`, `make backend-test-e2e`, and `make all-verify`.
+---

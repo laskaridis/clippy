@@ -1,0 +1,36 @@
+<!--
+component: label-create-form
+inputs:
+  - none
+actions:
+  - submit -> create label
+hooks:
+  - none
+block: none
+elements:
+  - none
+modifiers:
+  - none
+-->
+<div data-component="label-create-form">
+  <h2 class="h5 mb-3">Create a new label</h2>
+  <div class="card p-4">
+    <form method="post">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="create">
+      <div class="row g-3 align-items-end">
+        <div class="col-md-4">
+          <label for="id_name" class="form-label">Name</label>
+          <input type="text" id="id_name" name="name" class="form-control" required>
+        </div>
+        <div class="col-md-2">
+          <label for="id_color" class="form-label">Color (optional)</label>
+          <input type="text" id="id_color" name="color" class="form-control" placeholder="#6366F1">
+        </div>
+        <div class="col-md-2 text-md-end">
+          <button type="submit" class="btn btn-primary w-100">Create label</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>

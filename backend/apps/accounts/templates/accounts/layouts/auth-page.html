@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+
+{% block content %}
+  <div class="row justify-content-center" data-component="auth-page-shell">
+    <div class="col-md-6 col-lg-5">
+      {% block auth_intro %}{% endblock %}
+      {% block auth_card %}{% endblock %}
+    </div>
+  </div>
+{% endblock %}

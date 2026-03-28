@@ -8,7 +8,7 @@ from apps.clips.models import Clip, Label
 
 class ClipDetailView(LoginRequiredMixin, DetailView):
     model = Clip
-    template_name = "clips/detail.html"
+    template_name = "clips/pages/detail.html"
     context_object_name = "clip"
 
     def get_queryset(self):

@@ -25,7 +25,7 @@ def _parse_panel_state(raw_value: str | None) -> str:
 
 class ClipListView(LoginRequiredMixin, ListView):
     model = Clip
-    template_name = "clips/list.html"
+    template_name = "clips/pages/list.html"
     context_object_name = "clips"
 
     def get_queryset(self):

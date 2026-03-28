@@ -1,0 +1,47 @@
+.label-filter-options {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.label-filter-options__option {
+  width: 100%;
+  border: 1px solid var(--bs-border-color);
+  border-radius: var(--clips-filter-surface-radius);
+  background: var(--bs-body-bg);
+  color: inherit;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--clips-filter-option-gap);
+  padding: 0.45rem 0.55rem;
+  text-align: left;
+}
+
+.label-filter-options__option:hover {
+  background: var(--bs-tertiary-bg);
+}
+
+.label-filter-options__option.label-filter-options__option--selected {
+  border-color: var(--bs-primary);
+  background: var(--bs-primary-bg-subtle);
+}
+
+.label-filter-options__option-name {
+  min-width: 0;
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.label-filter-options__option-count {
+  font-size: 0.78rem;
+  color: var(--bs-secondary-color);
+  flex-shrink: 0;
+}
+
+.label-filter-options__option:focus-visible,
+.label-filter-options__show-more:focus-visible {
+  outline: var(--clips-focus-outline-width) solid var(--bs-primary);
+  outline-offset: var(--clips-focus-outline-offset);
+}

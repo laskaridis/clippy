@@ -1,0 +1,11 @@
+{% extends "accounts/layouts/auth-page.html" %}
+
+{% block title %}Activate your account – Clippy{% endblock %}
+
+{% block auth_card %}
+  {% if success %}
+    {% include "accounts/components/auth-card-shell.html" with card_title="Your account is active" card_body_template="accounts/components/activation-result-cta.html" success=success text_center=True only %}
+  {% else %}
+    {% include "accounts/components/auth-card-shell.html" with card_title="Activation link is invalid" card_body_template="accounts/components/activation-result-cta.html" success=success text_center=True only %}
+  {% endif %}
+{% endblock %}

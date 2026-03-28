@@ -1,0 +1,51 @@
+<!--
+component: selected-label-pills
+inputs:
+  - selected_label_pills
+  - clear_all_filters_query
+actions:
+  - click -> remove one or all selected labels
+hooks:
+  - data-action="remove-label-filter"
+  - data-action="clear-label-filters"
+block: selected-label-pills
+elements:
+  - selected-label-pills__content
+  - selected-label-pills__label
+  - selected-label-pills__pill
+  - selected-label-pills__text
+  - selected-label-pills__remove
+modifiers:
+  - none
+-->
+<section class="selected-label-pills mb-4" aria-label="Selected labels" data-component="selected-label-pills">
+  <div class="selected-label-pills__content d-flex flex-wrap align-items-center gap-2">
+    <span class="selected-label-pills__label small text-secondary">Selected labels:</span>
+    {% for selected_label in selected_label_pills %}
+      <span class="selected-label-pills__pill badge text-bg-primary d-inline-flex align-items-center gap-2 selected-label-pill" data-selected-label-pill>
+        <span
+          class="selected-label-pills__text selected-label-text text-truncate"
+          title="{{ selected_label.name }}"
+          data-full-label="{{ selected_label.name }}"
+        >{{ selected_label.name }}</span>
+        <a
+          href="{% url 'clips_web:list' %}{{ selected_label.remove_query }}"
+          class="selected-label-pills__remove link-light text-decoration-none"
+          aria-label="Remove label {{ selected_label.name }}"
+          data-action="remove-label-filter"
+          data-label-pill-remove
+          data-label-slug="{{ selected_label.slug }}"
+        >
+          ×
+        </a>
+      </span>
+    {% endfor %}
+    <a
+      class="btn btn-outline-secondary btn-sm"
+      href="{% url 'clips_web:list' %}{{ clear_all_filters_query }}"
+      data-action="clear-label-filters"
+    >
+      Clear all
+    </a>
+  </div>
+</section>

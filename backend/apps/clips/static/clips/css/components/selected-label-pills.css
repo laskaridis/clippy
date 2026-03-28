@@ -1,0 +1,30 @@
+.selected-label-pills__pill,
+.selected-label-pill {
+  max-width: min(24rem, 100%);
+}
+
+.selected-label-pills__text,
+.selected-label-text {
+  max-width: 16rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: inline-block;
+}
+
+.selected-label-pills__remove:focus-visible {
+  outline: var(--clips-focus-outline-width) solid var(--bs-primary);
+  outline-offset: var(--clips-focus-outline-offset);
+}
+
+@media (max-width: 1024px) {
+  .selected-label-pills__pill,
+  .selected-label-pill {
+    max-width: 100%;
+  }
+
+  .selected-label-pills__text,
+  .selected-label-text {
+    max-width: min(12rem, 58vw);
+  }
+}
