@@ -1,0 +1,39 @@
+<!--
+component: login-form
+inputs:
+  - form
+actions:
+  - submit -> accounts:login
+hooks:
+  - none
+block: none
+elements:
+  - none
+modifiers:
+  - none
+-->
+<form method="post" novalidate data-component="login-form">
+  {% csrf_token %}
+
+  <div class="mb-3">
+    <label for="id_username" class="form-label">Email</label>
+    <input type="email" name="username" id="id_username" class="form-control" required>
+  </div>
+
+  <div class="mb-3">
+    <label for="id_password" class="form-label">Password</label>
+    <input type="password" name="password" id="id_password" class="form-control" required>
+  </div>
+
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <a href="{% url 'accounts:password_reset' %}" class="small">Forgot password?</a>
+  </div>
+
+  <button type="submit" class="btn btn-primary w-100">
+    Sign in
+  </button>
+  <p class="text-center mt-3 mb-0 small text-secondary">
+    New to Clippy?
+    <a href="{% url 'accounts:register' %}">Create an account</a>
+  </p>
+</form>

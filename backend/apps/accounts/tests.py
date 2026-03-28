@@ -1,26 +1,114 @@
 from django.contrib.auth import get_user_model
 from django.test import TestCase
+from django.urls import reverse
+from django.utils.encoding import force_bytes
+from django.utils.http import urlsafe_base64_encode
 from unittest.mock import patch
 
 from apps.accounts.bootstrap import ensure_admin_user_from_env
+from django.contrib.auth.tokens import default_token_generator
 
 
 class AccountsAuthTests(TestCase):
     def test_login_page_renders(self) -> None:
         response = self.client.get("/accounts/login/")
         self.assertEqual(response.status_code, 200)
-        self.assertTemplateUsed(response, "accounts/login.html")
+        self.assertTemplateUsed(response, "accounts/pages/login.html")
 
     def test_home_navbar_is_not_forced_to_dark_theme(self) -> None:
         response = self.client.get("/")
 
         self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "pages/home.html")
         self.assertNotContains(response, "navbar-dark", html=False)
         self.assertContains(response, 'id="themeToggle"', html=False)
         self.assertContains(
             response, 'src="/static/js/theme-controller.js"', html=False
         )
         self.assertNotContains(response, "window.localStorage.setItem(", html=False)
+
+    def test_home_page_uses_auth_and_anon_primary_ctas(self) -> None:
+        anonymous_response = self.client.get(reverse("home"))
+        self.assertEqual(anonymous_response.status_code, 200)
+        self.assertContains(anonymous_response, "Sign in to start clipping")
+        self.assertNotContains(anonymous_response, "Go to my clips")
+
+        User = get_user_model()
+        user = User.objects.create_user(
+            email="cta-user@example.com",
+            username="cta-user@example.com",
+            password="password123",
+        )
+        self.client.force_login(user)
+        authenticated_response = self.client.get(reverse("home"))
+        self.assertEqual(authenticated_response.status_code, 200)
+        self.assertContains(authenticated_response, "Go to my clips")
+        self.assertNotContains(authenticated_response, "Sign in to start clipping")
+
+    def test_register_page_renders_modular_template(self) -> None:
+        response = self.client.get(reverse("accounts:register"))
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "accounts/pages/register.html")
+
+    def test_password_reset_pages_render_modular_templates(self) -> None:
+        reset_form_response = self.client.get(reverse("accounts:password_reset"))
+        self.assertEqual(reset_form_response.status_code, 200)
+        self.assertTemplateUsed(
+            reset_form_response, "accounts/pages/password-reset-form.html"
+        )
+
+        reset_done_response = self.client.get(reverse("accounts:password_reset_done"))
+        self.assertEqual(reset_done_response.status_code, 200)
+        self.assertTemplateUsed(
+            reset_done_response, "accounts/pages/password-reset-done.html"
+        )
+
+        reset_complete_response = self.client.get(
+            reverse("accounts:password_reset_complete")
+        )
+        self.assertEqual(reset_complete_response.status_code, 200)
+        self.assertTemplateUsed(
+            reset_complete_response, "accounts/pages/password-reset-complete.html"
+        )
+
+    def test_password_reset_confirm_page_renders_modular_template(self) -> None:
+        User = get_user_model()
+        user = User.objects.create_user(
+            email="reset-user@example.com",
+            username="reset-user@example.com",
+            password="password123",
+        )
+        uid = urlsafe_base64_encode(force_bytes(user.pk))
+        token = default_token_generator.make_token(user)
+
+        response = self.client.get(
+            reverse(
+                "accounts:password_reset_confirm",
+                kwargs={"uidb64": uid, "token": token},
+            ),
+            follow=True,
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "accounts/pages/password-reset-confirm.html")
+
+    def test_activation_page_renders_modular_template(self) -> None:
+        User = get_user_model()
+        user = User.objects.create_user(
+            email="activation-user@example.com",
+            username="activation-user@example.com",
+            password="password123",
+            is_active=False,
+        )
+        uid = urlsafe_base64_encode(force_bytes(user.pk))
+        token = default_token_generator.make_token(user)
+
+        response = self.client.get(
+            reverse("accounts:activate", kwargs={"uidb64": uid, "token": token})
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "accounts/pages/activation-complete.html")
 
     def test_successful_login_redirects_to_clips(self) -> None:
         User = get_user_model()

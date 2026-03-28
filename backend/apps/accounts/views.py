@@ -20,7 +20,7 @@ from django.views.generic import FormView
 
 
 class SignInView(LoginView):
-    template_name = "accounts/login.html"
+    template_name = "accounts/pages/login.html"
     redirect_authenticated_user = True
 
     def get_success_url(self):
@@ -42,7 +42,7 @@ class SignOutView(LogoutView):
 
 
 class SignUpView(FormView):
-    template_name = "accounts/register.html"
+    template_name = "accounts/pages/register.html"
     form_class = UserCreationForm
     success_url = reverse_lazy("accounts:login")
 
@@ -80,7 +80,7 @@ class SignUpView(FormView):
 
 
 class ActivateAccountView(View):
-    template_name = "accounts/activation_complete.html"
+    template_name = "accounts/pages/activation-complete.html"
 
     def get(self, request, uidb64, token):  # pragma: no cover - simple flow
         user = None
@@ -100,20 +100,20 @@ class ActivateAccountView(View):
 
 
 class ClippyPasswordResetView(PasswordResetView):
-    template_name = "accounts/password_reset_form.html"
+    template_name = "accounts/pages/password-reset-form.html"
     email_template_name = "accounts/password_reset_email.txt"
     subject_template_name = "accounts/password_reset_subject.txt"
     success_url = reverse_lazy("accounts:password_reset_done")
 
 
 class ClippyPasswordResetDoneView(PasswordResetDoneView):
-    template_name = "accounts/password_reset_done.html"
+    template_name = "accounts/pages/password-reset-done.html"
 
 
 class ClippyPasswordResetConfirmView(PasswordResetConfirmView):
-    template_name = "accounts/password_reset_confirm.html"
+    template_name = "accounts/pages/password-reset-confirm.html"
     success_url = reverse_lazy("accounts:password_reset_complete")
 
 
 class ClippyPasswordResetCompleteView(PasswordResetCompleteView):
-    template_name = "accounts/password_reset_complete.html"
+    template_name = "accounts/pages/password-reset-complete.html"

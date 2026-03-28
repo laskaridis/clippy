@@ -1,0 +1,99 @@
+<!--
+component: label-filter-options
+inputs:
+  - target_list
+  - search_input_id
+  - list_aria_label
+  - label_filters_dataset
+  - selected_label_slugs
+actions:
+  - input/click -> label filtering controls
+hooks:
+  - data-action="search-labels"
+  - data-role="label-options-list"
+  - data-action="toggle-label"
+  - data-role="label-no-match"
+  - data-action="toggle-show-more-labels"
+block: label-filter-options
+elements:
+  - label-filter-options__search
+  - label-filter-options__search-label
+  - label-filter-options__search-input
+  - label-filter-options__list
+  - label-filter-options__option
+  - label-filter-options__option-name
+  - label-filter-options__option-count
+  - label-filter-options__show-more
+  - label-filter-options__empty-state
+  - label-filter-options__no-match
+modifiers:
+  - label-filter-options__option--selected
+-->
+<div class="label-filter-options" data-component="label-filter-options">
+  <div class="label-filter-options__search mb-2">
+    <label class="label-filter-options__search-label form-label small fw-semibold mb-1" for="{{ search_input_id }}">Search labels</label>
+    <input
+      id="{{ search_input_id }}"
+      type="search"
+      class="label-filter-options__search-input form-control form-control-sm"
+      placeholder="Search labels"
+      autocomplete="off"
+      data-action="search-labels"
+      data-label-search-input
+      data-target-list="{{ target_list }}"
+    >
+  </div>
+
+  <div
+    class="label-filter-options__list label-filter-options"
+    data-role="label-options-list"
+    data-label-options-list
+    data-target-list="{{ target_list }}"
+    role="list"
+    aria-label="{{ list_aria_label }}"
+  >
+    {% if label_filters_dataset %}
+      {% for label_filter in label_filters_dataset %}
+        <button
+          type="button"
+          class="label-filter-options__option{% if label_filter.slug in selected_label_slugs %} label-filter-options__option--selected{% endif %}"
+          data-action="toggle-label"
+          data-label-toggle
+          data-target-list="{{ target_list }}"
+          data-label-slug="{{ label_filter.slug }}"
+          data-label-name="{{ label_filter.name }}"
+          data-label-full-name="{{ label_filter.name }}"
+          data-label-selected="{% if label_filter.slug in selected_label_slugs %}true{% else %}false{% endif %}"
+          data-label-default-hidden="{% if label_filter.slug not in selected_label_slugs and forloop.counter > 10 %}true{% else %}false{% endif %}"
+          aria-pressed="{% if label_filter.slug in selected_label_slugs %}true{% else %}false{% endif %}"
+          aria-label="Toggle label {{ label_filter.name }}"
+          title="{{ label_filter.name }}"
+        >
+          <span
+            class="label-filter-options__option-name text-truncate"
+            title="{{ label_filter.name }}"
+            data-full-label="{{ label_filter.name }}"
+          >{{ label_filter.name }}</span>
+          <span class="label-filter-options__option-count">{{ label_filter.contextual_results_count }}</span>
+        </button>
+      {% endfor %}
+    {% else %}
+      <p class="label-filter-options__empty-state small text-secondary mb-0">No labels yet.</p>
+    {% endif %}
+  </div>
+
+  <p class="label-filter-options__no-match small text-secondary mt-2 mb-0 d-none" data-role="label-no-match" data-label-no-match data-target-list="{{ target_list }}">
+    No matching labels.
+  </p>
+
+  <button
+    type="button"
+    class="label-filter-options__show-more btn btn-sm btn-outline-secondary mt-2{% if label_filters_dataset|length <= 10 %} d-none{% endif %}"
+    data-action="toggle-show-more-labels"
+    data-label-show-more
+    data-target-list="{{ target_list }}"
+    data-expanded="false"
+  >
+    Show more
+  </button>
+</div>

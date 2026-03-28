@@ -1,5 +1,5 @@
 from django.contrib.auth import get_user_model
-from django.test import TestCase
+from django.test import Client, TestCase
 from django.urls import resolve, reverse
 
 from apps.clips.models import Clip, Label
@@ -58,6 +58,7 @@ class ClipHtmlViewsTests(TestCase):
         response = self.client.get(reverse("clips_web:list"))
 
         self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "clips/pages/list.html")
         clips = list(response.context["clips"])
         self.assertEqual(len(clips), 2)
         self.assertTrue(all(clip.user == self.user for clip in clips))
@@ -499,7 +500,7 @@ class ClipHtmlViewsTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(
             response,
-            'class="nav-item clips-nav-search-item"',
+            'class="global-nav__search-item nav-item clips-nav-search-item"',
             html=False,
         )
         self.assertContains(
@@ -551,6 +552,11 @@ class ClipHtmlViewsTests(TestCase):
         )
         self.assertContains(
             response,
+            'data-action="toggle-filter-panel"',
+            html=False,
+        )
+        self.assertContains(
+            response,
             'aria-controls="label-filter-sidebar-panel"',
             html=False,
         )
@@ -562,6 +568,11 @@ class ClipHtmlViewsTests(TestCase):
         self.assertContains(
             response,
             "data-filter-drawer-trigger",
+            html=False,
+        )
+        self.assertContains(
+            response,
+            'data-action="open-filter-drawer"',
             html=False,
         )
         self.assertContains(
@@ -581,15 +592,35 @@ class ClipHtmlViewsTests(TestCase):
         )
         self.assertContains(
             response,
-            'class="label-filter-drawer d-none"',
+            'class="filter-drawer d-none"',
             html=False,
         )
         self.assertContains(response, 'role="dialog"', html=False)
         self.assertContains(response, 'aria-modal="true"', html=False)
         self.assertContains(response, "data-filter-drawer-close", html=False)
-        self.assertContains(response, "data-filter-drawer-backdrop", html=False)
+        self.assertContains(
+            response,
+            'data-action="close-filter-drawer"',
+            html=False,
+        )
+        self.assertContains(
+            response,
+            'data-component="filter-drawer-backdrop"',
+            html=False,
+        )
+        self.assertContains(
+            response,
+            'data-role="selected-label-count"',
+            html=False,
+        )
         self.assertContains(response, "data-label-search-input", count=2, html=False)
+        self.assertContains(response, 'data-action="search-labels"', html=False)
         self.assertContains(response, "data-label-show-more", count=2, html=False)
+        self.assertContains(
+            response,
+            'data-action="toggle-show-more-labels"',
+            html=False,
+        )
         self.assertContains(response, "data-filter-no-horizontal-scroll", html=False)
 
     def test_list_small_screen_filters_trigger_shows_selected_labels_count(
@@ -605,7 +636,7 @@ class ClipHtmlViewsTests(TestCase):
         self.assertEqual(unselected_response.status_code, 200)
         self.assertContains(
             unselected_response,
-            "<span data-selected-label-count>0</span>",
+            '<span data-role="selected-label-count" data-selected-label-count>0</span>',
             html=False,
         )
 
@@ -615,7 +646,7 @@ class ClipHtmlViewsTests(TestCase):
         self.assertEqual(selected_response.status_code, 200)
         self.assertContains(
             selected_response,
-            "<span data-selected-label-count>2</span>",
+            '<span data-role="selected-label-count" data-selected-label-count>2</span>',
             html=False,
         )
 
@@ -623,7 +654,7 @@ class ClipHtmlViewsTests(TestCase):
         self.assertEqual(deselected_response.status_code, 200)
         self.assertContains(
             deselected_response,
-            "<span data-selected-label-count>1</span>",
+            '<span data-role="selected-label-count" data-selected-label-count>1</span>',
             html=False,
         )
 
@@ -719,6 +750,7 @@ class ClipHtmlViewsTests(TestCase):
         self.client.force_login(self.user)
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "clips/pages/detail.html")
         self.assertEqual(response.context["clip"], clip)
 
         self.client.force_login(self.other_user)
@@ -775,6 +807,52 @@ class ClipHtmlViewsTests(TestCase):
         url = reverse("clips_web:detail", args=[clip.id])
         self.client.force_login(self.user)
         response = self.client.post(url, {"labels": "research, work"})
+
+        self.assertEqual(response.status_code, 302)
+        clip.refresh_from_db()
+        label_names = list(clip.labels.order_by("name").values_list("name", flat=True))
+        self.assertEqual(label_names, ["research", "work"])
+
+    def test_detail_page_renders_csrf_token_for_label_form(self) -> None:
+        clip = Clip.objects.create(
+            user=self.user,
+            title="Owned",
+            url="https://example.com/owned",
+            domain="example.com",
+            raw_content="Owned clip",
+            normalized_text="owned clip",
+        )
+
+        self.client.force_login(self.user)
+        response = self.client.get(reverse("clips_web:detail", args=[clip.id]))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'name="csrfmiddlewaretoken"', html=False)
+
+    def test_owner_can_update_clip_labels_via_post_with_csrf_enforced_client(
+        self,
+    ) -> None:
+        clip = Clip.objects.create(
+            user=self.user,
+            title="Owned",
+            url="https://example.com/owned",
+            domain="example.com",
+            raw_content="Owned clip",
+            normalized_text="owned clip",
+        )
+        existing_label = Label.objects.create(user=self.user, name="research")
+        clip.labels.add(existing_label)
+
+        csrf_client = Client(enforce_csrf_checks=True)
+        csrf_client.force_login(self.user)
+        csrf_client.get(reverse("clips_web:detail", args=[clip.id]))
+        csrf_token = csrf_client.cookies["csrftoken"].value
+
+        response = csrf_client.post(
+            reverse("clips_web:detail", args=[clip.id]),
+            {"csrfmiddlewaretoken": csrf_token, "labels": "research, work"},
+            HTTP_X_CSRFTOKEN=csrf_token,
+        )
 
         self.assertEqual(response.status_code, 302)
         clip.refresh_from_db()

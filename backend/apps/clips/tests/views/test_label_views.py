@@ -1,5 +1,5 @@
 from django.contrib.auth import get_user_model
-from django.test import TestCase
+from django.test import Client, TestCase
 from django.urls import resolve, reverse
 
 from apps.clips.models import Label
@@ -34,6 +34,7 @@ class LabelHtmlViewsTests(TestCase):
         response = self.client.get(reverse("clips_web:labels"))
 
         self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "clips/pages/labels.html")
         labels = list(response.context["labels"])
         self.assertEqual(len(labels), 2)
         self.assertTrue(all(label.user == self.user for label in labels))
@@ -48,6 +49,38 @@ class LabelHtmlViewsTests(TestCase):
                 "description": "Notes",
                 "color": "#ffffff",
             },
+        )
+
+        self.assertEqual(response.status_code, 302)
+        label = Label.objects.get(user=self.user, name="research")
+        self.assertEqual(label.description, "Notes")
+        self.assertEqual(label.color, "#ffffff")
+
+    def test_labels_page_renders_csrf_tokens_for_post_forms(self) -> None:
+        Label.objects.create(user=self.user, name="research")
+
+        self.client.force_login(self.user)
+        response = self.client.get(reverse("clips_web:labels"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'name="csrfmiddlewaretoken"', html=False)
+
+    def test_owner_can_create_label_via_post_with_csrf_enforced_client(self) -> None:
+        csrf_client = Client(enforce_csrf_checks=True)
+        csrf_client.force_login(self.user)
+        csrf_client.get(reverse("clips_web:labels"))
+        csrf_token = csrf_client.cookies["csrftoken"].value
+
+        response = csrf_client.post(
+            reverse("clips_web:labels"),
+            {
+                "csrfmiddlewaretoken": csrf_token,
+                "action": "create",
+                "name": "research",
+                "description": "Notes",
+                "color": "#ffffff",
+            },
+            HTTP_X_CSRFTOKEN=csrf_token,
         )
 
         self.assertEqual(response.status_code, 302)

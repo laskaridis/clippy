@@ -1,0 +1,72 @@
+<!--
+component: global-nav
+inputs:
+  - user
+actions:
+  - navigate -> clips/auth routes
+  - click -> theme toggle
+  - type -> quick search (authenticated)
+block: global-nav
+elements:
+  - global-nav__container
+  - global-nav__brand
+  - global-nav__brand-dot
+  - global-nav__collapse
+  - global-nav__menu
+  - global-nav__search-item
+modifiers:
+  - none
+-->
+<nav class="global-nav navbar navbar-expand-lg border-bottom bg-body" data-component="global-nav">
+  <div class="global-nav__container container py-2">
+    <a class="global-nav__brand navbar-brand fw-bold d-flex align-items-center gap-2" href="/">
+      <span class="rounded-circle bg-brand-gradient d-inline-block global-nav__brand-dot"></span>
+      <span>Clippy</span>
+    </a>
+
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#nav" aria-controls="nav" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+
+    <div id="nav" class="global-nav__collapse collapse navbar-collapse justify-content-end">
+      <ul class="global-nav__menu navbar-nav align-items-center gap-2">
+        {% if user.is_authenticated %}
+          <li class="global-nav__search-item nav-item clips-nav-search-item">
+            {% include "components/global-auth-quick-search.html" only %}
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="{% url 'clips_web:list' %}">My clips</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="{% url 'clips_web:labels' %}">Labels</a>
+          </li>
+          <li class="nav-item dropdown">
+            <button
+              class="btn btn-link nav-link dropdown-toggle border-0 p-0"
+              type="button"
+              data-bs-toggle="dropdown"
+              aria-expanded="false"
+            >
+              {{ user.email|default:user.username }}
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end">
+              <li>
+                <a class="dropdown-item" href="{% url 'accounts:logout' %}">Sign out</a>
+              </li>
+            </ul>
+          </li>
+        {% else %}
+          <li class="nav-item">
+            <a class="nav-link" href="#">Docs</a>
+          </li>
+          <li class="nav-item">
+            <a class="btn btn-primary btn-sm" href="{% url 'accounts:login' %}">Sign in</a>
+          </li>
+        {% endif %}
+        <li class="nav-item ms-2">
+          {% include "components/global-theme-toggle.html" only %}
+        </li>
+      </ul>
+    </div>
+  </div>
+</nav>

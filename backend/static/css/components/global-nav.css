@@ -1,0 +1,16 @@
+.global-nav__brand-dot {
+  width: 20px;
+  height: 20px;
+}
+
+.global-nav__search-item,
+.clips-nav-search-item {
+  width: min(40rem, 54vw);
+}
+
+@media (max-width: 1024px) {
+  .global-nav__search-item,
+  .clips-nav-search-item {
+    width: 100%;
+  }
+}

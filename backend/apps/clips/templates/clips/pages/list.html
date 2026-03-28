@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% load static %}
+{% load clips_filters %}
+
+{% block title %}My clips – Clippy{% endblock %}
+
+{% block extra_head %}
+  <link rel="stylesheet" href="{% static 'clips/css/components/list-page-layout.css' %}">
+  <link rel="stylesheet" href="{% static 'clips/css/components/filter-sidebar.css' %}">
+  <link rel="stylesheet" href="{% static 'clips/css/components/filter-drawer.css' %}">
+  <link rel="stylesheet" href="{% static 'clips/css/components/label-filter-options.css' %}">
+  <link rel="stylesheet" href="{% static 'clips/css/components/selected-label-pills.css' %}">
+  <link rel="stylesheet" href="{% static 'clips/css/components/clip-card.css' %}">
+{% endblock %}
+
+{% block extra_js %}
+  <script src="{% static 'clips/js/components/label-filter-options.js' %}"></script>
+  <script src="{% static 'clips/js/components/clip-card.js' %}"></script>
+  <script src="{% static 'clips/js/pages/list-page.js' %}"></script>
+{% endblock %}
+
+{% block content %}
+  <div
+    class="mb-3"
+    data-label-filter-sidebar-mount
+    data-panel-state="{{ panel_state }}"
+  ></div>
+
+  {% include "clips/components/list-page-header.html" only %}
+
+  <div class="list-page-layout clips-layout" data-component="clips-list-layout" data-filter-no-horizontal-scroll>
+    {% include "clips/components/filter-sidebar.html" with panel_state=panel_state label_filters_dataset=label_filters_dataset selected_label_slugs=selected_label_slugs only %}
+
+    <div class="list-page-layout__results clips-results">
+      <section class="mb-3 filter-trigger-row" data-component="filter-trigger-row">
+        <button
+          id="filters-trigger"
+          type="button"
+          class="filter-trigger-row__trigger btn btn-outline-secondary"
+          data-action="open-filter-drawer"
+          data-filter-drawer-trigger
+          aria-controls="label-filter-drawer"
+          aria-haspopup="dialog"
+          aria-expanded="{% if panel_state == 'open' %}true{% else %}false{% endif %}"
+        >
+          Filters (<span data-role="selected-label-count" data-selected-label-count>{{ selected_labels_count }}</span>)
+        </button>
+      </section>
+
+      {% if selected_labels %}
+        {% include "clips/components/selected-label-pills.html" with selected_label_pills=selected_label_pills clear_all_filters_query=clear_all_filters_query only %}
+      {% endif %}
+
+      {% if active_url_filter %}
+        {% include "clips/components/active-url-filter.html" with active_url_filter=active_url_filter selected_labels=selected_labels clear_all_filters_query=clear_all_filters_query only %}
+      {% endif %}
+
+      {% if clips %}
+        <div class="list-page-layout__grid row row-cols-1 row-cols-lg-2 g-3">
+          {% for clip in clips %}
+            <div class="col d-flex">
+              {% include "clips/components/clip-card.html" with clip=clip current_query_params=current_query_params only %}
+            </div>
+          {% endfor %}
+        </div>
+        <p class="text-secondary mt-4 mb-0">{{ clips|length }} clip{{ clips|length|pluralize }} total</p>
+      {% else %}
+        {% include "clips/components/list-empty-state.html" with selected_labels=selected_labels clear_all_filters_query=clear_all_filters_query only %}
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="filter-drawer-backdrop d-none" data-component="filter-drawer-backdrop" aria-hidden="true"></div>
+  {% include "clips/components/filter-drawer.html" with selected_labels=selected_labels clear_all_filters_query=clear_all_filters_query label_filters_dataset=label_filters_dataset selected_label_slugs=selected_label_slugs only %}
+{% endblock %}

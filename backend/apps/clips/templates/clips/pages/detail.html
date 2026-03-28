@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ clip.title|default:"Clip" }} – Clippy{% endblock %}
+
+{% block extra_head %}
+  <link rel="stylesheet" href="{% static 'clips/css/components/detail-content-card.css' %}">
+{% endblock %}
+
+{% block content %}
+  {% include "clips/components/detail-page-header.html" with clip=clip only %}
+
+  <div class="row g-4">
+    <div class="col-lg-8">
+      {% if clip.notes %}
+        {% include "clips/components/detail-notes-card.html" with clip=clip only %}
+      {% endif %}
+
+      {% include "clips/components/detail-content-card.html" with clip=clip only %}
+    </div>
+
+    <div class="col-lg-4">
+      {% include "clips/components/detail-labels-panel.html" with clip=clip labels_text=labels_text csrf_token=csrf_token only %}
+    </div>
+  </div>
+{% endblock %}

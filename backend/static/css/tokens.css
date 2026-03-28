@@ -1,0 +1,13 @@
+/* Global design tokens scaffold for modular front-end migration. */
+
+:root {
+  --global-auth-quick-search-max-height: 22rem;
+  --clips-filter-surface-radius: 0.5rem;
+  --clips-filter-panel-spacing: 0.75rem;
+  --clips-filter-control-gap: 0.5rem;
+  --clips-filter-option-gap: 0.75rem;
+  --clips-focus-outline-width: 2px;
+  --clips-focus-outline-offset: 2px;
+  --clips-filter-drawer-backdrop-z: 1040;
+  --clips-filter-drawer-z: 1050;
+}

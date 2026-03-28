@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+
+{% block title %}Labels – Clippy{% endblock %}
+
+{% block content %}
+  {% include "clips/components/labels-page-header.html" only %}
+
+  <section class="mb-4">
+    <h2 class="h5 mb-3">Your labels</h2>
+    {% if labels %}
+      {% include "clips/components/labels-table.html" with labels=labels csrf_token=csrf_token only %}
+    {% else %}
+      {% include "clips/components/labels-empty-state.html" only %}
+    {% endif %}
+  </section>
+
+  <section class="mb-4">
+    {% include "clips/components/label-create-form.html" with csrf_token=csrf_token only %}
+  </section>
+
+  <p class="mt-3">
+    <a href="{% url 'clips_web:list' %}" class="link-secondary">Back to my clips</a>
+  </p>
+{% endblock %}

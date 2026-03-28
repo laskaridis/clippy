@@ -1,0 +1,27 @@
+<!--
+component: activation-result-cta
+inputs:
+  - success
+actions:
+  - click -> accounts:login
+hooks:
+  - none
+block: none
+elements:
+  - none
+modifiers:
+  - none
+-->
+<div data-component="activation-result-cta">
+  {% if success %}
+    <p class="text-secondary mb-4">
+      You can now sign in and start clipping the web.
+    </p>
+    <a href="{% url 'accounts:login' %}" class="btn btn-primary">Go to sign in</a>
+  {% else %}
+    <p class="text-secondary mb-4">
+      This activation link is invalid or has already been used.
+    </p>
+    <a href="{% url 'accounts:login' %}" class="btn btn-outline-secondary">Back to sign in</a>
+  {% endif %}
+</div>

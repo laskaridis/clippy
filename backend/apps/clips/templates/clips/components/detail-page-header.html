@@ -1,0 +1,27 @@
+<!--
+component: detail-page-header
+inputs:
+  - clip
+actions:
+  - click -> open clip source
+  - click -> navigate back to list
+hooks:
+  - none
+block: none
+elements:
+  - none
+modifiers:
+  - none
+-->
+<div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-4" data-component="detail-page-header">
+  <div>
+    <h1 class="h3 mb-2">{{ clip.title|default:clip.url }}</h1>
+    <div class="small text-secondary">
+      Captured on {{ clip.created_at }} · {{ clip.domain }}
+    </div>
+  </div>
+  <div class="d-flex gap-2">
+    <a href="{{ clip.url }}" class="btn btn-outline-light btn-sm" target="_blank" rel="noopener noreferrer">Open source</a>
+    <a href="{% url 'clips_web:list' %}" class="btn btn-outline-secondary btn-sm">Back to clips</a>
+  </div>
+</div>

@@ -1,0 +1,33 @@
+.clip-card {
+  min-width: 0;
+}
+
+.clip-card__title {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  line-height: 1.3;
+  min-height: 2.3em;
+}
+
+.clip-card__preview {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  overflow: hidden;
+  line-height: 1.4;
+  min-height: 4.2em;
+}
+
+.clip-card__source-link {
+  color: var(--bs-secondary-color);
+  opacity: 0.9;
+  transition: color 0.15s ease, opacity 0.15s ease;
+}
+
+.clip-card__source-link:hover,
+.clip-card__source-link:focus-visible {
+  color: var(--bs-primary);
+  opacity: 1;
+}

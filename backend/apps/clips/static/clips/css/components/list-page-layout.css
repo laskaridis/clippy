@@ -1,0 +1,28 @@
+.list-page-layout,
+.clips-layout {
+  display: grid;
+  grid-template-columns: 18rem minmax(0, 1fr);
+  gap: 1rem;
+  overflow-x: clip;
+}
+
+.filter-trigger-row {
+  display: none;
+}
+
+@media (max-width: 1024px) {
+  .list-page-layout,
+  .clips-layout {
+    display: block;
+    overflow-x: hidden;
+  }
+
+  .filter-trigger-row {
+    display: block;
+  }
+
+  .filter-trigger-row__trigger:focus-visible {
+    outline: var(--clips-focus-outline-width) solid var(--bs-primary);
+    outline-offset: var(--clips-focus-outline-offset);
+  }
+}

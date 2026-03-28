@@ -1,0 +1,11 @@
+{% extends "accounts/layouts/auth-page.html" %}
+
+{% block title %}Sign in – Clippy{% endblock %}
+
+{% block auth_intro %}
+  {% include "accounts/components/auth-page-intro.html" with title="Welcome back" subtitle="Sign in to access your clipped web." only %}
+{% endblock %}
+
+{% block auth_card %}
+  {% include "accounts/components/auth-card-shell.html" with card_body_template="accounts/components/login-form.html" show_form_error=form.errors form_error_message="Please check your email and password and try again." form=form csrf_token=csrf_token only %}
+{% endblock %}

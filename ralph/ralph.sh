@@ -162,6 +162,7 @@ for ((iteration = 1; iteration <= MAX_ITERATIONS; iteration++)); do
         "RALPH_STATUS=BLOCKED")
             log_error "Ralph is blocked on iteration ${iteration}. Exiting with failure."
             exit 1
+			;;
 		*)
 			log_warn "Invalid Ralph status line on iteration ${iteration}: '$status_line'"
 			;;

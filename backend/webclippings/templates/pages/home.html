@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+
+{% block title %}Clippy – Clip anything. Instantly.{% endblock %}
+
+{% block content %}
+  <div data-component="home-page">
+    {% include "components/home-hero.html" with user=user only %}
+    {% include "components/home-feature-grid.html" only %}
+  </div>
+{% endblock %}

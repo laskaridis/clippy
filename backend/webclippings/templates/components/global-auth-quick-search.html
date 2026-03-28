@@ -1,0 +1,39 @@
+<!--
+component: global-auth-quick-search
+inputs:
+  - none
+actions:
+  - type -> quick search results panel
+block: global-auth-quick-search
+elements:
+  - global-auth-quick-search__input
+  - global-auth-quick-search__panel
+  - global-auth-quick-search__results
+  - global-auth-quick-search__results-items
+  - global-auth-quick-search__group-title
+  - global-auth-quick-search__item
+  - global-auth-quick-search__clip-headline
+  - global-auth-quick-search__clip-meta
+modifiers:
+  - global-auth-quick-search__item--active
+-->
+<label class="visually-hidden" for="quick-search-input">Quick search</label>
+<div class="global-auth-quick-search position-relative clips-nav-search-wrap" data-component="global-auth-quick-search">
+  <input
+    id="quick-search-input"
+    class="global-auth-quick-search__input form-control"
+    data-js="quick-search-input"
+    type="text"
+    placeholder="Search clips, labels, and websites"
+    autocomplete="off"
+    role="combobox"
+    aria-autocomplete="list"
+    aria-expanded="false"
+    aria-controls="quick-search-results"
+  >
+  <div id="quick-search-panel" class="global-auth-quick-search__panel card border-0 shadow-sm mt-2 d-none position-absolute start-0 end-0 z-3 quick-search-panel" data-js="quick-search-panel">
+    <div id="quick-search-results" class="global-auth-quick-search__results list-group list-group-flush" role="listbox" aria-label="Quick search results" data-js="quick-search-results">
+      <div id="quick-search-results-items" class="global-auth-quick-search__results-items" data-js="quick-search-results-items"></div>
+    </div>
+  </div>
+</div>

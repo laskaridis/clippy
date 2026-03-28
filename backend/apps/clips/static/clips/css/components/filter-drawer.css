@@ -1,0 +1,50 @@
+.filter-drawer-backdrop,
+.filter-drawer {
+  display: none;
+}
+
+@media (max-width: 1024px) {
+  .filter-drawer-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.42);
+    z-index: var(--clips-filter-drawer-backdrop-z);
+  }
+
+  .filter-drawer {
+    display: block;
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: min(26rem, 92vw);
+    background: var(--bs-body-bg);
+    box-shadow: -8px 0 24px rgba(0, 0, 0, 0.2);
+    z-index: var(--clips-filter-drawer-z);
+    padding: var(--clips-filter-panel-spacing);
+    overflow-x: hidden;
+    overflow-y: auto;
+  }
+
+  .filter-drawer__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--clips-filter-control-gap);
+    margin-bottom: var(--clips-filter-panel-spacing);
+    position: sticky;
+    top: 0;
+    background: var(--bs-body-bg);
+    padding-bottom: 0.5rem;
+  }
+
+  .filter-drawer__body {
+    overflow-x: hidden;
+  }
+
+  .filter-drawer__close:focus-visible {
+    outline: var(--clips-focus-outline-width) solid var(--bs-primary);
+    outline-offset: var(--clips-focus-outline-offset);
+  }
+}

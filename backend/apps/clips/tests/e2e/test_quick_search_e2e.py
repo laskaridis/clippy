@@ -174,7 +174,9 @@ class QuickSearchE2ETests(StaticLiveServerTestCase):
                     timeout=10_000,
                 )
 
-                clear_all_button = page.locator("[data-label-clear-all]").first
+                clear_all_button = page.locator(
+                    '[data-action="clear-label-filters"]'
+                ).first
                 clear_all_button.wait_for(state="visible", timeout=10_000)
                 clear_all_button.click()
 
@@ -185,6 +187,79 @@ class QuickSearchE2ETests(StaticLiveServerTestCase):
                 self.assertEqual(
                     page.url,
                     f"{self.live_server_url}/clips/?panel=expanded",
+                )
+            finally:
+                context.close()
+                browser.close()
+
+    def test_drawer_label_toggle_updates_query_with_multiple_filter_roots_present(
+        self,
+    ) -> None:
+        with sync_playwright() as playwright:
+            try:
+                browser: Browser = playwright.chromium.launch(
+                    channel="chromium",
+                    headless=True,
+                )
+            except Exception:
+                browser = playwright.chromium.launch(headless=True)
+            context: BrowserContext = browser.new_context(
+                viewport={"width": 390, "height": 844}
+            )
+            page: Page = context.new_page()
+            try:
+                self._login(page)
+                page.wait_for_function(
+                    "() => typeof window.ClipsListLabelFilters !== 'undefined'",
+                    timeout=10_000,
+                )
+
+                drawer_trigger = page.locator("[data-filter-drawer-trigger]").first
+                drawer_trigger.wait_for(state="visible", timeout=10_000)
+                drawer_trigger.click()
+                page.wait_for_selector(
+                    '[data-component="filter-drawer"][aria-hidden="false"]',
+                    timeout=10_000,
+                )
+
+                drawer_option = page.locator(
+                    '[data-component="filter-drawer"] '
+                    '[data-label-toggle][data-target-list="drawer"]'
+                    '[data-label-slug="orionlabel-fixture"]'
+                ).first
+                drawer_option.wait_for(state="visible", timeout=10_000)
+                drawer_option.click()
+
+                page.wait_for_url(
+                    (
+                        f"{self.live_server_url}/clips/"
+                        "?panel=open&label=orionlabel-fixture"
+                    ),
+                    timeout=10_000,
+                )
+                page.wait_for_function(
+                    "() => typeof window.ClipsListLabelFilters !== 'undefined'",
+                    timeout=10_000,
+                )
+
+                self.assertEqual(page.locator("[data-selected-label-pill]").count(), 1)
+                self.assertEqual(
+                    page.locator(
+                        '[data-component="filter-drawer"] '
+                        '[data-label-toggle][data-target-list="drawer"]'
+                        '[data-label-slug="orionlabel-fixture"]'
+                        '[data-label-selected="true"]'
+                    ).count(),
+                    1,
+                )
+                self.assertEqual(
+                    page.locator(
+                        '[data-component="filter-sidebar"] '
+                        '[data-label-toggle][data-target-list="sidebar"]'
+                        '[data-label-slug="orionlabel-fixture"]'
+                        '[data-label-selected="true"]'
+                    ).count(),
+                    1,
                 )
             finally:
                 context.close()
