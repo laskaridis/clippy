@@ -25,6 +25,11 @@ class AccountsAuthTests(TestCase):
         self.assertContains(
             response, 'src="/static/js/theme-controller.js"', html=False
         )
+        self.assertContains(
+            response,
+            'type="module" src="/static/js/backend-app.js"',
+            html=False,
+        )
         self.assertNotContains(response, "window.localStorage.setItem(", html=False)
 
     def test_home_page_uses_auth_and_anon_primary_ctas(self) -> None:

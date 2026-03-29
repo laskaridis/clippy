@@ -523,6 +523,21 @@ class ClipHtmlViewsTests(TestCase):
             '<section class="mb-4" aria-label="Quick search">',
             html=False,
         )
+        self.assertContains(
+            response,
+            'type="module" src="/static/js/backend-app.js"',
+            html=False,
+        )
+        self.assertNotContains(
+            response,
+            'src="/static/js/components/global-auth-quick-search.js"',
+            html=False,
+        )
+        self.assertNotContains(
+            response,
+            'src="/static/clips/js/pages/list-page.js"',
+            html=False,
+        )
 
     def test_labels_page_renders_clips_navbar_quick_search(self) -> None:
         self.client.force_login(self.user)
