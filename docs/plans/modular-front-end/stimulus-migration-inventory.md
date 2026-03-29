@@ -13,9 +13,9 @@ The interactive backend surface for this migration is exactly:
 | Component | Current primary template root | Current behavior source |
 | --- | --- | --- |
 | `global-theme-toggle` | `backend/webclippings/templates/components/global-theme-toggle.html` | `backend/static/js/theme-controller.js` |
-| `global-auth-quick-search` | `backend/webclippings/templates/components/global-auth-quick-search.html` | `backend/static/js/components/global-auth-quick-search.js` |
-| `clip-card` | `backend/apps/clips/templates/clips/components/clip-card.html` | `backend/apps/clips/static/clips/js/components/clip-card.js` |
-| `label-filter-options` | `backend/apps/clips/templates/clips/components/label-filter-options.html` | `backend/apps/clips/static/clips/js/components/label-filter-options.js` |
+| `global-auth-quick-search` | `backend/webclippings/templates/components/global-auth-quick-search.html` | `backend/static/js/controllers/global-auth-quick-search-controller.js` |
+| `clip-card` | `backend/apps/clips/templates/clips/components/clip-card.html` | `backend/static/js/controllers/clip-card-controller.js` |
+| `label-filter-options` | `backend/apps/clips/templates/clips/components/label-filter-options.html` | `backend/static/js/controllers/label-filter-options-controller.js` |
 | `filter-sidebar` | `backend/apps/clips/templates/clips/components/filter-sidebar.html` | `backend/static/js/controllers/filter-sidebar-controller.js` |
 | `filter-drawer` | `backend/apps/clips/templates/clips/components/filter-drawer.html` | `backend/static/js/controllers/filter-drawer-controller.js` |
 | `filter-trigger-row` | `backend/apps/clips/templates/clips/pages/list.html` | `backend/static/js/controllers/filter-trigger-row-controller.js` |
@@ -60,8 +60,9 @@ introducing direct imports or `window.*` global APIs.
 
 - `global-theme-toggle` keeps a minimal pre-paint bootstrap outside Stimulus for
   initial theme restoration before first paint.
-- The remaining interactive behavior moves behind one shared Stimulus
-  application entrypoint and registered controllers.
+- The remaining interactive behavior runs through one shared Stimulus
+  application entrypoint and registered controllers loaded from
+  `backend/static/js/backend-app.js`.
 - `backend/apps/clips/static/clips/js/pages/list-page.js` is removed once
   `filter-sidebar`, `filter-drawer`, and `filter-trigger-row` own the remaining
   list-page coordination directly and label add/remove/clear affordances rely on

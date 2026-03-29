@@ -572,7 +572,7 @@
         "Theme JavaScript is reduced to Stimulus-owned behavior plus any minimal pre-paint bootstrap needed before first paint.",
         "Legacy global APIs (`window.ClipCardComponent`, `window.LabelFilterOptionsComponent`, `window.ClipsListLabelFilters`, and similar) are no longer present."
       ],
-      "status": "PENDING",
+      "status": "COMPLETED",
       "dependencies": [
         "T032",
         "T033"
