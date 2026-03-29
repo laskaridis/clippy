@@ -607,7 +607,7 @@
         "The final release gate `make all-verify` passes before handoff.",
         "Relevant plan artifacts under `docs/plans/modular-front-end/` reflect the final implementation status and any intentional follow-up debt."
       ],
-      "status": "PENDING",
+      "status": "COMPLETED",
       "dependencies": [
         "T035"
       ],

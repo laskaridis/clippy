@@ -1,6 +1,7 @@
 ## Codebase Patterns
 - Use `scripts/agent-preflight.sh` before edits; branch/worktree compliance is a hard gate and also enforced by git hooks.
 - Use Makefile entrypoints (`make backend-test-unit`, `make backend-lint`, `make backend-typecheck`, `make all-verify`) as canonical quality gates for backend/frontend refactor work.
+- For final handoff verification, run the delivery gate plus the required Make targets sequentially and keep `make all-verify` last so backend E2E coverage does not overlap with any separate Django E2E run.
 - For backend Stimulus migration, load shared behavior through `backend/static/js/backend-app.js` and register controllers in `backend/static/js/controllers/index.js`; do not reintroduce template-level legacy script tags once a component has a Stimulus owner.
 - Once a backend component is fully owned by a Stimulus controller, remove its retired legacy IIFE script and any temporary compatibility bootstrap import in the same change so the shared entrypoint remains the only runtime path.
 - Keep `backend/static/js/theme-controller.js` as a head-loaded pre-paint restore shim only; move theme toggle UI state, aria labels, and localStorage persistence into the `global-theme-toggle` Stimulus controller to preserve no-flash startup without split runtime ownership.
@@ -43,6 +44,18 @@
   - Patterns discovered: Stimulus overlay regressions are best covered by asserting both the mounted root state (`aria-hidden`, `d-none`) and focus restoration, not just whether a selector still exists in the DOM.
   - Gotchas encountered: Playwright `wait_for_selector()` defaults to waiting for a visible element, so hidden-but-mounted drawer roots should be checked with `wait_for_function()` or a hidden-state assertion instead.
   - Useful context: verification passed with `make backend-test-unit`, `make backend-lint`, `make backend-typecheck`, and `make backend-test-e2e`; `T036` is now the only remaining task in this feature plan.
+---
+
+## [2026-03-29 19:00:21 EEST]
+- Task id: T036
+- What was implemented: Ran the final delivery gate and required verification targets, confirmed the full repository releasability checks pass, and marked the modular front-end Stimulus migration plan complete.
+- Files changed:
+  - `docs/plans/modular-front-end/tasks.json`
+  - `docs/plans/modular-front-end/ralph.txt`
+- **Learnings for future iterations:**
+  - Patterns discovered: final handoff verification for this repo is most reliable when the delivery gate runs before the explicit Make targets, with `make all-verify` saved for the end of the sequence.
+  - Gotchas encountered: `make all-verify` already runs backend E2E coverage, so separate Django E2E commands should not be run in parallel or interleaved with it.
+  - Useful context: this pass cleared `.agents/skills/feature-delivery-gate/scripts/gate.sh`, `make backend-test-unit`, `make backend-lint`, `make backend-typecheck`, and `make all-verify`.
 ---
 
 ## [2026-03-29 18:32:39 EEST]
