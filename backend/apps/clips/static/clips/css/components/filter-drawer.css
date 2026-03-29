@@ -1,27 +1,35 @@
+.filter-drawer-shell,
 .filter-drawer-backdrop,
 .filter-drawer {
   display: none;
 }
 
 @media (max-width: 1024px) {
-  .filter-drawer-backdrop {
+  .filter-drawer-shell {
     display: block;
     position: fixed;
     inset: 0;
+    z-index: var(--clips-filter-drawer-z);
+  }
+
+  .filter-drawer-backdrop {
+    display: block;
+    position: absolute;
+    inset: 0;
     background: rgba(0, 0, 0, 0.42);
-    z-index: var(--clips-filter-drawer-backdrop-z);
+    z-index: 0;
   }
 
   .filter-drawer {
     display: block;
-    position: fixed;
+    position: absolute;
     top: 0;
     right: 0;
     bottom: 0;
     width: min(26rem, 92vw);
     background: var(--bs-body-bg);
     box-shadow: -8px 0 24px rgba(0, 0, 0, 0.2);
-    z-index: var(--clips-filter-drawer-z);
+    z-index: 1;
     padding: var(--clips-filter-panel-spacing);
     overflow-x: hidden;
     overflow-y: auto;

@@ -63,17 +63,5 @@
     </div>
   </div>
 
-  <div
-    data-controller="filter-drawer"
-    data-filter-drawer-initial-panel-state-value="{{ panel_state }}"
-  >
-    <div
-      class="filter-drawer-backdrop d-none"
-      data-component="filter-drawer-backdrop"
-      data-filter-drawer-target="backdrop"
-      data-action="click->filter-drawer#close"
-      aria-hidden="true"
-    ></div>
-    {% include "clips/components/filter-drawer.html" with selected_labels=selected_labels clear_all_filters_query=clear_all_filters_query label_filters_dataset=label_filters_dataset selected_label_slugs=selected_label_slugs only %}
-  </div>
+  {% include "clips/components/filter-drawer.html" with panel_state=panel_state selected_labels=selected_labels clear_all_filters_query=clear_all_filters_query label_filters_dataset=label_filters_dataset selected_label_slugs=selected_label_slugs only %}
 {% endblock %}

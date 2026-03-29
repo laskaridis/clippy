@@ -552,7 +552,7 @@
         "Existing `data-component` root markers remain available where tests or component identity still depend on them.",
         "Template changes preserve current accessibility attributes, semantic structure, and explicit include-context usage."
       ],
-      "status": "PENDING",
+      "status": "COMPLETED",
       "dependencies": [
         "T028",
         "T029",
