@@ -29,6 +29,21 @@
 - For duplicated component instances on one page (for example sidebar + drawer label options), use instance markers like `data-target-list` in browser tests/selectors so interactions are asserted against the intended root.
 - Before removing non-root `data-*` hooks, run an `rg` consumer sweep across templates, JS, CSS, and tests; remove only zero-consumer hooks and preserve active interaction hooks as stable JS contracts.
 - For backend Playwright E2E tests, do any Django ORM assertions after the Playwright browser/context closes; model queries inside the Playwright block can trip Django `SynchronousOnlyOperation`.
+- For backend Playwright E2E assertions on Stimulus overlays, wait on the mounted root's `aria-hidden` and `d-none` state plus `document.activeElement`; these components usually stay attached while visibility and focus move.
+
+## [2026-03-29 18:55:46 EEST]
+- Task id: T035
+- What was implemented: Added Playwright-backed regression coverage for the remaining Stimulus runtime contracts by verifying theme toggle persistence on the home page and the clips filter drawer open/escape-close focus lifecycle, while keeping the existing quick-search, filter, and clip delete E2E coverage in place.
+- Files changed:
+  - `backend/apps/clips/tests/e2e/test_quick_search_e2e.py`
+  - `docs/plans/modular-front-end/tasks.json`
+  - `docs/plans/modular-front-end/ralph.txt`
+  - `AGENTS.md`
+- **Learnings for future iterations:**
+  - Patterns discovered: Stimulus overlay regressions are best covered by asserting both the mounted root state (`aria-hidden`, `d-none`) and focus restoration, not just whether a selector still exists in the DOM.
+  - Gotchas encountered: Playwright `wait_for_selector()` defaults to waiting for a visible element, so hidden-but-mounted drawer roots should be checked with `wait_for_function()` or a hidden-state assertion instead.
+  - Useful context: verification passed with `make backend-test-unit`, `make backend-lint`, `make backend-typecheck`, and `make backend-test-e2e`; `T036` is now the only remaining task in this feature plan.
+---
 
 ## [2026-03-29 18:32:39 EEST]
 - Task id: T032
