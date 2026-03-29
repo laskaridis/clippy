@@ -1,6 +1,7 @@
 <aside
   class="filter-sidebar{% if panel_state == 'collapsed' %} filter-sidebar--collapsed{% endif %}"
   data-component="filter-sidebar"
+  data-controller="filter-sidebar"
   aria-label="Clip filters"
 >
   <header class="filter-sidebar__header">
@@ -8,7 +9,8 @@
     <button
       type="button"
       class="filter-sidebar__toggle btn btn-sm btn-outline-secondary"
-      data-action="toggle-filter-panel"
+      data-action="click->filter-sidebar#toggle"
+      data-filter-sidebar-target="toggle"
       data-filter-panel-toggle
       data-expanded-label="Collapse"
       data-collapsed-label="Expand"
@@ -22,6 +24,7 @@
   <div
     id="label-filter-sidebar-panel"
     class="filter-sidebar__panel{% if panel_state != 'expanded' %} d-none{% endif %}"
+    data-filter-sidebar-target="panel"
     data-role="filter-panel-body"
     data-filter-panel-body
   >

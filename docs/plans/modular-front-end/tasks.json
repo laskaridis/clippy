@@ -516,7 +516,7 @@
         "`filter-trigger-row` exists only if the drawer open trigger remains outside the drawer root; otherwise its responsibilities are collapsed into `filter-drawer` without breaking component boundaries.",
         "No filtering behavior depends on `window.LabelFilterOptionsComponent`, `window.ClipsListLabelFilters`, or page-global orchestration."
       ],
-      "status": "PENDING",
+      "status": "COMPLETED",
       "dependencies": [
         "T027"
       ],

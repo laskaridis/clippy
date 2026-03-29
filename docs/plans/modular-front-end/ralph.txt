@@ -4,6 +4,7 @@
 - For backend Stimulus migration, load shared behavior through `backend/static/js/backend-app.js`, register controllers in `backend/static/js/controllers/index.js`, and keep any temporary legacy compatibility script loading in `backend/static/js/legacy-backend-bootstrap.js` instead of template-level script tags.
 - Keep `backend/static/js/theme-controller.js` as a head-loaded pre-paint restore shim only; move theme toggle UI state, aria labels, and localStorage persistence into the `global-theme-toggle` Stimulus controller to preserve no-flash startup without split runtime ownership.
 - For Stimulus replacements of document-level widgets, keep debounce/request state on the controller instance and bind any document-level listeners in `connect()` with matching cleanup in `disconnect()` to avoid leaking handlers across remounts.
+- For Stimulus coordination across disjoint server-rendered roots, use document-level `CustomEvent` contracts between controller owners and gate `legacy-backend-bootstrap` on the migrated controller roots so legacy scripts do not double-bind.
 - For the Stimulus migration, assign each interactive component exactly one controller owner and use URL query state plus document-level DOM events for cross-component coordination instead of `window.*` APIs or page-global orchestration.
 - For BEM compliance spot-audits, scan component CSS with `rg` to enforce no `[data-component="..."]` styling anchors and keep styling on explicit class contracts.
 - For clips list behavior, URL query state (`label`, `panel`, `url`) is the source of truth; UI controls mutate URL parameters and trigger reload/parity through server-rendered context.
@@ -44,7 +45,31 @@
 - **Learnings for future iterations:**
   - Patterns discovered: component-owned delete flows fit cleanly in Stimulus by storing the request URL on the root as a controller value and binding the button with a `click-><controller>#<method>` action.
   - Gotchas encountered: Django ORM assertions inside backend Playwright E2E tests can fail with `SynchronousOnlyOperation`; close the Playwright browser/context before checking database state.
-  - Useful context: verification passed with `make backend-test-unit`, `make backend-lint`, `make backend-typecheck`, `make backend-test-e2e`, and `make all-verify`; the new browser-backed delete test now covers the clip-card Stimulus delete path directly.
+- Useful context: verification passed with `make backend-test-unit`, `make backend-lint`, `make backend-typecheck`, `make backend-test-e2e`, and `make all-verify`; the new browser-backed delete test now covers the clip-card Stimulus delete path directly.
+---
+
+## [2026-03-29 18:30:08 EEST]
+- Task id: T031
+- What was implemented: Moved clips list label filtering and panel state ownership into Stimulus controllers (`label-filter-options`, `filter-sidebar`, `filter-drawer`, and `filter-trigger-row`), rewired the list/filter templates to use controller/action/target contracts, and gated the legacy bootstrap so the migrated page no longer depends on legacy filter globals or page-level orchestration.
+- Files changed:
+  - `backend/static/js/controllers/label-filter-options-controller.js`
+  - `backend/static/js/controllers/filter-sidebar-controller.js`
+  - `backend/static/js/controllers/filter-drawer-controller.js`
+  - `backend/static/js/controllers/filter-trigger-row-controller.js`
+  - `backend/apps/clips/templates/clips/components/label-filter-options.html`
+  - `backend/apps/clips/templates/clips/components/filter-sidebar.html`
+  - `backend/apps/clips/templates/clips/components/filter-drawer.html`
+  - `backend/apps/clips/templates/clips/pages/list.html`
+  - `backend/static/js/legacy-backend-bootstrap.js`
+  - `backend/apps/clips/tests/views/test_clip_views.py`
+  - `backend/apps/clips/tests/e2e/test_quick_search_e2e.py`
+  - `docs/plans/modular-front-end/tasks.json`
+  - `docs/plans/modular-front-end/ralph.txt`
+  - `AGENTS.md`
+- **Learnings for future iterations:**
+  - Patterns discovered: when the mobile drawer trigger lives outside the drawer root, keep the trigger and drawer as separate Stimulus owners and coordinate them with document-level `CustomEvent` messages rather than cross-controller DOM reach-through.
+  - Gotchas encountered: loading the legacy clips-list bootstrap alongside migrated Stimulus roots causes duplicate filter bindings; gate the legacy bootstrap on the new controller markers during the transition.
+  - Useful context: browser verification passed through `make backend-test-e2e`, and the full gate passed with `make backend-test-unit`, `make backend-lint`, `make backend-typecheck`, and `make all-verify`.
 ---
 
 ## [2026-03-27 13:47:39 EET]

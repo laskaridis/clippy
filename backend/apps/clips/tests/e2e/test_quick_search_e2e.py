@@ -167,7 +167,19 @@ class QuickSearchE2ETests(StaticLiveServerTestCase):
             try:
                 self._login(page)
                 page.wait_for_function(
-                    "() => typeof window.ClipsListLabelFilters !== 'undefined'",
+                    """
+                    () => {
+                      return Boolean(
+                        window.ClippyBackendStimulus &&
+                          document.querySelector(
+                            '[data-controller~="label-filter-options"]'
+                          ) &&
+                          document.querySelector(
+                            '[data-controller~="filter-sidebar"]'
+                          )
+                      )
+                    }
+                    """,
                     timeout=10_000,
                 )
 
@@ -181,7 +193,19 @@ class QuickSearchE2ETests(StaticLiveServerTestCase):
                     wait_until="domcontentloaded",
                 )
                 page.wait_for_function(
-                    "() => typeof window.ClipsListLabelFilters !== 'undefined'",
+                    """
+                    () => {
+                      return Boolean(
+                        window.ClippyBackendStimulus &&
+                          document.querySelector(
+                            '[data-controller~="label-filter-options"]'
+                          ) &&
+                          document.querySelector(
+                            '[data-controller~="filter-drawer"]'
+                          )
+                      )
+                    }
+                    """,
                     timeout=10_000,
                 )
 
@@ -221,7 +245,19 @@ class QuickSearchE2ETests(StaticLiveServerTestCase):
             try:
                 self._login(page)
                 page.wait_for_function(
-                    "() => typeof window.ClipsListLabelFilters !== 'undefined'",
+                    """
+                    () => {
+                      return Boolean(
+                        window.ClippyBackendStimulus &&
+                          document.querySelector(
+                            '[data-controller~="filter-trigger-row"]'
+                          ) &&
+                          document.querySelector(
+                            '[data-controller~="filter-drawer"]'
+                          )
+                      )
+                    }
+                    """,
                     timeout=10_000,
                 )
 
@@ -249,7 +285,16 @@ class QuickSearchE2ETests(StaticLiveServerTestCase):
                     timeout=10_000,
                 )
                 page.wait_for_function(
-                    "() => typeof window.ClipsListLabelFilters !== 'undefined'",
+                    """
+                    () => {
+                      return Boolean(
+                        window.ClippyBackendStimulus &&
+                          document.querySelector(
+                            '[data-controller~="label-filter-options"]'
+                          )
+                      )
+                    }
+                    """,
                     timeout=10_000,
                 )
 
