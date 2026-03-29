@@ -510,6 +510,21 @@ class ClipHtmlViewsTests(TestCase):
         )
         self.assertContains(
             response,
+            'data-controller="global-auth-quick-search"',
+            html=False,
+        )
+        self.assertContains(
+            response,
+            "input->global-auth-quick-search#queueSearch",
+            html=False,
+        )
+        self.assertContains(
+            response,
+            'data-global-auth-quick-search-target="resultsItems"',
+            html=False,
+        )
+        self.assertContains(
+            response,
             '<label class="visually-hidden" for="quick-search-input">Quick search</label>',
             html=False,
         )
@@ -545,6 +560,11 @@ class ClipHtmlViewsTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'id="quick-search-input"', html=False)
+        self.assertContains(
+            response,
+            'data-controller="global-auth-quick-search"',
+            html=False,
+        )
         self.assertContains(
             response,
             '<label class="visually-hidden" for="quick-search-input">Quick search</label>',

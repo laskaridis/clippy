@@ -480,7 +480,7 @@
         "Debounce timing, endpoint, and query-length constraints are provided through controller values where appropriate.",
         "Current quick-search behavior remains intact: request cancellation, results rendering, keyboard navigation, active descendant handling, escape close, and click-away close."
       ],
-      "status": "PENDING",
+      "status": "COMPLETED",
       "dependencies": [
         "T027"
       ],
