@@ -1,24 +1,3 @@
-<!--
-component: filter-sidebar
-inputs:
-  - panel_state
-  - label_filters_dataset
-  - selected_label_slugs
-actions:
-  - click -> panel toggle
-  - input/click -> label filter updates
-hooks:
-  - data-action="toggle-filter-panel"
-  - data-role="filter-panel-body"
-block: filter-sidebar
-elements:
-  - filter-sidebar__header
-  - filter-sidebar__title
-  - filter-sidebar__toggle
-  - filter-sidebar__panel
-modifiers:
-  - filter-sidebar--collapsed
--->
 <aside
   class="filter-sidebar{% if panel_state == 'collapsed' %} filter-sidebar--collapsed{% endif %}"
   data-component="filter-sidebar"
