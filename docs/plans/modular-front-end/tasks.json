@@ -533,7 +533,7 @@
         "All former page-level orchestration responsibilities are reassigned to owning component controllers with explicit event or URL-state contracts.",
         "Clips list interactions remain parity-equivalent on both desktop and mobile flows."
       ],
-      "status": "PENDING",
+      "status": "COMPLETED",
       "dependencies": [
         "T030",
         "T031"

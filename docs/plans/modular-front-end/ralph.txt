@@ -8,13 +8,12 @@
 - For the Stimulus migration, assign each interactive component exactly one controller owner and use URL query state plus document-level DOM events for cross-component coordination instead of `window.*` APIs or page-global orchestration.
 - For BEM compliance spot-audits, scan component CSS with `rg` to enforce no `[data-component="..."]` styling anchors and keep styling on explicit class contracts.
 - For clips list behavior, URL query state (`label`, `panel`, `url`) is the source of truth; UI controls mutate URL parameters and trigger reload/parity through server-rendered context.
+- For clips list filter affordances, keep add/remove/clear actions as plain server-rendered links when the destination query is already known; do not add page-level JavaScript that duplicates the same navigation.
 - Global style loading order is defined in `backend/webclippings/templates/base.html`: load `static/css/tokens.css` before `static/css/base.css` so shared tokens are available to base and component styles.
 - Keep `backend/webclippings/templates/base.html` as a compatibility shim that extends `templates/layouts/base-shell.html` while legacy pages still reference `base.html`; this enables incremental migration without route template rewiring.
-- Keep quick-search behavior in a global authenticated component script (`backend/static/js/components/global-auth-quick-search.js`) loaded from `base-shell`, while clips list logic lives in `clips/js/pages/list-page.js` orchestrating clips-scoped component modules.
-- Keep clips component JS module basenames aligned with template component basenames (for example `clip-card.html` <-> `clip-card.js`, `label-filter-options.html` <-> `label-filter-options.js`) and wire initialization from `js/pages/list-page.js`.
+- Keep quick-search behavior in Stimulus under the shared backend app entrypoint; avoid reintroducing page-specific script tags or page-level orchestration on the clips list route.
+- Keep clips component controller ownership aligned with template component basenames (for example `clip-card.html` <-> `clip-card`, `label-filter-options.html` <-> `label-filter-options`) and register them centrally in `backend/static/js/controllers/index.js`.
 - When removing legacy root aliases, keep `data-component="<name>"` as the canonical JS ownership hook and remove alias fallbacks in component JS/tests in the same change to avoid split contracts.
-- For list-page component JS, pass explicit root elements into component initializers (`init({ root, ... })`) and keep setup-time DOM queries scoped to those roots to avoid document-global coupling.
-- Keep clips list cross-component orchestration (drawer/sidebar state wiring and page-level label actions) in `clips/js/pages/list-page.js`; keep `clips/js/components/label-filter-options.js` scoped to label-option-root behavior and expose only minimal query mutation helpers via `window.ClipsListLabelFilters`.
 - Keep global authenticated quick-search styling in `backend/static/css/components/global-auth-quick-search.css` loaded from `base-shell`, while clips list route styles are loaded from `clips/pages/list.html` via app `css/components/*` includes.
 - When migrating route templates into app `pages/` folders, update all `template_name` references and template assertions together in the same change to avoid silent route/template drift.
 - When a Django component partial uses custom filters/tags, add its own `{% load ... %}` in that partial; parent template loads are not guaranteed for isolated component includes.
@@ -28,6 +27,22 @@
 - For duplicated component instances on one page (for example sidebar + drawer label options), use instance markers like `data-target-list` in browser tests/selectors so interactions are asserted against the intended root.
 - Before removing non-root `data-*` hooks, run an `rg` consumer sweep across templates, JS, CSS, and tests; remove only zero-consumer hooks and preserve active interaction hooks as stable JS contracts.
 - For backend Playwright E2E tests, do any Django ORM assertions after the Playwright browser/context closes; model queries inside the Playwright block can trip Django `SynchronousOnlyOperation`.
+
+## [2026-03-29 18:32:39 EEST]
+- Task id: T032
+- What was implemented: Removed the legacy clips list page orchestration entrypoint, retired the unused backend compatibility loader path for that page, and aligned the migration notes around controller-owned coordination plus server-rendered filter navigation.
+- Files changed:
+  - `backend/static/js/legacy-backend-bootstrap.js`
+  - `backend/apps/clips/static/clips/js/pages/list-page.js`
+  - `docs/plans/modular-front-end/stimulus-migration-inventory.md`
+  - `docs/plans/modular-front-end/tasks.json`
+  - `docs/plans/modular-front-end/ralph.txt`
+  - `AGENTS.md`
+- **Learnings for future iterations:**
+  - Patterns discovered: when a clips list interaction already renders the exact destination URL in the template, keep it as plain navigation and let the next server-rendered response supply the updated filter state.
+  - Gotchas encountered: compatibility bootstraps can silently retain stale asset references after a migration step, so remove dead load paths when deleting legacy entrypoints.
+  - Useful context: this change removes only the clips list page coordinator; the remaining legacy component IIFEs are still follow-up cleanup for `T034`.
+---
 
 ## [2026-03-29 18:21:24 EEST]
 - Task id: T030
