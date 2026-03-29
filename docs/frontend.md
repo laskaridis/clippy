@@ -28,28 +28,9 @@ code in this repository.
   - Component styling: `static/.../css/components/<component-name>.css` (optional)
 - Avoid generic suffixes like `-controller`, `-utils`, `-helper` in component file names.
 - Component html templates are partials included by pages; they NEVER extend other templates.
-  - Page templates may use `{% extends %}` for layout inheritance.
-- ALWAYS pass a component's variables in templates explicitly using `with ... only` instead of relying on outer template scope.
-- Components must NEVER rely on hidden ambient template variables.
-
-### Component Documentation
-
-Document the interface contract of each component using a multi-line comment in the head of the component's html file. Example:
-
-```html
-<!--
-component: <component-name>
-inputs:
-  - <list the component's inputs on separate lines>
-hooks:
-  - <list the component's exposed hooks (i.e. `data-*` attributes) on separate lines>
-block: <component's block name following the BEM approach>
-elements:
-  - <list the component's BEM element names on separate lines>
-modifiers:
-  - <list the component's BEM modifier names on separate lines>
--->
-```
+  - Django page templates may use `{% extends %}` for layout inheritance.
+- ALWAYS pass a component's variables in django templates explicitly using `with ... only` instead of relying on outer template scope.
+- Components must NEVER rely on hidden ambient django template variables.
 
 ## HTML Guidelines
 
@@ -60,30 +41,34 @@ modifiers:
 ## JavaScript Guidelines
 
 - NEVER use classes as js hooks.
-- Use `data-role` js hooks to reference a component's **internal** elements (structure only).
-- Use `data-action` js hooks to **trigger behavior** (event handling only):
+- Use stable `data-*` js hooks for interfacing with DOM elements from javascript:
+  - Use `data-component` js hook on the **component root** element.
+  - Use `data-action` js hooks to **trigger behavior** (event handling only).
+  - Use `data-role` js hooks to reference a component's **internal** elements (structure only).
+  Example:
   ```html
-  <button data-action="toggle"></button>
-  ```
-  ```javascript
-  const btn = document.querySelector('[data-action="toggle"]');
-  ```
-- Use scoped queries within a component root:
-  ```html
+  <!--
+  CONTRACTS:
+  data-action="add-to-cart"  : requires data-product-id
+  data-action="toggle-modal" : requires data-product-id
+  data-product-id="1"        : required by add-to-cart and toggle-modal actions
+  data-role="product-price-label"
+  -->
   <div class="card" data-component="card">
-    <button class="card__delete" data-action="delete">Delete</button>
+    <span class="card__label" data-role="product-price-label">$99</span>
+    <button class="card__delete btn" data-action="add-to-cart" data-product-id="99">Add</button>
+    <button class="card__toggle btn" data-action="toggle-modal" data-product-id="99">Preview</button>
   </div>
   ```
   ```javascript
-  const root = document.querySelector('[data-component="card"]');
-  const deleteBtn = root.querySelector('[data-action="delete"]'); 
+  const card = document.querySelector('[data-component="card"]');
+  const label = card.querySelector('[data-role="product-price-label"]'); // structural ref
+  const btn = card.querySelector('[data-action="add-to-cart"]');  // event target
   ```
-- Use intention-revealing names in js hooks, for example: `data-action="delete"`, `data-action="close"`, `data-role="title"`
-- Treat js hooks as part of the component's API contract:
-  - add hooks only when consumed
-  - remove hooks when no longer consumed
-  - document them in the component's html template file 
-- Component js should enhance DOM only inside its own root.
+- Use scoped queries within a component root.
+- Use intention-revealing names in js hooks, for example: `data-action="delete-clip"`, `data-action="close-clip-preview"`, `data-role="clip-title"`
+- Treat js hooks as part of the component's API contract.
+- A component's js should interact with the DOM only inside its own root.
 - Page-level orchestration belongs in `static/.../js/pages/<page-name>.js`.
 - Page entrypoints should initialize component modules explicitly.
 - Use idempotent initialization guards for repeat mount paths.

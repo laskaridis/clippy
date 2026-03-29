@@ -1,29 +1,3 @@
-<!--
-component: clip-card
-inputs:
-  - clip
-  - current_query_params
-actions:
-  - click -> open clip detail/source
-  - click -> delete clip
-  - click -> apply label filter
-hooks:
-  - data-action="delete-clip"
-  - data-action="add-label-filter"
-block: clip-card
-elements:
-  - clip-card__body
-  - clip-card__header
-  - clip-card__title-wrap
-  - clip-card__title-row
-  - clip-card__title
-  - clip-card__source-link
-  - clip-card__preview
-  - clip-card__labels
-  - clip-card__timestamp
-modifiers:
-  - none
--->
 {% load clips_filters %}
 <article class="clip-card card border-0 shadow-sm w-100 h-100" data-component="clip-card">
   <div class="clip-card__body card-body d-flex flex-column">

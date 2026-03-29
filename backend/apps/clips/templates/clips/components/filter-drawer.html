@@ -1,27 +1,3 @@
-<!--
-component: filter-drawer
-inputs:
-  - selected_labels
-  - clear_all_filters_query
-  - label_filters_dataset
-  - selected_label_slugs
-actions:
-  - click -> close drawer
-  - click -> clear filters
-  - input/click -> label filter updates
-hooks:
-  - data-action="clear-label-filters"
-  - data-action="close-filter-drawer"
-block: filter-drawer
-elements:
-  - filter-drawer__header
-  - filter-drawer__title
-  - filter-drawer__actions
-  - filter-drawer__close
-  - filter-drawer__body
-modifiers:
-  - none
--->
 <aside
   id="label-filter-drawer"
   class="filter-drawer d-none"

@@ -16,22 +16,22 @@ moving on. If no root feature folder has been specified, stop and reply with an 
 
 The user MUST speficy a root feature folder with the following files inside:
 - `spec.md` detailing the specification of the feature, including the related stories
-- `tasks.md` detailing the implementation plan of the feature, broken down in tasks.
+- `tasks.json` detailing the implementation plan of the feature, broken down in tasks.
 
 ## Your Task
 
-1. Read the `spec.md` and `tasks.md` in the user-specified feature folder.
+1. Read the `spec.md` and `tasks.json` in the user-specified feature folder.
 2. Read the progress log at `ralph.txt` inside the same folder (check Codebase Patterns 
    section first)
 3. Check that you're working on a feature branch named after the feature using a git 
    worktree (if not, create one).
 4. Pick the **highest priority** task which is not implemented yet and doesn't have any
-   pending dependencies.
+   pending dependencies (HINT: you have access to `jq` cli tool).
 5. Implement that single task. 
 6. Run quality checks (e.g., typecheck, lint, test - use whatever your project requires)
    and make sure they ALL pass.
-7. Update AGENTS.md files if you discover reusable patterns (see below)
-8. Update `tasks.md` to mark the task as completed. 
+7. Update AGENTS.md files if you discover reusable patterns (see below).
+8. Update `tasks.json` to mark the task as completed. 
 9. Append your progress to `ralph.txt` under the specified feature folder.
 10. Commit ALL your changes.
 

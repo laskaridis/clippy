@@ -1,34 +1,3 @@
-<!--
-component: label-filter-options
-inputs:
-  - target_list
-  - search_input_id
-  - list_aria_label
-  - label_filters_dataset
-  - selected_label_slugs
-actions:
-  - input/click -> label filtering controls
-hooks:
-  - data-action="search-labels"
-  - data-role="label-options-list"
-  - data-action="toggle-label"
-  - data-role="label-no-match"
-  - data-action="toggle-show-more-labels"
-block: label-filter-options
-elements:
-  - label-filter-options__search
-  - label-filter-options__search-label
-  - label-filter-options__search-input
-  - label-filter-options__list
-  - label-filter-options__option
-  - label-filter-options__option-name
-  - label-filter-options__option-count
-  - label-filter-options__show-more
-  - label-filter-options__empty-state
-  - label-filter-options__no-match
-modifiers:
-  - label-filter-options__option--selected
--->
 <div class="label-filter-options" data-component="label-filter-options">
   <div class="label-filter-options__search mb-2">
     <label class="label-filter-options__search-label form-label small fw-semibold mb-1" for="{{ search_input_id }}">Search labels</label>
