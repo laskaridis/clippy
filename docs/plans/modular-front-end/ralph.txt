@@ -1,10 +1,11 @@
 ## Codebase Patterns
 - Use `scripts/agent-preflight.sh` before edits; branch/worktree compliance is a hard gate and also enforced by git hooks.
 - Use Makefile entrypoints (`make backend-test-unit`, `make backend-lint`, `make backend-typecheck`, `make all-verify`) as canonical quality gates for backend/frontend refactor work.
-- For backend Stimulus migration, load shared behavior through `backend/static/js/backend-app.js`, register controllers in `backend/static/js/controllers/index.js`, and keep any temporary legacy compatibility script loading in `backend/static/js/legacy-backend-bootstrap.js` instead of template-level script tags.
+- For backend Stimulus migration, load shared behavior through `backend/static/js/backend-app.js` and register controllers in `backend/static/js/controllers/index.js`; do not reintroduce template-level legacy script tags once a component has a Stimulus owner.
+- Once a backend component is fully owned by a Stimulus controller, remove its retired legacy IIFE script and any temporary compatibility bootstrap import in the same change so the shared entrypoint remains the only runtime path.
 - Keep `backend/static/js/theme-controller.js` as a head-loaded pre-paint restore shim only; move theme toggle UI state, aria labels, and localStorage persistence into the `global-theme-toggle` Stimulus controller to preserve no-flash startup without split runtime ownership.
 - For Stimulus replacements of document-level widgets, keep debounce/request state on the controller instance and bind any document-level listeners in `connect()` with matching cleanup in `disconnect()` to avoid leaking handlers across remounts.
-- For Stimulus coordination across disjoint server-rendered roots, use document-level `CustomEvent` contracts between controller owners and gate `legacy-backend-bootstrap` on the migrated controller roots so legacy scripts do not double-bind.
+- For Stimulus coordination across disjoint server-rendered roots, use document-level `CustomEvent` contracts between controller owners instead of `window.*` APIs or compatibility shims.
 - For Stimulus-owned server-rendered components, keep `data-controller`, any controller values, and the canonical `data-component` marker on the same root element; place controller targets inside that root instead of spreading the contract across wrapper shells.
 - For the Stimulus migration, assign each interactive component exactly one controller owner and use URL query state plus document-level DOM events for cross-component coordination instead of `window.*` APIs or page-global orchestration.
 - For BEM compliance spot-audits, scan component CSS with `rg` to enforce no `[data-component="..."]` styling anchors and keep styling on explicit class contracts.
@@ -60,6 +61,25 @@
   - Patterns discovered: for server-rendered Stimulus overlays, make the canonical `data-component` root a full-viewport shell when the controller needs to own both the backdrop and the panel surface.
   - Gotchas encountered: simply nesting a fixed-position backdrop under the drawer panel root can leave it intercepting clicks meant for drawer content; keep the backdrop and panel as siblings within a viewport-sized root so z-index layering stays explicit.
   - Useful context: `filter-trigger-row` remains the only separate controller in this flow because the mobile open trigger still lives outside the drawer root and communicates through the existing document event contract.
+---
+
+## [2026-03-29 18:50:08 EEST]
+- Task id: T034
+- What was implemented: Removed the retired backend compatibility bootstrap, deleted the superseded legacy quick-search/clip-card/label-filter-options IIFE scripts, simplified the shared backend Stimulus entrypoint to a single runtime path, and updated migration guidance to reflect that the Stimulus controllers are now the only owners.
+- Files changed:
+  - `backend/static/js/backend-app.js`
+  - `backend/static/js/legacy-backend-bootstrap.js`
+  - `backend/static/js/components/global-auth-quick-search.js`
+  - `backend/apps/clips/static/clips/js/components/clip-card.js`
+  - `backend/apps/clips/static/clips/js/components/label-filter-options.js`
+  - `docs/plans/modular-front-end/stimulus-migration-inventory.md`
+  - `docs/plans/modular-front-end/tasks.json`
+  - `docs/plans/modular-front-end/ralph.txt`
+  - `AGENTS.md`
+- **Learnings for future iterations:**
+  - Patterns discovered: once a server-rendered backend component is fully migrated to Stimulus, the shared `backend-app.js` entrypoint should be the only runtime loader for that behavior.
+  - Gotchas encountered: overlapping backend verification commands can leave the Django test database behind and break later E2E runs with `database ... already exists`; keep backend E2E and `make all-verify` strictly sequential.
+  - Useful context: browser-backed verification passed after the cleanup with `make backend-test-e2e` and `make all-verify`, so the remaining work starts from the Stimulus-only runtime path.
 ---
 
 ## [2026-03-29 18:21:24 EEST]
