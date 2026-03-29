@@ -45,3 +45,5 @@ If you need to do something **ALWAYS** check first if there is a Makefile target
 ## Front-end development
 
 Before writing any code that includes any kind of **front-end** changes ALLWAYS read `docs/frontend.md` to learn about the core principles, rules and guidelines followed in this project.
+
+- For backend server-rendered frontend work, load shared behavior through `backend/static/js/backend-app.js`; register Stimulus controllers in `backend/static/js/controllers/index.js` and keep any temporary legacy compatibility wiring inside `backend/static/js/legacy-backend-bootstrap.js` instead of adding new per-template script tags.
