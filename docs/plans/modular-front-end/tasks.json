@@ -419,6 +419,201 @@
       "notes": [
         "Migrated from `docs/plans/modular-front-end/code-review-findings.md` task `CRF-003`."
       ]
+    },
+    {
+      "id": "T026",
+      "description": "Establish the Stimulus migration inventory and define controller ownership boundaries for all currently interactive backend components.",
+      "priority": "P0",
+      "acceptance_criteria": [
+        "The in-scope interactive components are explicitly identified as `global-theme-toggle`, `global-auth-quick-search`, `clip-card`, `label-filter-options`, `filter-sidebar`, `filter-drawer`, and `filter-trigger-row` if the trigger remains outside the drawer root.",
+        "Each in-scope interaction is assigned to exactly one owning controller, with no remaining dependence on page-global orchestration or `window.*` controller APIs.",
+        "Cross-component coordination points are defined up front as either URL-state driven or DOM-event driven."
+      ],
+      "status": "COMPLETED",
+      "dependencies": [
+        "T025"
+      ],
+      "notes": [
+        "Use this task as the implementation source of truth for controller boundaries and event contracts."
+      ]
+    },
+    {
+      "id": "T027",
+      "description": "Introduce the backend Stimulus runtime, controller registry, and repeatable asset-loading path for server-rendered pages.",
+      "priority": "P0",
+      "acceptance_criteria": [
+        "A single backend JS application entrypoint starts Stimulus and registers all backend controllers.",
+        "The shared backend layout loads the Stimulus application entrypoint instead of per-component IIFE scripts.",
+        "Stimulus dependency installation/loading is represented through repository code and canonical workflow commands rather than ad hoc manual steps."
+      ],
+      "status": "PENDING",
+      "dependencies": [
+        "T026"
+      ],
+      "notes": [
+        "Keep the solution minimal and compatible with the current Django static-file setup."
+      ]
+    },
+    {
+      "id": "T028",
+      "description": "Refactor theme behavior into a `global-theme-toggle` Stimulus controller while preserving pre-paint theme restore semantics.",
+      "priority": "P0",
+      "acceptance_criteria": [
+        "Theme toggle connect/init, icon state, aria-label updates, and local-storage persistence are owned by a Stimulus controller attached to the theme component root.",
+        "Any required pre-paint theme restore remains in a minimal non-Stimulus bootstrap path so the current no-flash behavior is preserved.",
+        "The previous non-Stimulus theme controller implementation is removed or reduced to pre-paint restore only."
+      ],
+      "status": "PENDING",
+      "dependencies": [
+        "T027"
+      ],
+      "notes": [
+        "Keep document theme state synchronized with the controller after connect."
+      ]
+    },
+    {
+      "id": "T029",
+      "description": "Replace authenticated quick search with a `global-auth-quick-search` Stimulus controller using targets, values, and component-local event handling.",
+      "priority": "P0",
+      "acceptance_criteria": [
+        "Quick search input, panel, results list, and results-items container are modeled as Stimulus targets.",
+        "Debounce timing, endpoint, and query-length constraints are provided through controller values where appropriate.",
+        "Current quick-search behavior remains intact: request cancellation, results rendering, keyboard navigation, active descendant handling, escape close, and click-away close."
+      ],
+      "status": "PENDING",
+      "dependencies": [
+        "T027"
+      ],
+      "notes": [
+        "Preserve IDs and accessibility attributes currently referenced by tests unless there is a strong reason to change them."
+      ]
+    },
+    {
+      "id": "T030",
+      "description": "Convert `clip-card` delete behavior to a component-owned Stimulus controller and remove the legacy global initializer.",
+      "priority": "P0",
+      "acceptance_criteria": [
+        "Each clip card root owns its delete flow through a `clip-card` Stimulus controller.",
+        "CSRF handling, successful removal, and current failure messaging behavior remain unchanged.",
+        "The previous `window.ClipCardComponent` initializer is removed."
+      ],
+      "status": "PENDING",
+      "dependencies": [
+        "T027"
+      ],
+      "notes": [
+        "Do not reintroduce page-level knowledge into clip-card behavior."
+      ]
+    },
+    {
+      "id": "T031",
+      "description": "Convert label filtering behavior to Stimulus by introducing `label-filter-options`, `filter-sidebar`, `filter-drawer`, and `filter-trigger-row` controllers with explicit event contracts.",
+      "priority": "P0",
+      "acceptance_criteria": [
+        "`label-filter-options` owns label search, show-more, selected-state sync, row reordering, and URL mutation behavior through controller-local targets and methods.",
+        "`filter-sidebar` owns desktop panel expand/collapse state and URL `panel` synchronization.",
+        "`filter-drawer` owns mobile drawer open/close, backdrop, escape handling, focus management, and URL `panel` synchronization.",
+        "`filter-trigger-row` exists only if the drawer open trigger remains outside the drawer root; otherwise its responsibilities are collapsed into `filter-drawer` without breaking component boundaries.",
+        "No filtering behavior depends on `window.LabelFilterOptionsComponent`, `window.ClipsListLabelFilters`, or page-global orchestration."
+      ],
+      "status": "PENDING",
+      "dependencies": [
+        "T027"
+      ],
+      "notes": [
+        "Use DOM events or URL state for coordination; avoid cross-controller DOM reach-through."
+      ]
+    },
+    {
+      "id": "T032",
+      "description": "Remove clips list page orchestration and replace it with Stimulus controller coordination at component boundaries.",
+      "priority": "P0",
+      "acceptance_criteria": [
+        "`backend/apps/clips/static/clips/js/pages/list-page.js` is removed.",
+        "All former page-level orchestration responsibilities are reassigned to owning component controllers with explicit event or URL-state contracts.",
+        "Clips list interactions remain parity-equivalent on both desktop and mobile flows."
+      ],
+      "status": "PENDING",
+      "dependencies": [
+        "T030",
+        "T031"
+      ],
+      "notes": [
+        "This task is complete only when the page no longer acts as an interaction coordinator."
+      ]
+    },
+    {
+      "id": "T033",
+      "description": "Update interactive component templates to use Stimulus controller, action, target, and value contracts while preserving existing component identity markers.",
+      "priority": "P0",
+      "acceptance_criteria": [
+        "Each interactive component root includes `data-controller` with the component identifier.",
+        "Internal behavioral hooks are expressed with Stimulus `data-action`, `data-<controller>-target`, and `data-<controller>-value` contracts.",
+        "Existing `data-component` root markers remain available where tests or component identity still depend on them.",
+        "Template changes preserve current accessibility attributes, semantic structure, and explicit include-context usage."
+      ],
+      "status": "PENDING",
+      "dependencies": [
+        "T028",
+        "T029",
+        "T030",
+        "T031"
+      ],
+      "notes": [
+        "Do not add no-op controllers to static components."
+      ]
+    },
+    {
+      "id": "T034",
+      "description": "Remove superseded legacy scripts and global APIs after Stimulus replacements are fully wired.",
+      "priority": "P0",
+      "acceptance_criteria": [
+        "Legacy IIFE component scripts are removed or retired for `global-auth-quick-search`, `clip-card`, `label-filter-options`, and the clips list page.",
+        "Theme JavaScript is reduced to Stimulus-owned behavior plus any minimal pre-paint bootstrap needed before first paint.",
+        "Legacy global APIs (`window.ClipCardComponent`, `window.LabelFilterOptionsComponent`, `window.ClipsListLabelFilters`, and similar) are no longer present."
+      ],
+      "status": "PENDING",
+      "dependencies": [
+        "T032",
+        "T033"
+      ],
+      "notes": [
+        "Confirm there are no remaining template or test consumers before deleting any compatibility shims."
+      ]
+    },
+    {
+      "id": "T035",
+      "description": "Update automated coverage for Stimulus contracts and interaction parity across backend-rendered components.",
+      "priority": "P0",
+      "acceptance_criteria": [
+        "Backend view/template tests are updated to assert the new Stimulus contracts on interactive components where those contracts matter.",
+        "Existing quick-search, filter, and clip interaction tests continue to validate behavior rather than implementation details.",
+        "Any new or updated browser/E2E coverage exercises quick search, filter sidebar/drawer behavior, label search/show-more/selection, clip delete flow, and theme toggle persistence."
+      ],
+      "status": "PENDING",
+      "dependencies": [
+        "T034"
+      ],
+      "notes": [
+        "Preserve current coverage depth for accessibility-sensitive keyboard and focus behavior."
+      ]
+    },
+    {
+      "id": "T036",
+      "description": "Run required verification gates and update plan artifacts to reflect the completed Stimulus migration work.",
+      "priority": "P0",
+      "acceptance_criteria": [
+        "Required backend checks pass for the refactor batch, including at minimum `make backend-test-unit`, `make backend-lint`, and `make backend-typecheck`.",
+        "The final release gate `make all-verify` passes before handoff.",
+        "Relevant plan artifacts under `docs/plans/modular-front-end/` reflect the final implementation status and any intentional follow-up debt."
+      ],
+      "status": "PENDING",
+      "dependencies": [
+        "T035"
+      ],
+      "notes": [
+        "Do not run overlapping backend E2E commands in parallel with `make all-verify`."
+      ]
     }
   ]
 }

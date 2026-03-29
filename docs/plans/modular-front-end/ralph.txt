@@ -1,6 +1,7 @@
 ## Codebase Patterns
 - Use `scripts/agent-preflight.sh` before edits; branch/worktree compliance is a hard gate and also enforced by git hooks.
 - Use Makefile entrypoints (`make backend-test-unit`, `make backend-lint`, `make backend-typecheck`, `make all-verify`) as canonical quality gates for backend/frontend refactor work.
+- For the Stimulus migration, assign each interactive component exactly one controller owner and use URL query state plus document-level DOM events for cross-component coordination instead of `window.*` APIs or page-global orchestration.
 - For BEM compliance spot-audits, scan component CSS with `rg` to enforce no `[data-component="..."]` styling anchors and keep styling on explicit class contracts.
 - For clips list behavior, URL query state (`label`, `panel`, `url`) is the source of truth; UI controls mutate URL parameters and trigger reload/parity through server-rendered context.
 - Global style loading order is defined in `backend/webclippings/templates/base.html`: load `static/css/tokens.css` before `static/css/base.css` so shared tokens are available to base and component styles.
@@ -38,6 +39,19 @@
   - Patterns discovered: quick-search result rows are rendered in JavaScript, so BEM class-contract migrations must update both JS-rendered markup class names and JS class toggles together.
   - Gotchas encountered: backend HTML tests with hard-coded full `class="..."` strings are brittle during BEM migrations; update assertions to the canonical class contract as markup evolves.
 - Useful context: verification passed with `make backend-test-unit`, `make backend-lint`, `make backend-typecheck`, `make backend-test-e2e`, and `make all-verify` (Playwright browser download warnings remained non-fatal due system-browser fallback).
+---
+
+## [2026-03-29 17:48:04 EEST]
+- Task id: T026
+- What was implemented: Added the Stimulus migration inventory and controller ownership map for all interactive backend components, including the event and URL-state coordination contracts needed to replace page-global orchestration and legacy `window.*` APIs.
+- Files changed:
+  - `docs/plans/modular-front-end/stimulus-migration-inventory.md`
+  - `docs/plans/modular-front-end/tasks.json`
+  - `docs/plans/modular-front-end/ralph.txt`
+- **Learnings for future iterations:**
+  - Patterns discovered: Stimulus migration work in this codebase should keep one controller per interactive component root and coordinate sibling controllers through document events and URL query state.
+  - Gotchas encountered: the mobile filter trigger currently lives outside the drawer root, so `filter-trigger-row` needs its own controller unless the trigger markup is moved into the drawer-owned component.
+  - Useful context: the remaining legacy global APIs to eliminate in follow-up tasks are `window.GlobalAuthQuickSearchComponent`, `window.ClipCardComponent`, `window.LabelFilterOptionsComponent`, and `window.ClipsListLabelFilters`, while theme keeps a minimal pre-paint bootstrap outside Stimulus.
 ---
 
 ## [2026-03-27 13:59:49 EET]
