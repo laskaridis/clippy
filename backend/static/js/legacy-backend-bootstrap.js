@@ -40,7 +40,10 @@ async function loadLegacyClipsListScripts() {
 }
 
 async function bootstrapLegacyBackendScripts() {
-  if (document.querySelector('[data-component="clips-list-layout"]')) {
+  if (
+    document.querySelector('[data-component="clips-list-layout"]')
+    && !document.querySelector('[data-controller~="label-filter-options"]')
+  ) {
     await loadLegacyClipsListScripts()
   }
 }

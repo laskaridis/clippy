@@ -2,6 +2,7 @@
   id="label-filter-drawer"
   class="filter-drawer d-none"
   data-component="filter-drawer"
+  data-filter-drawer-target="panel"
   role="dialog"
   aria-modal="true"
   aria-labelledby="label-filter-drawer-title"
@@ -22,7 +23,8 @@
       <button
         type="button"
         class="filter-drawer__close btn btn-sm btn-outline-secondary"
-        data-action="close-filter-drawer"
+        data-action="click->filter-drawer#close"
+        data-filter-drawer-target="closeButton"
         data-filter-drawer-close
         aria-label="Close filters"
       >

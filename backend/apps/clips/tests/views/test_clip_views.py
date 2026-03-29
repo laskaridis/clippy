@@ -587,7 +587,12 @@ class ClipHtmlViewsTests(TestCase):
         )
         self.assertContains(
             response,
-            'data-action="toggle-filter-panel"',
+            'data-controller="filter-sidebar"',
+            html=False,
+        )
+        self.assertContains(
+            response,
+            'data-action="click->filter-sidebar#toggle"',
             html=False,
         )
         self.assertContains(
@@ -607,7 +612,12 @@ class ClipHtmlViewsTests(TestCase):
         )
         self.assertContains(
             response,
-            'data-action="open-filter-drawer"',
+            'data-controller="filter-trigger-row"',
+            html=False,
+        )
+        self.assertContains(
+            response,
+            'data-action="click->filter-trigger-row#openDrawer"',
             html=False,
         )
         self.assertContains(
@@ -635,7 +645,12 @@ class ClipHtmlViewsTests(TestCase):
         self.assertContains(response, "data-filter-drawer-close", html=False)
         self.assertContains(
             response,
-            'data-action="close-filter-drawer"',
+            'data-controller="filter-drawer"',
+            html=False,
+        )
+        self.assertContains(
+            response,
+            'data-action="click->filter-drawer#close"',
             html=False,
         )
         self.assertContains(
@@ -645,15 +660,25 @@ class ClipHtmlViewsTests(TestCase):
         )
         self.assertContains(
             response,
+            'data-controller="label-filter-options"',
+            count=2,
+            html=False,
+        )
+        self.assertContains(
+            response,
             'data-role="selected-label-count"',
             html=False,
         )
         self.assertContains(response, "data-label-search-input", count=2, html=False)
-        self.assertContains(response, 'data-action="search-labels"', html=False)
+        self.assertContains(
+            response,
+            'data-action="input->label-filter-options#search"',
+            html=False,
+        )
         self.assertContains(response, "data-label-show-more", count=2, html=False)
         self.assertContains(
             response,
-            'data-action="toggle-show-more-labels"',
+            'data-action="click->label-filter-options#toggleShowMore"',
             html=False,
         )
         self.assertContains(response, "data-filter-no-horizontal-scroll", html=False)

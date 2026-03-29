@@ -14,24 +14,23 @@
 {% endblock %}
 
 {% block content %}
-  <div
-    class="mb-3"
-    data-label-filter-sidebar-mount
-    data-panel-state="{{ panel_state }}"
-  ></div>
-
   {% include "clips/components/list-page-header.html" only %}
 
   <div class="list-page-layout clips-layout" data-component="clips-list-layout" data-filter-no-horizontal-scroll>
     {% include "clips/components/filter-sidebar.html" with panel_state=panel_state label_filters_dataset=label_filters_dataset selected_label_slugs=selected_label_slugs only %}
 
     <div class="list-page-layout__results clips-results">
-      <section class="mb-3 filter-trigger-row" data-component="filter-trigger-row">
+      <section
+        class="mb-3 filter-trigger-row"
+        data-component="filter-trigger-row"
+        data-controller="filter-trigger-row"
+      >
         <button
           id="filters-trigger"
           type="button"
           class="filter-trigger-row__trigger btn btn-outline-secondary"
-          data-action="open-filter-drawer"
+          data-action="click->filter-trigger-row#openDrawer"
+          data-filter-trigger-row-target="trigger"
           data-filter-drawer-trigger
           aria-controls="label-filter-drawer"
           aria-haspopup="dialog"
@@ -64,6 +63,17 @@
     </div>
   </div>
 
-  <div class="filter-drawer-backdrop d-none" data-component="filter-drawer-backdrop" aria-hidden="true"></div>
-  {% include "clips/components/filter-drawer.html" with selected_labels=selected_labels clear_all_filters_query=clear_all_filters_query label_filters_dataset=label_filters_dataset selected_label_slugs=selected_label_slugs only %}
+  <div
+    data-controller="filter-drawer"
+    data-filter-drawer-initial-panel-state-value="{{ panel_state }}"
+  >
+    <div
+      class="filter-drawer-backdrop d-none"
+      data-component="filter-drawer-backdrop"
+      data-filter-drawer-target="backdrop"
+      data-action="click->filter-drawer#close"
+      aria-hidden="true"
+    ></div>
+    {% include "clips/components/filter-drawer.html" with selected_labels=selected_labels clear_all_filters_query=clear_all_filters_query label_filters_dataset=label_filters_dataset selected_label_slugs=selected_label_slugs only %}
+  </div>
 {% endblock %}
