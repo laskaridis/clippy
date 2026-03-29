@@ -590,7 +590,7 @@
         "Existing quick-search, filter, and clip interaction tests continue to validate behavior rather than implementation details.",
         "Any new or updated browser/E2E coverage exercises quick search, filter sidebar/drawer behavior, label search/show-more/selection, clip delete flow, and theme toggle persistence."
       ],
-      "status": "PENDING",
+      "status": "COMPLETED",
       "dependencies": [
         "T034"
       ],

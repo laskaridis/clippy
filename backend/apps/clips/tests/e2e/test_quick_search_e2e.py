@@ -151,6 +151,86 @@ class QuickSearchE2ETests(StaticLiveServerTestCase):
                 context.close()
                 browser.close()
 
+    def test_theme_toggle_updates_document_theme_and_persists_selection(self) -> None:
+        with sync_playwright() as playwright:
+            try:
+                browser: Browser = playwright.chromium.launch(
+                    channel="chromium",
+                    headless=True,
+                )
+            except Exception:
+                browser = playwright.chromium.launch(headless=True)
+            context: BrowserContext = browser.new_context()
+            page: Page = context.new_page()
+            try:
+                page.goto(f"{self.live_server_url}/", wait_until="domcontentloaded")
+                page.wait_for_function(
+                    """
+                    () => {
+                      const toggle = document.querySelector(
+                        '[data-component="global-theme-toggle"]'
+                      )
+                      return Boolean(
+                        toggle &&
+                          toggle.getAttribute("data-controller") === "global-theme-toggle" &&
+                          window.ClippyBackendStimulus
+                      )
+                    }
+                    """,
+                    timeout=10_000,
+                )
+
+                toggle = page.locator("#themeToggle")
+                toggle.wait_for(state="visible", timeout=10_000)
+
+                initial_theme = page.evaluate(
+                    "document.documentElement.getAttribute('data-bs-theme')"
+                )
+                initial_label = toggle.get_attribute("aria-label")
+
+                toggle.click()
+                page.wait_for_function(
+                    """
+                    (previousTheme) =>
+                      document.documentElement.getAttribute("data-bs-theme") !== previousTheme
+                    """,
+                    arg=initial_theme,
+                    timeout=10_000,
+                )
+
+                updated_theme = page.evaluate(
+                    "document.documentElement.getAttribute('data-bs-theme')"
+                )
+                updated_label = toggle.get_attribute("aria-label")
+                persisted_theme = page.evaluate(
+                    "window.localStorage.getItem('clippy-theme')"
+                )
+
+                self.assertNotEqual(updated_theme, initial_theme)
+                self.assertNotEqual(updated_label, initial_label)
+                self.assertEqual(persisted_theme, updated_theme)
+
+                page.reload(wait_until="domcontentloaded")
+                page.wait_for_function(
+                    """
+                    (expectedTheme) =>
+                      document.documentElement.getAttribute("data-bs-theme") === expectedTheme
+                    """,
+                    arg=updated_theme,
+                    timeout=10_000,
+                )
+
+                self.assertEqual(
+                    page.evaluate(
+                        "document.documentElement.getAttribute('data-bs-theme')"
+                    ),
+                    updated_theme,
+                )
+                self.assertEqual(toggle.get_attribute("aria-label"), updated_label)
+            finally:
+                context.close()
+                browser.close()
+
     def test_clear_all_clears_label_and_url_filters_with_javascript_enabled(
         self,
     ) -> None:
@@ -222,6 +302,96 @@ class QuickSearchE2ETests(StaticLiveServerTestCase):
                 self.assertEqual(
                     page.url,
                     f"{self.live_server_url}/clips/?panel=expanded",
+                )
+            finally:
+                context.close()
+                browser.close()
+
+    def test_filter_drawer_open_and_escape_close_preserve_focus_contract(
+        self,
+    ) -> None:
+        with sync_playwright() as playwright:
+            try:
+                browser: Browser = playwright.chromium.launch(
+                    channel="chromium",
+                    headless=True,
+                )
+            except Exception:
+                browser = playwright.chromium.launch(headless=True)
+            context: BrowserContext = browser.new_context(
+                viewport={"width": 390, "height": 844}
+            )
+            page: Page = context.new_page()
+            try:
+                self._login(page)
+                page.wait_for_function(
+                    """
+                    () => {
+                      return Boolean(
+                        window.ClippyBackendStimulus &&
+                          document.querySelector(
+                            '[data-controller~="filter-trigger-row"]'
+                          ) &&
+                          document.querySelector(
+                            '[data-controller~="filter-drawer"]'
+                          )
+                      )
+                    }
+                    """,
+                    timeout=10_000,
+                )
+
+                drawer_trigger = page.locator("[data-filter-drawer-trigger]").first
+                drawer_trigger.wait_for(state="visible", timeout=10_000)
+                drawer_trigger.click()
+
+                page.wait_for_selector(
+                    '[data-component="filter-drawer"][aria-hidden="false"]',
+                    timeout=10_000,
+                )
+                page.wait_for_function(
+                    """
+                    () => {
+                      const trigger = document.querySelector("[data-filter-drawer-trigger]")
+                      const activeElement = document.activeElement
+                      return Boolean(
+                        trigger?.getAttribute("aria-expanded") === "true" &&
+                          activeElement?.id === "label-filter-search-drawer"
+                      )
+                    }
+                    """,
+                    timeout=10_000,
+                )
+                self.assertEqual(page.url, f"{self.live_server_url}/clips/?panel=open")
+
+                page.keyboard.press("Escape")
+
+                page.wait_for_function(
+                    """
+                    () => {
+                      const drawer = document.querySelector('[data-component="filter-drawer"]')
+                      return Boolean(
+                        drawer?.getAttribute("aria-hidden") === "true" &&
+                          drawer.classList.contains("d-none")
+                      )
+                    }
+                    """,
+                    timeout=10_000,
+                )
+                page.wait_for_function(
+                    """
+                    () => {
+                      const trigger = document.querySelector("[data-filter-drawer-trigger]")
+                      return Boolean(
+                        trigger?.getAttribute("aria-expanded") === "false" &&
+                          document.activeElement === trigger
+                      )
+                    }
+                    """,
+                    timeout=10_000,
+                )
+                self.assertEqual(
+                    page.url, f"{self.live_server_url}/clips/?panel=closed"
                 )
             finally:
                 context.close()
