@@ -245,12 +245,6 @@
     );
     updateSelectedCount(selectedCountTargets);
 
-    if (window.ClipCardComponent && typeof window.ClipCardComponent.init === "function") {
-      var clipCardRoots = toArray(listLayout.querySelectorAll('[data-component="clip-card"]'));
-      clipCardRoots.forEach(function(root) {
-        window.ClipCardComponent.init({ root: root });
-      });
-    }
   }
 
   initListPage();

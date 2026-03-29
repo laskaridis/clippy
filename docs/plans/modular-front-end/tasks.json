@@ -497,7 +497,7 @@
         "CSRF handling, successful removal, and current failure messaging behavior remain unchanged.",
         "The previous `window.ClipCardComponent` initializer is removed."
       ],
-      "status": "PENDING",
+      "status": "COMPLETED",
       "dependencies": [
         "T027"
       ],

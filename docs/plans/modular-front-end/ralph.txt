@@ -26,6 +26,26 @@
 - Component template headers are a required contract surface: every migrated component must document `component`, `inputs`, `actions`, `block`, `elements`, and `modifiers`; if a component has no custom BEM contract, set `block/elements/modifiers` to `none`.
 - For duplicated component instances on one page (for example sidebar + drawer label options), use instance markers like `data-target-list` in browser tests/selectors so interactions are asserted against the intended root.
 - Before removing non-root `data-*` hooks, run an `rg` consumer sweep across templates, JS, CSS, and tests; remove only zero-consumer hooks and preserve active interaction hooks as stable JS contracts.
+- For backend Playwright E2E tests, do any Django ORM assertions after the Playwright browser/context closes; model queries inside the Playwright block can trip Django `SynchronousOnlyOperation`.
+
+## [2026-03-29 18:21:24 EEST]
+- Task id: T030
+- What was implemented: Moved clip-card delete behavior into the `clip-card` Stimulus controller, rewired the clip-card template to use Stimulus action/value contracts, removed legacy clip-card page/bootstrap initialization, and added backend view plus Playwright-backed E2E coverage for the delete flow.
+- Files changed:
+  - `backend/static/js/controllers/clip-card-controller.js`
+  - `backend/apps/clips/templates/clips/components/clip-card.html`
+  - `backend/apps/clips/static/clips/js/pages/list-page.js`
+  - `backend/static/js/legacy-backend-bootstrap.js`
+  - `backend/apps/clips/tests/views/test_clip_views.py`
+  - `backend/apps/clips/tests/e2e/test_quick_search_e2e.py`
+  - `docs/plans/modular-front-end/tasks.json`
+  - `docs/plans/modular-front-end/ralph.txt`
+  - `AGENTS.md`
+- **Learnings for future iterations:**
+  - Patterns discovered: component-owned delete flows fit cleanly in Stimulus by storing the request URL on the root as a controller value and binding the button with a `click-><controller>#<method>` action.
+  - Gotchas encountered: Django ORM assertions inside backend Playwright E2E tests can fail with `SynchronousOnlyOperation`; close the Playwright browser/context before checking database state.
+  - Useful context: verification passed with `make backend-test-unit`, `make backend-lint`, `make backend-typecheck`, `make backend-test-e2e`, and `make all-verify`; the new browser-backed delete test now covers the clip-card Stimulus delete path directly.
+---
 
 ## [2026-03-27 13:47:39 EET]
 - Task id: T014

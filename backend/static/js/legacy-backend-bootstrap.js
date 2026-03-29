@@ -36,9 +36,6 @@ async function loadLegacyClipsListScripts() {
   await loadClassicScript(
     new URL("../clips/js/components/label-filter-options.js", import.meta.url)
   )
-  await loadClassicScript(
-    new URL("../clips/js/components/clip-card.js", import.meta.url)
-  )
   await loadClassicScript(new URL("../clips/js/pages/list-page.js", import.meta.url))
 }
 
