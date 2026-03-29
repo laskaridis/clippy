@@ -102,7 +102,18 @@ class QuickSearchE2ETests(StaticLiveServerTestCase):
 
                 self._login(page)
                 page.wait_for_function(
-                    "() => typeof window.ClipsListLabelFilters !== 'undefined'",
+                    """
+                    () => {
+                      const root = document.querySelector(
+                        '[data-component="global-auth-quick-search"]'
+                      )
+                      return Boolean(
+                        root &&
+                          root.getAttribute("data-controller") &&
+                          window.ClippyBackendStimulus
+                      )
+                    }
+                    """,
                     timeout=10_000,
                 )
                 search_input = page.locator("#quick-search-input")

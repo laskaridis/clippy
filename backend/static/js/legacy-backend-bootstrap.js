@@ -43,12 +43,6 @@ async function loadLegacyClipsListScripts() {
 }
 
 async function bootstrapLegacyBackendScripts() {
-  if (document.querySelector('[data-component="global-auth-quick-search"]')) {
-    await loadClassicScript(
-      new URL("./components/global-auth-quick-search.js", import.meta.url)
-    )
-  }
-
   if (document.querySelector('[data-component="clips-list-layout"]')) {
     await loadLegacyClipsListScripts()
   }

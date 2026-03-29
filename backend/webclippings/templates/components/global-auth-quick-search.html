@@ -1,9 +1,17 @@
 <label class="visually-hidden" for="quick-search-input">Quick search</label>
-<div class="global-auth-quick-search position-relative clips-nav-search-wrap" data-component="global-auth-quick-search">
+<div
+  class="global-auth-quick-search position-relative clips-nav-search-wrap"
+  data-component="global-auth-quick-search"
+  data-controller="global-auth-quick-search"
+  data-global-auth-quick-search-endpoint-value="/api/clips/quick-search/"
+  data-global-auth-quick-search-debounce-ms-value="200"
+>
   <input
     id="quick-search-input"
     class="global-auth-quick-search__input form-control"
     data-js="quick-search-input"
+    data-global-auth-quick-search-target="input"
+    data-action="input->global-auth-quick-search#queueSearch focus->global-auth-quick-search#searchOnFocus keydown->global-auth-quick-search#handleKeydown"
     type="text"
     placeholder="Search clips, labels, and websites"
     autocomplete="off"
@@ -12,9 +20,27 @@
     aria-expanded="false"
     aria-controls="quick-search-results"
   >
-  <div id="quick-search-panel" class="global-auth-quick-search__panel card border-0 shadow-sm mt-2 d-none position-absolute start-0 end-0 z-3 quick-search-panel" data-js="quick-search-panel">
-    <div id="quick-search-results" class="global-auth-quick-search__results list-group list-group-flush" role="listbox" aria-label="Quick search results" data-js="quick-search-results">
-      <div id="quick-search-results-items" class="global-auth-quick-search__results-items" data-js="quick-search-results-items"></div>
+  <div
+    id="quick-search-panel"
+    class="global-auth-quick-search__panel card border-0 shadow-sm mt-2 d-none position-absolute start-0 end-0 z-3 quick-search-panel"
+    data-js="quick-search-panel"
+    data-global-auth-quick-search-target="panel"
+  >
+    <div
+      id="quick-search-results"
+      class="global-auth-quick-search__results list-group list-group-flush"
+      role="listbox"
+      aria-label="Quick search results"
+      data-js="quick-search-results"
+      data-global-auth-quick-search-target="results"
+    >
+      <div
+        id="quick-search-results-items"
+        class="global-auth-quick-search__results-items"
+        data-js="quick-search-results-items"
+        data-global-auth-quick-search-target="resultsItems"
+        data-action="mousemove->global-auth-quick-search#handleResultsMousemove"
+      ></div>
     </div>
   </div>
 </div>

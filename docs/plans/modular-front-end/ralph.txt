@@ -3,6 +3,7 @@
 - Use Makefile entrypoints (`make backend-test-unit`, `make backend-lint`, `make backend-typecheck`, `make all-verify`) as canonical quality gates for backend/frontend refactor work.
 - For backend Stimulus migration, load shared behavior through `backend/static/js/backend-app.js`, register controllers in `backend/static/js/controllers/index.js`, and keep any temporary legacy compatibility script loading in `backend/static/js/legacy-backend-bootstrap.js` instead of template-level script tags.
 - Keep `backend/static/js/theme-controller.js` as a head-loaded pre-paint restore shim only; move theme toggle UI state, aria labels, and localStorage persistence into the `global-theme-toggle` Stimulus controller to preserve no-flash startup without split runtime ownership.
+- For Stimulus replacements of document-level widgets, keep debounce/request state on the controller instance and bind any document-level listeners in `connect()` with matching cleanup in `disconnect()` to avoid leaking handlers across remounts.
 - For the Stimulus migration, assign each interactive component exactly one controller owner and use URL query state plus document-level DOM events for cross-component coordination instead of `window.*` APIs or page-global orchestration.
 - For BEM compliance spot-audits, scan component CSS with `rg` to enforce no `[data-component="..."]` styling anchors and keep styling on explicit class contracts.
 - For clips list behavior, URL query state (`label`, `panel`, `url`) is the source of truth; UI controls mutate URL parameters and trigger reload/parity through server-rendered context.
@@ -594,4 +595,21 @@
   - Patterns discovered: when label-filter behavior spans both component roots and page-wide UI (selected pills, clear-all links, drawer/sidebar shells), keep local list/search behavior in the component module and handle cross-component orchestration in the page entrypoint.
   - Gotchas encountered: HTML assertion counts can overcount when hook names are also present inside template header comments; use resilient assertions (or scoped snippets) when validating `data-action`/`data-role` rollout.
   - Useful context: browser parity and quality gates passed with `make backend-test-unit`, `make backend-lint`, `make backend-typecheck`, `make backend-test-e2e`, and `make all-verify`.
+---
+## [2026-03-29 18:13:11 EEST]
+- Task id: T029
+- What was implemented: Replaced the authenticated quick-search classic script with a `global-auth-quick-search` Stimulus controller that owns debounce timing, request cancellation, result rendering, keyboard navigation, active-descendant state, and click-away dismissal; updated the component template to declare controller/action/target/value contracts; and removed quick-search from the legacy bootstrap path.
+- Files changed:
+  - `backend/static/js/controllers/global-auth-quick-search-controller.js`
+  - `backend/webclippings/templates/components/global-auth-quick-search.html`
+  - `backend/static/js/legacy-backend-bootstrap.js`
+  - `backend/apps/clips/tests/views/test_clip_views.py`
+  - `backend/apps/clips/tests/e2e/test_quick_search_e2e.py`
+  - `docs/plans/modular-front-end/tasks.json`
+  - `docs/plans/modular-front-end/ralph.txt`
+  - `AGENTS.md`
+- **Learnings for future iterations:**
+  - Patterns discovered: document-level UI like quick-search can move cleanly into Stimulus when debounce and fetch cancellation live on the controller instance and only the outside-click listener remains document-scoped with lifecycle cleanup.
+  - Gotchas encountered: the repo shell may not expose `pytest` directly, so use the Makefile targets for backend verification and Playwright-backed browser checks.
+  - Useful context: verification passed with `make backend-test-unit`, `make backend-lint`, `make backend-typecheck`, `make backend-test-e2e`, and `make all-verify`; the backend browser verification now waits on the shared Stimulus app plus quick-search controller wiring instead of the legacy `window.GlobalAuthQuickSearchComponent` path.
 ---
