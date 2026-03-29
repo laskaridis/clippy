@@ -463,7 +463,7 @@
         "Any required pre-paint theme restore remains in a minimal non-Stimulus bootstrap path so the current no-flash behavior is preserved.",
         "The previous non-Stimulus theme controller implementation is removed or reduced to pre-paint restore only."
       ],
-      "status": "PENDING",
+      "status": "COMPLETED",
       "dependencies": [
         "T027"
       ],

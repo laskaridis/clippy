@@ -26,6 +26,14 @@ class AccountsAuthTests(TestCase):
             response, 'src="/static/js/theme-controller.js"', html=False
         )
         self.assertContains(
+            response, 'data-controller="global-theme-toggle"', html=False
+        )
+        self.assertContains(
+            response,
+            'data-action="click->global-theme-toggle#toggle"',
+            html=False,
+        )
+        self.assertContains(
             response,
             'type="module" src="/static/js/backend-app.js"',
             html=False,
