@@ -16,9 +16,9 @@ The interactive backend surface for this migration is exactly:
 | `global-auth-quick-search` | `backend/webclippings/templates/components/global-auth-quick-search.html` | `backend/static/js/components/global-auth-quick-search.js` |
 | `clip-card` | `backend/apps/clips/templates/clips/components/clip-card.html` | `backend/apps/clips/static/clips/js/components/clip-card.js` |
 | `label-filter-options` | `backend/apps/clips/templates/clips/components/label-filter-options.html` | `backend/apps/clips/static/clips/js/components/label-filter-options.js` |
-| `filter-sidebar` | `backend/apps/clips/templates/clips/components/filter-sidebar.html` | `backend/apps/clips/static/clips/js/pages/list-page.js` |
-| `filter-drawer` | `backend/apps/clips/templates/clips/components/filter-drawer.html` | `backend/apps/clips/static/clips/js/pages/list-page.js` |
-| `filter-trigger-row` | `backend/apps/clips/templates/clips/pages/list.html` | `backend/apps/clips/static/clips/js/pages/list-page.js` |
+| `filter-sidebar` | `backend/apps/clips/templates/clips/components/filter-sidebar.html` | `backend/static/js/controllers/filter-sidebar-controller.js` |
+| `filter-drawer` | `backend/apps/clips/templates/clips/components/filter-drawer.html` | `backend/static/js/controllers/filter-drawer-controller.js` |
+| `filter-trigger-row` | `backend/apps/clips/templates/clips/pages/list.html` | `backend/static/js/controllers/filter-trigger-row-controller.js` |
 
 ## Controller Ownership Map
 
@@ -28,7 +28,7 @@ The interactive backend surface for this migration is exactly:
 | `global-auth-quick-search` | Authenticated quick-search component only | `[data-component="global-auth-quick-search"]` | Input debounce, request cancellation, results rendering, active descendant state, keyboard navigation, escape close, click-away close | `window.GlobalAuthQuickSearchComponent` |
 | `clip-card` | Single clip card delete flow only | `[data-component="clip-card"]` | Delete request, CSRF header use, success removal, error/forbidden messaging | `window.ClipCardComponent` |
 | `label-filter-options` | Label options list behavior only | `[data-component="label-filter-options"]` | Search filtering, show more/less state, selected-state sync from URL, selected-row reordering, label URL mutation helpers dispatched from local actions | `window.LabelFilterOptionsComponent` and `window.ClipsListLabelFilters` label mutation helpers |
-| `filter-sidebar` | Desktop sidebar expand/collapse behavior only | `[data-component="filter-sidebar"]` | Toggle panel visibility, synchronize `panel=expanded|collapsed` URL state, surface selected-label count updates for the sidebar region | `list-page.js` sidebar orchestration |
+| `filter-sidebar` | Desktop sidebar expand/collapse behavior only | `[data-component="filter-sidebar"]` | Toggle panel visibility and synchronize `panel=expanded|collapsed` URL state | `list-page.js` sidebar orchestration |
 | `filter-drawer` | Mobile drawer behavior only | `[data-component="filter-drawer"]` | Open/close state, backdrop visibility, escape handling, focus entry/return, synchronize `panel=open|closed` URL state | `list-page.js` drawer orchestration |
 | `filter-trigger-row` | Drawer trigger outside drawer root only | `[data-component="filter-trigger-row"]` | Dispatch open intent to the drawer controller when the mobile trigger remains outside the drawer root | `list-page.js` trigger wiring |
 
@@ -50,9 +50,8 @@ be collapsed into `filter-drawer`.
 
 | Event | Emitter | Consumer | Purpose |
 | --- | --- | --- | --- |
-| `clips:filters-panel-changed` | `filter-sidebar`, `filter-drawer` | sibling panel controller, `filter-trigger-row` | Keep desktop/mobile panel affordances synchronized when one controller changes the shared `panel` URL state. |
-| `clips:label-selection-changed` | `label-filter-options` | sibling `label-filter-options` roots, `filter-sidebar`, `filter-drawer`, selected-label count views | Re-sync selected rows, counts, and show-more visibility after URL-changing label actions. |
-| `clips:filter-drawer-open-requested` | `filter-trigger-row` | `filter-drawer` | Open the mobile drawer without requiring direct controller reach-through. |
+| `clips:filter-drawer:state` | `filter-drawer` | `filter-trigger-row` | Keep the mobile trigger `aria-expanded` state synchronized with drawer visibility. |
+| `clips:filter-drawer:open` | `filter-trigger-row` | `filter-drawer` | Open the mobile drawer without requiring direct controller reach-through. |
 
 These events are emitted on `document` so controllers can coordinate without
 introducing direct imports or `window.*` global APIs.
@@ -63,9 +62,9 @@ introducing direct imports or `window.*` global APIs.
   initial theme restoration before first paint.
 - The remaining interactive behavior moves behind one shared Stimulus
   application entrypoint and registered controllers.
-- `backend/apps/clips/static/clips/js/pages/list-page.js` becomes removable once
-  `clip-card`, `label-filter-options`, `filter-sidebar`, `filter-drawer`, and
-  `filter-trigger-row` own their behavior and coordinate through URL state and
-  DOM events.
+- `backend/apps/clips/static/clips/js/pages/list-page.js` is removed once
+  `filter-sidebar`, `filter-drawer`, and `filter-trigger-row` own the remaining
+  list-page coordination directly and label add/remove/clear affordances rely on
+  their server-rendered navigation targets.
 - No controller should expose a `window.*` API after the migration tasks are
   complete.
