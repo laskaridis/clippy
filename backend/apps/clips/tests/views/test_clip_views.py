@@ -826,6 +826,32 @@ class ClipHtmlViewsTests(TestCase):
         self.assertEqual(response.status_code, 404)
         self.assertTrue(Clip.objects.filter(id=clip.id).exists())
 
+    def test_list_view_renders_clip_card_stimulus_delete_contract(self) -> None:
+        clip = Clip.objects.create(
+            user=self.user,
+            title="Owned",
+            url="https://example.com/owned",
+            domain="example.com",
+            raw_content="Owned clip",
+            normalized_text="owned clip",
+        )
+
+        self.client.force_login(self.user)
+        response = self.client.get(reverse("clips_web:list"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'data-controller="clip-card"', html=False)
+        self.assertContains(
+            response,
+            f'data-clip-card-delete-url-value="{reverse("clips_web:detail", args=[clip.id])}"',
+            html=False,
+        )
+        self.assertContains(
+            response,
+            'data-action="click->clip-card#delete"',
+            html=False,
+        )
+
     def test_owner_can_update_clip_labels_via_post(self) -> None:
         clip = Clip.objects.create(
             user=self.user,

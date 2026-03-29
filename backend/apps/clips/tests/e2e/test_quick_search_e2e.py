@@ -275,3 +275,58 @@ class QuickSearchE2ETests(StaticLiveServerTestCase):
             finally:
                 context.close()
                 browser.close()
+
+    def test_clip_card_delete_removes_card_from_list(self) -> None:
+        clip_title = "Orion clip fixture"
+
+        with sync_playwright() as playwright:
+            try:
+                browser: Browser = playwright.chromium.launch(
+                    channel="chromium",
+                    headless=True,
+                )
+            except Exception:
+                browser = playwright.chromium.launch(headless=True)
+            context: BrowserContext = browser.new_context()
+            page: Page = context.new_page()
+            try:
+                self._login(page)
+                page.wait_for_function(
+                    """
+                    () => {
+                      const clipCard = document.querySelector(
+                        '[data-component="clip-card"]'
+                      )
+                      return Boolean(
+                        clipCard &&
+                          clipCard.getAttribute("data-controller") === "clip-card" &&
+                          window.ClippyBackendStimulus
+                      )
+                    }
+                    """,
+                    timeout=10_000,
+                )
+
+                clip_card = page.locator(
+                    '[data-component="clip-card"]',
+                    has=page.locator("text=Orion clip fixture"),
+                ).first
+                clip_card.wait_for(state="visible", timeout=10_000)
+
+                delete_button = clip_card.locator(
+                    '[data-action="click->clip-card#delete"]'
+                )
+                with page.expect_response(
+                    lambda response: response.request.method == "DELETE"
+                    and "/clips/" in response.url
+                    and response.status == 204,
+                    timeout=10_000,
+                ):
+                    delete_button.click()
+
+                clip_card.wait_for(state="detached", timeout=10_000)
+            finally:
+                context.close()
+                browser.close()
+
+        self.assertFalse(Clip.objects.filter(user=self.user, title=clip_title).exists())

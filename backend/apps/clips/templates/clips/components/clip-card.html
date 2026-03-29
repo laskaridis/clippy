@@ -1,5 +1,10 @@
 {% load clips_filters %}
-<article class="clip-card card border-0 shadow-sm w-100 h-100" data-component="clip-card">
+<article
+  class="clip-card card border-0 shadow-sm w-100 h-100"
+  data-component="clip-card"
+  data-controller="clip-card"
+  data-clip-card-delete-url-value="{% url 'clips_web:detail' clip.id %}"
+>
   <div class="clip-card__body card-body d-flex flex-column">
     <div class="clip-card__header d-flex justify-content-between align-items-start gap-3 mb-1">
       <div class="clip-card__title-wrap min-w-0">
@@ -22,7 +27,12 @@
           </a>
         </div>
       </div>
-      <button type="button" class="btn btn-outline-danger btn-sm clip-delete flex-shrink-0" data-action="delete-clip" data-delete-url="{% url 'clips_web:detail' clip.id %}">
+      <button
+        type="button"
+        class="btn btn-outline-danger btn-sm clip-delete flex-shrink-0"
+        data-action="click->clip-card#delete"
+        data-clip-card-target="deleteButton"
+      >
         Delete
       </button>
     </div>
