@@ -637,17 +637,27 @@ class ClipHtmlViewsTests(TestCase):
         )
         self.assertContains(
             response,
-            'class="filter-drawer d-none"',
+            'data-component="filter-drawer"',
             html=False,
         )
-        self.assertContains(response, 'role="dialog"', html=False)
-        self.assertContains(response, 'aria-modal="true"', html=False)
-        self.assertContains(response, "data-filter-drawer-close", html=False)
         self.assertContains(
             response,
             'data-controller="filter-drawer"',
             html=False,
         )
+        self.assertContains(
+            response,
+            'data-filter-drawer-initial-panel-state-value="collapsed"',
+            html=False,
+        )
+        self.assertContains(
+            response,
+            'class="filter-drawer-shell d-none"',
+            html=False,
+        )
+        self.assertContains(response, 'role="dialog"', html=False)
+        self.assertContains(response, 'aria-modal="true"', html=False)
+        self.assertContains(response, "data-filter-drawer-close", html=False)
         self.assertContains(
             response,
             'data-action="click->filter-drawer#close"',

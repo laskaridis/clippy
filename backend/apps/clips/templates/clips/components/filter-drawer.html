@@ -1,39 +1,50 @@
-<aside
+<div
   id="label-filter-drawer"
-  class="filter-drawer d-none"
+  class="filter-drawer-shell d-none"
   data-component="filter-drawer"
+  data-controller="filter-drawer"
+  data-filter-drawer-initial-panel-state-value="{{ panel_state }}"
   data-filter-drawer-target="panel"
   role="dialog"
   aria-modal="true"
   aria-labelledby="label-filter-drawer-title"
   aria-hidden="true"
 >
-  <header class="filter-drawer__header">
-    <h2 id="label-filter-drawer-title" class="filter-drawer__title h6 mb-0">Filters</h2>
-    <div class="filter-drawer__actions d-flex align-items-center gap-2">
-      {% if selected_labels %}
-        <a
-          class="btn btn-sm btn-outline-secondary"
-          href="{% url 'clips_web:list' %}{{ clear_all_filters_query }}"
-          data-action="clear-label-filters"
+  <div
+    class="filter-drawer-backdrop"
+    data-component="filter-drawer-backdrop"
+    data-filter-drawer-target="backdrop"
+    data-action="click->filter-drawer#close"
+    aria-hidden="true"
+  ></div>
+  <aside class="filter-drawer">
+    <header class="filter-drawer__header">
+      <h2 id="label-filter-drawer-title" class="filter-drawer__title h6 mb-0">Filters</h2>
+      <div class="filter-drawer__actions d-flex align-items-center gap-2">
+        {% if selected_labels %}
+          <a
+            class="btn btn-sm btn-outline-secondary"
+            href="{% url 'clips_web:list' %}{{ clear_all_filters_query }}"
+            data-action="clear-label-filters"
+          >
+            Clear all
+          </a>
+        {% endif %}
+        <button
+          type="button"
+          class="filter-drawer__close btn btn-sm btn-outline-secondary"
+          data-action="click->filter-drawer#close"
+          data-filter-drawer-target="closeButton"
+          data-filter-drawer-close
+          aria-label="Close filters"
         >
-          Clear all
-        </a>
-      {% endif %}
-      <button
-        type="button"
-        class="filter-drawer__close btn btn-sm btn-outline-secondary"
-        data-action="click->filter-drawer#close"
-        data-filter-drawer-target="closeButton"
-        data-filter-drawer-close
-        aria-label="Close filters"
-      >
-        Close
-      </button>
-    </div>
-  </header>
+          Close
+        </button>
+      </div>
+    </header>
 
-  <div class="filter-drawer__body">
-    {% include "clips/components/label-filter-options.html" with target_list="drawer" search_input_id="label-filter-search-drawer" list_aria_label="Drawer filter labels" label_filters_dataset=label_filters_dataset selected_label_slugs=selected_label_slugs only %}
-  </div>
-</aside>
+    <div class="filter-drawer__body">
+      {% include "clips/components/label-filter-options.html" with target_list="drawer" search_input_id="label-filter-search-drawer" list_aria_label="Drawer filter labels" label_filters_dataset=label_filters_dataset selected_label_slugs=selected_label_slugs only %}
+    </div>
+  </aside>
+</div>

@@ -5,6 +5,7 @@
 - Keep `backend/static/js/theme-controller.js` as a head-loaded pre-paint restore shim only; move theme toggle UI state, aria labels, and localStorage persistence into the `global-theme-toggle` Stimulus controller to preserve no-flash startup without split runtime ownership.
 - For Stimulus replacements of document-level widgets, keep debounce/request state on the controller instance and bind any document-level listeners in `connect()` with matching cleanup in `disconnect()` to avoid leaking handlers across remounts.
 - For Stimulus coordination across disjoint server-rendered roots, use document-level `CustomEvent` contracts between controller owners and gate `legacy-backend-bootstrap` on the migrated controller roots so legacy scripts do not double-bind.
+- For Stimulus-owned server-rendered components, keep `data-controller`, any controller values, and the canonical `data-component` marker on the same root element; place controller targets inside that root instead of spreading the contract across wrapper shells.
 - For the Stimulus migration, assign each interactive component exactly one controller owner and use URL query state plus document-level DOM events for cross-component coordination instead of `window.*` APIs or page-global orchestration.
 - For BEM compliance spot-audits, scan component CSS with `rg` to enforce no `[data-component="..."]` styling anchors and keep styling on explicit class contracts.
 - For clips list behavior, URL query state (`label`, `panel`, `url`) is the source of truth; UI controls mutate URL parameters and trigger reload/parity through server-rendered context.
@@ -42,6 +43,23 @@
   - Patterns discovered: when a clips list interaction already renders the exact destination URL in the template, keep it as plain navigation and let the next server-rendered response supply the updated filter state.
   - Gotchas encountered: compatibility bootstraps can silently retain stale asset references after a migration step, so remove dead load paths when deleting legacy entrypoints.
   - Useful context: this change removes only the clips list page coordinator; the remaining legacy component IIFEs are still follow-up cleanup for `T034`.
+---
+
+## [2026-03-29 18:39:20 EEST]
+- Task id: T033
+- What was implemented: Completed the remaining Stimulus template wiring by moving the `filter-drawer` controller/value contract onto a canonical full-viewport drawer root, keeping both backdrop and drawer panel inside that root, and tightening backend template assertions around the root-owned contract.
+- Files changed:
+  - `backend/apps/clips/templates/clips/pages/list.html`
+  - `backend/apps/clips/templates/clips/components/filter-drawer.html`
+  - `backend/apps/clips/static/clips/css/components/filter-drawer.css`
+  - `backend/apps/clips/tests/views/test_clip_views.py`
+  - `docs/plans/modular-front-end/tasks.json`
+  - `docs/plans/modular-front-end/ralph.txt`
+  - `AGENTS.md`
+- **Learnings for future iterations:**
+  - Patterns discovered: for server-rendered Stimulus overlays, make the canonical `data-component` root a full-viewport shell when the controller needs to own both the backdrop and the panel surface.
+  - Gotchas encountered: simply nesting a fixed-position backdrop under the drawer panel root can leave it intercepting clicks meant for drawer content; keep the backdrop and panel as siblings within a viewport-sized root so z-index layering stays explicit.
+  - Useful context: `filter-trigger-row` remains the only separate controller in this flow because the mobile open trigger still lives outside the drawer root and communicates through the existing document event contract.
 ---
 
 ## [2026-03-29 18:21:24 EEST]
