@@ -47,3 +47,4 @@ If you need to do something **ALWAYS** check first if there is a Makefile target
 Before writing any code that includes any kind of **front-end** changes ALLWAYS read `docs/frontend.md` to learn about the core principles, rules and guidelines followed in this project.
 
 - For backend server-rendered frontend work, load shared behavior through `backend/static/js/backend-app.js`; register Stimulus controllers in `backend/static/js/controllers/index.js` and keep any temporary legacy compatibility wiring inside `backend/static/js/legacy-backend-bootstrap.js` instead of adding new per-template script tags.
+- For theme behavior, keep the head-loaded `backend/static/js/theme-controller.js` limited to pre-paint theme restoration only; put toggle UI state, aria updates, and persistence in the `global-theme-toggle` Stimulus controller so no-flash startup stays intact without split runtime ownership.
