@@ -107,7 +107,7 @@ if [[ ! -d "$FEATURE_DIR_PATH" ]]; then
 fi
 
 SPEC_FILE="${FEATURE_DIR_PATH}/spec.md"
-TASKS_FILE="${FEATURE_DIR_PATH}/tasks.md"
+TASKS_FILE="${FEATURE_DIR_PATH}/tasks.json"
 
 if [[ ! -f "$SPEC_FILE" ]]; then
 	log_error "Missing required file: $SPEC_FILE"
