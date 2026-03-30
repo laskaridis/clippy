@@ -62,7 +62,7 @@ introducing direct imports or `window.*` global APIs.
   initial theme restoration before first paint.
 - The remaining interactive behavior runs through one shared Stimulus
   application entrypoint and registered controllers loaded from
-  `backend/static/js/backend-app.js`.
+  `backend/static/js/application.js`.
 - `backend/apps/clips/static/clips/js/pages/list-page.js` is removed once
   `filter-sidebar`, `filter-drawer`, and `filter-trigger-row` own the remaining
   list-page coordination directly and label add/remove/clear affordances rely on

@@ -2,7 +2,7 @@
 - Use `scripts/agent-preflight.sh` before edits; branch/worktree compliance is a hard gate and also enforced by git hooks.
 - Use Makefile entrypoints (`make backend-test-unit`, `make backend-lint`, `make backend-typecheck`, `make all-verify`) as canonical quality gates for backend/frontend refactor work.
 - For final handoff verification, run the delivery gate plus the required Make targets sequentially and keep `make all-verify` last so backend E2E coverage does not overlap with any separate Django E2E run.
-- For backend Stimulus migration, load shared behavior through `backend/static/js/backend-app.js` and register controllers in `backend/static/js/controllers/index.js`; do not reintroduce template-level legacy script tags once a component has a Stimulus owner.
+- For backend Stimulus migration, load shared behavior through `backend/static/js/application.js` and register controllers in `backend/static/js/controllers/index.js`; do not reintroduce template-level legacy script tags once a component has a Stimulus owner.
 - Once a backend component is fully owned by a Stimulus controller, remove its retired legacy IIFE script and any temporary compatibility bootstrap import in the same change so the shared entrypoint remains the only runtime path.
 - Keep `backend/static/js/theme-controller.js` as a head-loaded pre-paint restore shim only; move theme toggle UI state, aria labels, and localStorage persistence into the `global-theme-toggle` Stimulus controller to preserve no-flash startup without split runtime ownership.
 - For Stimulus replacements of document-level widgets, keep debounce/request state on the controller instance and bind any document-level listeners in `connect()` with matching cleanup in `disconnect()` to avoid leaking handlers across remounts.
@@ -95,7 +95,7 @@
 - Task id: T034
 - What was implemented: Removed the retired backend compatibility bootstrap, deleted the superseded legacy quick-search/clip-card/label-filter-options IIFE scripts, simplified the shared backend Stimulus entrypoint to a single runtime path, and updated migration guidance to reflect that the Stimulus controllers are now the only owners.
 - Files changed:
-  - `backend/static/js/backend-app.js`
+  - `backend/static/js/application.js`
   - `backend/static/js/legacy-backend-bootstrap.js`
   - `backend/static/js/components/global-auth-quick-search.js`
   - `backend/apps/clips/static/clips/js/components/clip-card.js`
@@ -105,7 +105,7 @@
   - `docs/plans/modular-front-end/ralph.txt`
   - `AGENTS.md`
 - **Learnings for future iterations:**
-  - Patterns discovered: once a server-rendered backend component is fully migrated to Stimulus, the shared `backend-app.js` entrypoint should be the only runtime loader for that behavior.
+  - Patterns discovered: once a server-rendered backend component is fully migrated to Stimulus, the shared `application.js` entrypoint should be the only runtime loader for that behavior.
   - Gotchas encountered: overlapping backend verification commands can leave the Django test database behind and break later E2E runs with `database ... already exists`; keep backend E2E and `make all-verify` strictly sequential.
   - Useful context: browser-backed verification passed after the cleanup with `make backend-test-e2e` and `make all-verify`, so the remaining work starts from the Stimulus-only runtime path.
 ---
@@ -192,7 +192,7 @@
 - What was implemented: Added a repo-tracked Stimulus runtime, a single backend app entrypoint and controller registry, and a compatibility bootstrap that centrally loads the existing quick-search and clips list legacy scripts so server-rendered pages now rely on the shared backend app script instead of template-level per-component script tags.
 - Files changed:
   - `backend/static/js/vendor/stimulus.js`
-  - `backend/static/js/backend-app.js`
+  - `backend/static/js/application.js`
   - `backend/static/js/legacy-backend-bootstrap.js`
   - `backend/static/js/controllers/index.js`
   - `backend/static/js/controllers/global-theme-toggle-controller.js`
