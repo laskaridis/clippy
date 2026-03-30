@@ -35,7 +35,7 @@ class AccountsAuthTests(TestCase):
         )
         self.assertContains(
             response,
-            'type="module" src="/static/js/backend-app.js"',
+            'type="module" src="/static/js/application.js"',
             html=False,
         )
         self.assertNotContains(response, "window.localStorage.setItem(", html=False)
