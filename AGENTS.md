@@ -4,7 +4,7 @@ Guidelines for coding agents working in this repository.
 
 ## Context-Specific Guides
 
-Before doing any work **ALWAYS** read the `docs/README.md` first to learn about any context-specific documentation available in this project, in case you need to access it later.
+Before doing any work **ALWAYS** read the `docs/README.md` first to learn about any context-specific documentation available in this project in case you need to access it later.
 
 ## Development Workflow
 
@@ -16,7 +16,7 @@ Before writing code of any kind **ALWAYS** read the core principles, rules and g
 
 ## Canonical task entrypoints
 
-When working with the codebase use `Makefile` as the primary surface for local workflows and automation such as testing, launching servers, initializing environments, running guardrail checks, etc:
+When working with the codebase prefer `Makefile` as the primary surface of stable tasks for local workflow and automation such as testing, launching servers, initializing environments, running guardrail checks, etc:
 
 - For the live command list, run `make help`.
 - `make all-*` targets are the canonical cross-project entrypoints.
@@ -44,13 +44,4 @@ If you need to do something **ALWAYS** check first if there is a Makefile target
 
 ## Front-end development
 
-Before writing any code that includes any kind of **front-end** changes ALLWAYS read `docs/frontend.md` to learn about the core principles, rules and guidelines followed in this project.
-
-- For backend server-rendered frontend work, load shared behavior through `backend/static/js/backend-app.js` and register Stimulus controllers in `backend/static/js/controllers/index.js`; do not reintroduce per-component legacy script tags or a compatibility bootstrap once a component has a Stimulus owner.
-- For theme behavior, keep the head-loaded `backend/static/js/theme-controller.js` limited to pre-paint theme restoration only; put toggle UI state, aria updates, and persistence in the `global-theme-toggle` Stimulus controller so no-flash startup stays intact without split runtime ownership.
-- For Stimulus replacements of document-level widgets (for example quick-search popovers), keep debounce/request state on the controller instance and bind document listeners in `connect()` with matching cleanup in `disconnect()` so repeated mounts do not leak global handlers.
-- For Stimulus coordination across disjoint server-rendered roots (for example a drawer trigger outside the drawer controller root), use document-level `CustomEvent` contracts between controller owners instead of `window.*` APIs or compatibility shims.
-- For Stimulus-owned server-rendered components, put the controller and any required value contracts on the same root element that carries the canonical `data-component` marker; keep controller targets nested inside that root instead of splitting the contract across wrapper shells.
-- For clips list filter affordances, prefer the existing server-rendered `href` as the navigation contract for add/remove/clear actions; do not add page-level JavaScript that duplicates the same query mutation and redirect.
-- For backend Playwright E2E tests, perform ORM assertions after closing the Playwright browser/context block; querying Django models inside the Playwright-managed block can raise `SynchronousOnlyOperation` under the test runner's async context.
-- For backend Playwright E2E tests around Stimulus overlays, assert state transitions via the root element's `aria-hidden`/class contract and `document.activeElement`; these drawers stay mounted and toggle visibility/focus rather than detaching from the DOM.
+Before writing any code that includes any kind of **front-end** changes **ALLWAYS** read `docs/frontend.md` to learn about the core principles, rules and guidelines followed in this project.
