@@ -30,29 +30,6 @@ scripts/start-worktree-task.sh <task-slug> [base-branch]
 
 This creates a compliant worktree/branch.
 
-### Orchestrated multi-agent workflow
-
-For complex feature delivery, use an ORCHESTRATOR-led loop with strict role boundaries:
-
-1. ORCHESTRATOR delegates to CODER.
-2. CODER implements code + automated tests in the assigned worktree.
-3. ORCHESTRATOR delegates to VERIFICATION.
-4. VERIFICATION reviews against request scope and quality gates (functionality, test coverage, bugs, code quality, security, and a11y when applicable).
-5. If VERIFICATION fails, ORCHESTRATOR delegates back to CODER with prioritized findings.
-6. Repeat CODER -> VERIFICATION until VERIFICATION passes, or up to 3 failed cycles.
-7. If 3 failed cycles are reached, ORCHESTRATOR escalates to the user with blocker summary and recommended options.
-8. Once VERIFICATION passes, ORCHESTRATOR delegates to SHIPPING.
-9. SHIPPING creates or updates the PR and reports status.
-10. If the user requests PR fixes, ORCHESTRATOR restarts CODER -> VERIFICATION -> SHIPPING.
-
-Hard rules:
-
-- ORCHESTRATOR never implements code directly.
-- VERIFICATION is mandatory between CODER and SHIPPING.
-- SHIPPING runs only after VERIFICATION pass.
-- Work must always remain in a dedicated `.worktrees/*` worktree on `feature/<slug>`.
-- Multiple features may be handled in parallel only by using separate worktrees and independent orchestrators.
-
 ## Git branch policy
 
 Treat all the following as **hard gates**:
