@@ -83,7 +83,7 @@
     {
       "id": "T005",
       "title": "Wire host-visible web and extension access",
-      "status": "pending",
+      "status": "completed",
       "depends_on": [
         "T003",
         "T004"

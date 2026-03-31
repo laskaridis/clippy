@@ -101,6 +101,7 @@ SANDBOX_REPO_URL="${SANDBOX_REPO_URL:-https://github.com/laskaridis/clippy.git}"
 SANDBOX_REPO_BRANCH="${SANDBOX_REPO_BRANCH:-}"
 SANDBOX_EXPORT_DIR="${SANDBOX_EXPORT_DIR:-/exports/extension}"
 SANDBOX_SSH_PORT="${SANDBOX_SSH_PORT:-22}"
+SANDBOX_WEB_PORT="${SANDBOX_WEB_PORT:-8000}"
 SANDBOX_POSTGRES_DATA="${SANDBOX_POSTGRES_DATA:-/var/lib/postgresql/data}"
 SANDBOX_POSTGRES_LOG="${SANDBOX_POSTGRES_LOG:-/var/log/postgresql/sandbox.log}"
 SANDBOX_POSTGRES_PORT="${SANDBOX_POSTGRES_PORT:-5432}"
@@ -117,6 +118,8 @@ SANDBOX_START_POSTGRES="${SANDBOX_START_POSTGRES:-1}"
 SANDBOX_KEEPALIVE_CMD="${SANDBOX_KEEPALIVE_CMD:-}"
 SANDBOX_POSTGRES_SUPERUSER="${SANDBOX_POSTGRES_SUPERUSER:-postgres}"
 SANDBOX_SSH_PUBLIC_KEY="${SANDBOX_SSH_PUBLIC_KEY:-${SSH_PUBLIC_KEY:-}}"
+SANDBOX_PUBLIC_WEB_HOST="${SANDBOX_PUBLIC_WEB_HOST:-localhost}"
+SANDBOX_PUBLIC_BASE_URL="${SANDBOX_PUBLIC_BASE_URL:-http://${SANDBOX_PUBLIC_WEB_HOST}:${SANDBOX_WEB_PORT}}"
 
 PG_BIN_DIR="$(detect_pg_bin_dir)" || {
   error "could not locate PostgreSQL binaries under /usr/lib/postgresql"
@@ -126,9 +129,22 @@ PG_BIN_DIR="$(detect_pg_bin_dir)" || {
 DATABASE_URL="postgresql://${SANDBOX_DB_USER}:${SANDBOX_DB_PASSWORD}@${SANDBOX_DB_HOST}:${SANDBOX_POSTGRES_PORT}/${SANDBOX_DB_NAME}?sslmode=${SANDBOX_DB_SSLMODE}"
 export DATABASE_URL
 
-mkdir -p /var/log/postgresql "${SANDBOX_HOME}/.ssh" "$(dirname "${SANDBOX_WORKSPACE}")" "${SANDBOX_EXPORT_DIR}"
+WORKSPACE_ROOT="$(dirname "${SANDBOX_WORKSPACE}")"
+WORKTREE_BASENAME="$(basename "${SANDBOX_WORKSPACE}")"
+if command -v sha1sum >/dev/null 2>&1; then
+  WORKTREE_HASH="$(printf '%s' "${SANDBOX_WORKSPACE}" | sha1sum | cut -c1-6)"
+elif command -v shasum >/dev/null 2>&1; then
+  WORKTREE_HASH="$(printf '%s' "${SANDBOX_WORKSPACE}" | shasum -a 1 | cut -c1-6)"
+else
+  error "neither sha1sum nor shasum is available"
+  exit 1
+fi
+SANDBOX_WORKTREE_ID="${WORKTREE_BASENAME}-${WORKTREE_HASH}"
+SANDBOX_EXTENSION_RUNTIME_DIR="${SANDBOX_WORKSPACE}/extension/.local/worktrees/${SANDBOX_WORKTREE_ID}/chrome"
+
+mkdir -p /var/log/postgresql "${SANDBOX_HOME}/.ssh" "${WORKSPACE_ROOT}" "${SANDBOX_EXPORT_DIR}"
 touch "${SANDBOX_POSTGRES_LOG}"
-chown -R agent:agent "${SANDBOX_HOME}" "$(dirname "${SANDBOX_WORKSPACE}")"
+chown -R agent:agent "${SANDBOX_HOME}" "${WORKSPACE_ROOT}"
 if ! chown -R agent:agent "${SANDBOX_EXPORT_DIR}" 2>/dev/null; then
   warn "could not change ownership for ${SANDBOX_EXPORT_DIR}; continuing with existing host mount permissions"
 fi
@@ -167,6 +183,13 @@ export DATABASE_URL=$(shell_quote "${DATABASE_URL}")
 export SANDBOX_HOME=$(shell_quote "${SANDBOX_HOME}")
 export SANDBOX_WORKSPACE=$(shell_quote "${SANDBOX_WORKSPACE}")
 export SANDBOX_EXPORT_DIR=$(shell_quote "${SANDBOX_EXPORT_DIR}")
+export SANDBOX_WORKTREE_ID=$(shell_quote "${SANDBOX_WORKTREE_ID}")
+export SANDBOX_EXTENSION_RUNTIME_DIR=$(shell_quote "${SANDBOX_EXTENSION_RUNTIME_DIR}")
+export DJANGO_DEV_PORT=$(shell_quote "${SANDBOX_WEB_PORT}")
+export PORT=$(shell_quote "${SANDBOX_WEB_PORT}")
+export DJANGO_DEV_HOST=$(shell_quote "${SANDBOX_PUBLIC_WEB_HOST}")
+export DJANGO_DEV_BASE_URL=$(shell_quote "${SANDBOX_PUBLIC_BASE_URL}")
+export ALLOWED_HOSTS=$(shell_quote "${SANDBOX_PUBLIC_WEB_HOST},localhost,127.0.0.1,[::1]")
 EOF
 
   cat >"${tmp_ssh}" <<EOF
@@ -174,6 +197,13 @@ DATABASE_URL=${DATABASE_URL}
 SANDBOX_HOME=${SANDBOX_HOME}
 SANDBOX_WORKSPACE=${SANDBOX_WORKSPACE}
 SANDBOX_EXPORT_DIR=${SANDBOX_EXPORT_DIR}
+SANDBOX_WORKTREE_ID=${SANDBOX_WORKTREE_ID}
+SANDBOX_EXTENSION_RUNTIME_DIR=${SANDBOX_EXTENSION_RUNTIME_DIR}
+DJANGO_DEV_PORT=${SANDBOX_WEB_PORT}
+PORT=${SANDBOX_WEB_PORT}
+DJANGO_DEV_HOST=${SANDBOX_PUBLIC_WEB_HOST}
+DJANGO_DEV_BASE_URL=${SANDBOX_PUBLIC_BASE_URL}
+ALLOWED_HOSTS=${SANDBOX_PUBLIC_WEB_HOST},localhost,127.0.0.1,[::1]
 EOF
 
   local env_name
@@ -280,6 +310,29 @@ SQL
   fi
 }
 
+sync_extension_export_once() {
+  if [[ ! -d "${SANDBOX_EXTENSION_RUNTIME_DIR}" ]]; then
+    return 0
+  fi
+
+  mkdir -p "${SANDBOX_EXPORT_DIR}"
+  find "${SANDBOX_EXPORT_DIR}" -mindepth 1 -maxdepth 1 -exec rm -rf {} + 2>/dev/null || true
+  cp -a "${SANDBOX_EXTENSION_RUNTIME_DIR}/." "${SANDBOX_EXPORT_DIR}/"
+}
+
+start_extension_export_sync() {
+  info "watching ${SANDBOX_EXTENSION_RUNTIME_DIR} for host extension export sync"
+  (
+    while true; do
+      if ! sync_extension_export_once; then
+        warn "extension export sync failed; retrying"
+      fi
+      sleep 2
+    done
+  ) &
+  EXTENSION_SYNC_PID=$!
+}
+
 configure_gh_auth() {
   if [[ -z "${GH_TOKEN:-}" ]]; then
     warn "GH_TOKEN is unset; skipping gh authentication"
@@ -347,6 +400,11 @@ stop_postgres() {
 cleanup() {
   local exit_code=$?
 
+  if [[ -n "${EXTENSION_SYNC_PID:-}" ]] && kill -0 "${EXTENSION_SYNC_PID}" >/dev/null 2>&1; then
+    kill "${EXTENSION_SYNC_PID}" >/dev/null 2>&1 || true
+    wait "${EXTENSION_SYNC_PID}" || true
+  fi
+
   if [[ -n "${SSHD_PID:-}" ]] && kill -0 "${SSHD_PID}" >/dev/null 2>&1; then
     kill "${SSHD_PID}" >/dev/null 2>&1 || true
     wait "${SSHD_PID}" || true
@@ -364,6 +422,7 @@ start_postgres
 configure_database
 configure_gh_auth
 ensure_workspace_clone
+start_extension_export_sync
 start_sshd
 
 if [[ -n "${SANDBOX_KEEPALIVE_CMD}" ]]; then

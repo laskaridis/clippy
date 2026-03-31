@@ -17,6 +17,7 @@ The sandbox is the execution surface for coding, testing, and local runtime work
 - [x] (2026-03-31 14:21Z) Implemented the sandbox image in `infra/sandbox/Dockerfile`, validated a full `docker build`, confirmed the required CLI/tool versions inside the built image, and reran `make all-verify`.
 - [x] (2026-03-31 15:56Z) Implemented the idempotent sandbox bootstrap in `infra/sandbox/entrypoint.sh`, including PostgreSQL initialization/reuse, persisted shell environment, SSH key installation, GitHub-aware clone/auth wiring, and a restart validation against persistent volumes.
 - [x] (2026-03-31 14:51Z) Added `make sandbox-start name=<id>` and `make sandbox-destroy name=<id>` with deterministic per-instance names, ports, volumes, host export paths, host `gh` token fallback, and validated start/destroy behavior plus `make all-verify`.
+- [x] (2026-03-31 15:00Z) Wired host-visible sandbox web/extension access by aligning the sandbox web port inside and outside the container, exporting localhost-focused backend runtime defaults for sandbox shells, and continuously syncing the sandbox unpacked extension output into `.local/sandboxes/<id>/exports/extension`.
 - [ ] Add the sandbox README/env template and document the exact user-facing start, access, and destroy flows.
 - [ ] Validate that at least two named sandboxes can run in parallel with distinct SSH ports, web ports, database volumes, and extension export directories.
 

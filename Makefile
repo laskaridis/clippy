@@ -169,6 +169,7 @@ sandbox-start:
 		-e SANDBOX_REPO_URL="$${repo_url}" \
 		-e SANDBOX_EXPORT_DIR="/exports/extension" \
 		-e SANDBOX_SSH_PORT="22" \
+		-e SANDBOX_WEB_PORT="$${web_port}" \
 	); \
 	if [[ -n "$${repo_branch}" ]]; then env_args+=( -e SANDBOX_REPO_BRANCH="$${repo_branch}" ); fi; \
 	if [[ -n "$${ssh_public_key}" ]]; then env_args+=( -e SANDBOX_SSH_PUBLIC_KEY="$${ssh_public_key}" ); fi; \
@@ -202,7 +203,7 @@ sandbox-start:
 		docker run -d \
 			--name "$${container_name}" \
 			-p "$${ssh_port}:22" \
-			-p "$${web_port}:8000" \
+			-p "$${web_port}:$${web_port}" \
 			-v "$${workspace_volume}:/workspace" \
 			-v "$${home_volume}:/home/agent" \
 			-v "$${postgres_volume}:/var/lib/postgresql/data" \
