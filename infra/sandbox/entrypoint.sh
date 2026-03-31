@@ -128,7 +128,10 @@ export DATABASE_URL
 
 mkdir -p /var/log/postgresql "${SANDBOX_HOME}/.ssh" "$(dirname "${SANDBOX_WORKSPACE}")" "${SANDBOX_EXPORT_DIR}"
 touch "${SANDBOX_POSTGRES_LOG}"
-chown -R agent:agent "${SANDBOX_HOME}" "$(dirname "${SANDBOX_WORKSPACE}")" "${SANDBOX_EXPORT_DIR}"
+chown -R agent:agent "${SANDBOX_HOME}" "$(dirname "${SANDBOX_WORKSPACE}")"
+if ! chown -R agent:agent "${SANDBOX_EXPORT_DIR}" 2>/dev/null; then
+  warn "could not change ownership for ${SANDBOX_EXPORT_DIR}; continuing with existing host mount permissions"
+fi
 chown postgres:postgres /var/log/postgresql "${SANDBOX_POSTGRES_LOG}"
 chmod 0700 "${SANDBOX_HOME}/.ssh"
 

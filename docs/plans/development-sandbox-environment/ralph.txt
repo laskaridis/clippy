@@ -2,6 +2,8 @@
 - Use `make help` as the canonical discovery surface before adding or invoking repository workflow commands.
 - For sandbox image work, keep the Docker build context minimal by copying only `.tool-versions` and late-stage sandbox scripts instead of the full repository tree.
 - Sandbox bootstrap should authenticate both `gh` and `git clone` from `GH_TOKEN`; for local-path validation overrides, mark the source repo as a git `safe.directory` before cloning.
+- Only forward `SANDBOX_REPO_BRANCH` into the sandbox when that branch exists on `origin`; local-only feature branches will break first-boot checkout.
+- Host bind mounts used for sandbox export directories may reject `chown` on this Docker stack, so bootstrap must warn and continue instead of treating ownership changes as fatal.
 
 ## [2026-03-31 13:49:21Z]
 - Task id: T001
@@ -29,4 +31,13 @@
   - Patterns discovered: For private GitHub remotes, sandbox bootstrap must wire `GH_TOKEN` into both `gh auth` and `git clone`; logging in to `gh` alone is not enough unless git credential helper setup is also handled.
   - Gotchas encountered: PostgreSQL bootstrap should administer the freshly initialized cluster over the local Unix socket as the `postgres` OS user; TCP auth for `postgres` will fail before a password is explicitly set.
   - Useful context: A disposable Docker validation with persistent named volumes is enough to prove the entrypoint restart path is non-destructive before Makefile lifecycle targets exist.
+---
+## [2026-03-31 14:51:55Z]
+- Task id: T004
+- What was implemented: Added root `Makefile` lifecycle targets for `sandbox-start` and `sandbox-destroy`, including deterministic per-instance resource naming, cached image rebuilds, host `gh` token fallback, branch-forwarding safeguards, and start/destroy validation against a real `alpha` sandbox.
+- Files changed: `Makefile`, `infra/sandbox/entrypoint.sh`, `docs/plans/development-sandbox-environment/spec.md`, `docs/plans/development-sandbox-environment/tasks.json`, `docs/plans/development-sandbox-environment/ralph.txt`
+- **Learnings for future iterations:**
+  - Patterns discovered: For sandbox lifecycle targets, deriving `GH_TOKEN` from an existing host `gh` login keeps Make targets usable even when the shell environment has not exported the token explicitly.
+  - Gotchas encountered: Forwarding the current local branch name into the sandbox clone is unsafe unless that branch already exists on `origin`; otherwise first boot fails during checkout.
+  - Useful context: Host bind-mounted export directories can reject `chown` under Rancher Desktop/macOS, so the bootstrap now treats that as a warning while still letting the container come up.
 ---

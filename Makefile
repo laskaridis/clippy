@@ -5,9 +5,11 @@ SHELL := /usr/bin/env bash
 PYTHON ?= python3
 VENV_DIR := backend/.venv
 PIP := $(VENV_DIR)/bin/pip
+SANDBOX_IMAGE ?= webclippings-sandbox:local
 
 .PHONY: help all-init all-build all-test all-lint all-format all-typecheck all-run all-clean \
 	worktree-start local-env-start local-env-stop local-env-status local-env-teardown \
+	sandbox-start sandbox-destroy \
 	backend-init backend-test-unit backend-test-e2e backend-lint backend-format backend-format-check backend-typecheck backend-run backend-stop backend-status backend-clean \
 	extension-init extension-build extension-build-worktree extension-test-unit extension-test-e2e extension-test-a11y extension-lint extension-format extension-format-check extension-typecheck extension-clean \
 	all-verify backend-verify extension-verify
@@ -56,6 +58,8 @@ help:
 	@echo "  make all-clean                 - Remove local build and cache artifacts"
 	@echo "  make all-verify                - Run all checks (test, lint, typecheck, format)"
 	@echo "  make worktree-start            - Create a feature worktree (slug required)"
+	@echo "  make sandbox-start name=<id>   - Start or resume a named Docker sandbox"
+	@echo "  make sandbox-destroy name=<id> - Remove a named Docker sandbox and its data"
 	@echo ""
 	@echo "Local environment targets:"
 	@echo "  make local-env-start           - Start worktree-scoped local Docker services"
@@ -123,6 +127,119 @@ local-env-status:
 # Remove worktree-scoped local Docker services and volumes
 local-env-teardown:
 	@./infra/local/scripts/manage-worktree-compose.sh teardown
+
+# Start or resume a named Docker sandbox instance
+sandbox-start:
+	@set -euo pipefail; \
+	if [[ -z "$(strip $(name))" ]]; then \
+		echo "sandbox-start requires name=<id>" >&2; \
+		exit 1; \
+	fi; \
+	if [[ ! "$(name)" =~ ^[a-z0-9-]+$$ ]]; then \
+		echo "sandbox-start name must contain only lowercase letters, numbers, and hyphens" >&2; \
+		exit 1; \
+	fi; \
+	sandbox_id="$(name)"; \
+	container_name="webclippings-sandbox-$${sandbox_id}"; \
+	workspace_volume="$${container_name}-workspace"; \
+	home_volume="$${container_name}-home"; \
+	postgres_volume="$${container_name}-postgres"; \
+	export_dir=".local/sandboxes/$${sandbox_id}/exports/extension"; \
+	export_mount="$$(pwd)/$${export_dir}"; \
+	hash_value="$$(printf '%s' "$${sandbox_id}" | cksum | awk '{print $$1}')"; \
+	ssh_port="$$((2200 + (hash_value % 400)))"; \
+	web_port="$$((8200 + (hash_value % 400)))"; \
+	repo_url="$$(git config --get remote.origin.url)"; \
+	repo_branch="$$(git branch --show-current)"; \
+	gh_token="$${GH_TOKEN:-}"; \
+	ssh_public_key=""; \
+	for candidate in "$$HOME/.ssh/id_ed25519.pub" "$$HOME/.ssh/id_ecdsa.pub" "$$HOME/.ssh/id_rsa.pub"; do \
+		if [[ -f "$${candidate}" ]]; then \
+			ssh_public_key="$$(<"$${candidate}")"; \
+			break; \
+		fi; \
+	done; \
+	if [[ -z "$${gh_token}" ]] && command -v gh >/dev/null 2>&1 && gh auth status >/dev/null 2>&1; then \
+		gh_token="$$(gh auth token)"; \
+	fi; \
+	if ! git ls-remote --exit-code --heads origin "$${repo_branch}" >/dev/null 2>&1; then \
+		repo_branch=""; \
+	fi; \
+	env_args=( \
+		-e SANDBOX_REPO_URL="$${repo_url}" \
+		-e SANDBOX_EXPORT_DIR="/exports/extension" \
+		-e SANDBOX_SSH_PORT="22" \
+	); \
+	if [[ -n "$${repo_branch}" ]]; then env_args+=( -e SANDBOX_REPO_BRANCH="$${repo_branch}" ); fi; \
+	if [[ -n "$${ssh_public_key}" ]]; then env_args+=( -e SANDBOX_SSH_PUBLIC_KEY="$${ssh_public_key}" ); fi; \
+	if [[ -n "$${gh_token}" ]]; then env_args+=( -e GH_TOKEN="$${gh_token}" ); fi; \
+	if [[ -n "$${OPENAI_API_KEY:-}" ]]; then env_args+=( -e OPENAI_API_KEY="$${OPENAI_API_KEY}" ); fi; \
+	if [[ -n "$${OPENAI_BASE_URL:-}" ]]; then env_args+=( -e OPENAI_BASE_URL="$${OPENAI_BASE_URL}" ); fi; \
+	if [[ -n "$${OPENAI_ORG_ID:-}" ]]; then env_args+=( -e OPENAI_ORG_ID="$${OPENAI_ORG_ID}" ); fi; \
+	if [[ -n "$${OPENAI_PROJECT_ID:-}" ]]; then env_args+=( -e OPENAI_PROJECT_ID="$${OPENAI_PROJECT_ID}" ); fi; \
+	check_port() { \
+		local port="$$1"; \
+		local label="$$2"; \
+		if ! python3 -c 'import socket, sys; sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM); sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1); sock.bind(("127.0.0.1", int(sys.argv[1]))); sock.close()' "$${port}" >/dev/null 2>&1; then \
+			echo "sandbox '$${sandbox_id}' cannot start because $${label} port $${port} is already in use" >&2; \
+			exit 1; \
+		fi; \
+	}; \
+	docker build -t "$(SANDBOX_IMAGE)" -f infra/sandbox/Dockerfile .; \
+	mkdir -p "$${export_mount}"; \
+	if docker container inspect "$${container_name}" >/dev/null 2>&1; then \
+		if [[ "$$(docker inspect -f '{{.State.Running}}' "$${container_name}")" != "true" ]]; then \
+			check_port "$${ssh_port}" "SSH"; \
+			check_port "$${web_port}" "web"; \
+			docker start "$${container_name}" >/dev/null; \
+		fi; \
+	else \
+		check_port "$${ssh_port}" "SSH"; \
+		check_port "$${web_port}" "web"; \
+		docker volume create "$${workspace_volume}" >/dev/null; \
+		docker volume create "$${home_volume}" >/dev/null; \
+		docker volume create "$${postgres_volume}" >/dev/null; \
+		docker run -d \
+			--name "$${container_name}" \
+			-p "$${ssh_port}:22" \
+			-p "$${web_port}:8000" \
+			-v "$${workspace_volume}:/workspace" \
+			-v "$${home_volume}:/home/agent" \
+			-v "$${postgres_volume}:/var/lib/postgresql/data" \
+			-v "$${export_mount}:/exports/extension" \
+			"$${env_args[@]}" \
+			"$(SANDBOX_IMAGE)" >/dev/null; \
+	fi; \
+	echo "Sandbox: $${container_name}"; \
+	echo "SSH: ssh agent@localhost -p $${ssh_port}"; \
+	echo "VS Code Remote-SSH: agent@localhost:$${ssh_port}"; \
+	echo "Web app: http://localhost:$${web_port}"; \
+	echo "Repo: /workspace/webclippings"; \
+	echo "Extension export: $${export_dir}"
+
+# Remove a named Docker sandbox instance and its persistent resources
+sandbox-destroy:
+	@set -euo pipefail; \
+	if [[ -z "$(strip $(name))" ]]; then \
+		echo "sandbox-destroy requires name=<id>" >&2; \
+		exit 1; \
+	fi; \
+	if [[ ! "$(name)" =~ ^[a-z0-9-]+$$ ]]; then \
+		echo "sandbox-destroy name must contain only lowercase letters, numbers, and hyphens" >&2; \
+		exit 1; \
+	fi; \
+	sandbox_id="$(name)"; \
+	container_name="webclippings-sandbox-$${sandbox_id}"; \
+	workspace_volume="$${container_name}-workspace"; \
+	home_volume="$${container_name}-home"; \
+	postgres_volume="$${container_name}-postgres"; \
+	export_dir=".local/sandboxes/$${sandbox_id}"; \
+	if docker container inspect "$${container_name}" >/dev/null 2>&1; then \
+		docker rm -f "$${container_name}" >/dev/null; \
+	fi; \
+	docker volume rm -f "$${workspace_volume}" "$${home_volume}" "$${postgres_volume}" >/dev/null 2>&1 || true; \
+	rm -rf "$${export_dir}"; \
+	echo "Destroyed sandbox: $${container_name}"
 
 # Runs all backend checks (test, lint, typecheck, format) to verify that the backend is releasable.
 backend-verify:
