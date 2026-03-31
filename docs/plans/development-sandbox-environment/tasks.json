@@ -47,7 +47,7 @@
     {
       "id": "T003",
       "title": "Implement idempotent container bootstrap",
-      "status": "pending",
+      "status": "completed",
       "depends_on": [
         "T002"
       ],

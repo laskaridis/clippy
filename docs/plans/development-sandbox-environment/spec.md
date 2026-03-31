@@ -15,6 +15,7 @@ The sandbox is the execution surface for coding, testing, and local runtime work
 - [x] (2026-03-31 10:40Z) Removed the mistaken `feature/align-sandbox-spec` worktree and branch created in error.
 - [x] (2026-03-31 13:49Z) Restored workflow compliance on this task branch and created the initial `infra/sandbox/` scaffold (`Dockerfile`, `entrypoint.sh`, `.env.example`, `README.md`) required for the next implementation steps.
 - [x] (2026-03-31 14:21Z) Implemented the sandbox image in `infra/sandbox/Dockerfile`, validated a full `docker build`, confirmed the required CLI/tool versions inside the built image, and reran `make all-verify`.
+- [x] (2026-03-31 15:56Z) Implemented the idempotent sandbox bootstrap in `infra/sandbox/entrypoint.sh`, including PostgreSQL initialization/reuse, persisted shell environment, SSH key installation, GitHub-aware clone/auth wiring, and a restart validation against persistent volumes.
 - [ ] Implement sandbox assets under `infra/sandbox/` and the new Make targets in the root `Makefile`.
 - [ ] Add the sandbox README/env template and document the exact user-facing start, access, and destroy flows.
 - [ ] Validate that at least two named sandboxes can run in parallel with distinct SSH ports, web ports, database volumes, and extension export directories.
@@ -56,7 +57,9 @@ The sandbox is the execution surface for coding, testing, and local runtime work
 
 The first implementation milestone is now in place. The sandbox image can be built locally from `infra/sandbox/Dockerfile`, it reads the pinned versions from `.tool-versions`, and the resulting image exposes the required CLI surface (`python`, `node`, `pnpm`, `gh`, `codex`, `psql`, `pg_isready`, `playwright`, `jq`) on `PATH`.
 
-The main remaining risk has shifted from workflow compliance to bootstrap behavior. The branch/worktree is now compliant, but the container entrypoint, Makefile lifecycle wiring, and host export behavior are still placeholders and need to be implemented without regressing the validated runtime/toolchain base image.
+The second milestone is now in place too. The container bootstrap is no longer a placeholder: it provisions SSH access, initializes or reuses PostgreSQL, creates the sandbox-local app role/database, persists `DATABASE_URL` plus OpenAI variables for login shells, authenticates `gh` when `GH_TOKEN` is available, and clones the repository only when the workspace volume is empty.
+
+The main remaining risk has shifted to lifecycle wiring and host integration. The runtime/toolchain base image and bootstrap contract are both validated now, but the Makefile lifecycle targets, host-visible extension export flow, and multi-instance port/resource isolation still need to be wired together and exercised end to end.
 
 ## Context and Orientation
 

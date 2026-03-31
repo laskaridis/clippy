@@ -1,6 +1,7 @@
 ## Codebase Patterns
 - Use `make help` as the canonical discovery surface before adding or invoking repository workflow commands.
 - For sandbox image work, keep the Docker build context minimal by copying only `.tool-versions` and late-stage sandbox scripts instead of the full repository tree.
+- Sandbox bootstrap should authenticate both `gh` and `git clone` from `GH_TOKEN`; for local-path validation overrides, mark the source repo as a git `safe.directory` before cloning.
 
 ## [2026-03-31 13:49:21Z]
 - Task id: T001
@@ -19,4 +20,13 @@
   - Patterns discovered: The sandbox image can stay cache-friendly by splitting stable OS package installation from the heavy runtime-install layer, then copying `entrypoint.sh` only after the runtime layers are built.
   - Gotchas encountered: This environment intercepts some TLS chains inside `docker build`, so direct upstream runtime downloads and Playwright browser installs needed explicit handling to keep the build reproducible.
   - Useful context: A quick `docker run --entrypoint /bin/bash webclippings-sandbox:test -lc ...` probe is an efficient post-build check for required CLI availability before moving on to entrypoint or Makefile work.
+---
+## [2026-03-31 15:56:48Z]
+- Task id: T003
+- What was implemented: Replaced the sandbox entrypoint scaffold with an idempotent bootstrap that installs SSH authorized keys, persists `DATABASE_URL` and OpenAI variables into login shells, initializes or reuses PostgreSQL plus the sandbox app role/database, configures `gh` from `GH_TOKEN`, and clones the repository only on first boot while preserving existing workspace and database state on restart.
+- Files changed: `infra/sandbox/entrypoint.sh`, `docs/plans/development-sandbox-environment/spec.md`, `docs/plans/development-sandbox-environment/tasks.json`, `docs/plans/development-sandbox-environment/ralph.txt`
+- **Learnings for future iterations:**
+  - Patterns discovered: For private GitHub remotes, sandbox bootstrap must wire `GH_TOKEN` into both `gh auth` and `git clone`; logging in to `gh` alone is not enough unless git credential helper setup is also handled.
+  - Gotchas encountered: PostgreSQL bootstrap should administer the freshly initialized cluster over the local Unix socket as the `postgres` OS user; TCP auth for `postgres` will fail before a password is explicitly set.
+  - Useful context: A disposable Docker validation with persistent named volumes is enough to prove the entrypoint restart path is non-destructive before Makefile lifecycle targets exist.
 ---
