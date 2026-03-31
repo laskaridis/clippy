@@ -28,7 +28,7 @@
     {
       "id": "T002",
       "title": "Build the sandbox image from pinned tool versions",
-      "status": "pending",
+      "status": "completed",
       "depends_on": [
         "T001"
       ],

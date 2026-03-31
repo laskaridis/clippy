@@ -14,6 +14,7 @@ The sandbox is the execution surface for coding, testing, and local runtime work
 - [x] (2026-03-31 10:31Z) Aligned the design on self-contained multi-instance sandboxes with in-container PostgreSQL, only GitHub/OpenAI host secrets, host browser access for the web app, and host-visible unpacked extension exports.
 - [x] (2026-03-31 10:40Z) Removed the mistaken `feature/align-sandbox-spec` worktree and branch created in error.
 - [x] (2026-03-31 13:49Z) Restored workflow compliance on this task branch and created the initial `infra/sandbox/` scaffold (`Dockerfile`, `entrypoint.sh`, `.env.example`, `README.md`) required for the next implementation steps.
+- [x] (2026-03-31 14:21Z) Implemented the sandbox image in `infra/sandbox/Dockerfile`, validated a full `docker build`, confirmed the required CLI/tool versions inside the built image, and reran `make all-verify`.
 - [ ] Implement sandbox assets under `infra/sandbox/` and the new Make targets in the root `Makefile`.
 - [ ] Add the sandbox README/env template and document the exact user-facing start, access, and destroy flows.
 - [ ] Validate that at least two named sandboxes can run in parallel with distinct SSH ports, web ports, database volumes, and extension export directories.
@@ -53,9 +54,9 @@ The sandbox is the execution surface for coding, testing, and local runtime work
 
 ## Outcomes & Retrospective
 
-The implementation has not been started yet. The main outcome of this revision is a decision-complete plan that corrects the previous design drift. The earlier draft assumed Docker would remain external to the sandbox and that host-side worktrees would be replaced wholesale. The aligned design instead keeps the sandbox self-contained, preserves host browser access, and scopes the first iteration to two explicit lifecycle targets plus the minimum host integration needed for manual testing.
+The first implementation milestone is now in place. The sandbox image can be built locally from `infra/sandbox/Dockerfile`, it reads the pinned versions from `.tool-versions`, and the resulting image exposes the required CLI surface (`python`, `node`, `pnpm`, `gh`, `codex`, `psql`, `pg_isready`, `playwright`, `jq`) on `PATH`.
 
-The main remaining risk is workflow compliance. The existing feature worktree branch name does not satisfy `docs/DEVELOPMENT_WORKFLOW.md`, so implementation should either rename the branch or get explicit user approval to continue under this branch despite the preflight failure.
+The main remaining risk has shifted from workflow compliance to bootstrap behavior. The branch/worktree is now compliant, but the container entrypoint, Makefile lifecycle wiring, and host export behavior are still placeholders and need to be implemented without regressing the validated runtime/toolchain base image.
 
 ## Context and Orientation
 

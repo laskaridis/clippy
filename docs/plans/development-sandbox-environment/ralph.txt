@@ -1,5 +1,6 @@
 ## Codebase Patterns
 - Use `make help` as the canonical discovery surface before adding or invoking repository workflow commands.
+- For sandbox image work, keep the Docker build context minimal by copying only `.tool-versions` and late-stage sandbox scripts instead of the full repository tree.
 
 ## [2026-03-31 13:49:21Z]
 - Task id: T001
@@ -9,4 +10,13 @@
   - Patterns discovered: Repository workflow automation is expected to surface through root `Makefile` targets, even when the concrete implementation lives under `infra/`.
   - Gotchas encountered: `scripts/agent-preflight.sh` enforces the `feature/<slug>` branch rule; this worktree needed a branch rename before any compliant implementation work could start.
   - Useful context: A fresh worktree may fail `make all-verify` until `make all-init` has created `backend/.venv` and installed extension dependencies.
+---
+## [2026-03-31 14:21:04Z]
+- Task id: T002
+- What was implemented: Replaced the placeholder sandbox image with a working Ubuntu-based Docker build that reads pinned versions from `.tool-versions`, installs the required CLI/runtime/tooling set, provisions the non-root `agent` user plus SSH/PostgreSQL prerequisites, and validates successfully with `docker build`, in-container CLI probes, and `make all-verify`.
+- Files changed: `infra/sandbox/Dockerfile`, `docs/plans/development-sandbox-environment/spec.md`, `docs/plans/development-sandbox-environment/tasks.json`, `docs/plans/development-sandbox-environment/ralph.txt`
+- **Learnings for future iterations:**
+  - Patterns discovered: The sandbox image can stay cache-friendly by splitting stable OS package installation from the heavy runtime-install layer, then copying `entrypoint.sh` only after the runtime layers are built.
+  - Gotchas encountered: This environment intercepts some TLS chains inside `docker build`, so direct upstream runtime downloads and Playwright browser installs needed explicit handling to keep the build reproducible.
+  - Useful context: A quick `docker run --entrypoint /bin/bash webclippings-sandbox:test -lc ...` probe is an efficient post-build check for required CLI availability before moving on to entrypoint or Makefile work.
 ---
