@@ -20,7 +20,7 @@ The sandbox is the execution surface for coding, testing, and local runtime work
 - [x] (2026-03-31 15:00Z) Wired host-visible sandbox web/extension access by aligning the sandbox web port inside and outside the container, exporting localhost-focused backend runtime defaults for sandbox shells, and continuously syncing the sandbox unpacked extension output into `.local/sandboxes/<id>/exports/extension`.
 - [x] (2026-03-31 16:15Z) Expanded the sandbox README/env template to document the exact required host secrets, SSH assumptions, user-facing start/connect/destroy flow, deterministic naming model, idempotent restart behavior, and port-collision recovery path.
 - [x] (2026-03-31 15:14Z) Validated single-sandbox readiness for `alpha`, including host-printed SSH/web access, in-sandbox toolchain probes, `make all-init`, `make all-run`, host reachability on the published URL, and host-visible extension export output.
-- [ ] Validate that at least two named sandboxes can run in parallel with distinct SSH ports, web ports, database volumes, and extension export directories.
+- [x] (2026-03-31 15:20Z) Validated multi-sandbox isolation by starting `alpha` and `beta` concurrently, confirming distinct SSH/web ports plus per-instance Docker volumes and host export directories, then destroying `alpha` while `beta` remained usable.
 
 ## Surprises & Discoveries
 
@@ -66,7 +66,9 @@ The second milestone is now in place too. The container bootstrap is no longer a
 
 Single-sandbox readiness is now validated end to end. `make sandbox-start name=alpha` produces a working SSH endpoint and host URL, the sandboxed repo can run `make all-init` and `make all-run`, the Django app is reachable from the host on the published localhost port, and the unpacked extension export appears under `.local/sandboxes/alpha/exports/extension`.
 
-The remaining risk is now narrowed to multi-instance isolation and any deferred cleanup that emerges from that validation. The lifecycle wiring, host-visible extension export flow, and sandbox runtime/toolchain contract are all exercised for one named instance.
+Multi-instance isolation is now validated too. Running `make sandbox-start name=alpha` and `make sandbox-start name=beta` together produced distinct SSH ports (`2594` and `2236`), distinct web ports (`8594` and `8236`), distinct Docker volumes (`webclippings-sandbox-<id>-workspace`, `-home`, and `-postgres`), and distinct host export directories under `.local/sandboxes/<id>/exports/extension`. Destroying `alpha` left `beta` running with PostgreSQL still accepting connections and the cloned repository still present.
+
+The remaining follow-up is limited to any intentionally deferred cleanup captured separately as tech debt. The lifecycle wiring, host-visible extension export flow, and sandbox runtime/toolchain contract are now exercised for both single-instance and parallel-instance use.
 
 ## Context and Orientation
 

@@ -144,7 +144,7 @@
     {
       "id": "T008",
       "title": "Validate multi-sandbox isolation",
-      "status": "pending",
+      "status": "completed",
       "depends_on": [
         "T007"
       ],

@@ -7,6 +7,7 @@
 - For sandbox web access, keep the published backend port identical inside and outside the container, then export `DJANGO_DEV_PORT` and `DJANGO_DEV_BASE_URL` from the entrypoint so host browser URLs and extension runtime metadata stay aligned.
 - Sandbox documentation should describe the deterministic id-to-resource mapping and recovery semantics exactly as implemented in `Makefile`, because users rely on the printed SSH/web/export values instead of discovering container internals manually.
 - Backend runtime entrypoints that call `manage.py` should prefer `backend/.venv/bin/python` when it exists, otherwise sandbox and other clean environments can pass `make all-init` but still fail at `make all-run`.
+- Multi-sandbox isolation is enforced by deriving every Docker resource and host export path from the sandbox id; validate it with `docker inspect` against `webclippings-sandbox-<id>-workspace`, `-home`, and `-postgres` plus `.local/sandboxes/<id>/exports/extension`.
 
 ## [2026-03-31 13:49:21Z]
 - Task id: T001
@@ -70,4 +71,13 @@
   - Patterns discovered: Backend runtime scripts should resolve the repo virtualenv explicitly instead of assuming a globally provisioned Python environment.
   - Gotchas encountered: A sandbox clone sourced from `origin` will not automatically include in-progress branch edits, so local fixes may need to be copied into the running sandbox when validating uncommitted changes.
   - Useful context: The validated `alpha` instance used SSH port `2594`, web port `8594`, and exported extension artifacts under `.local/sandboxes/alpha/exports/extension`.
+---
+## [2026-03-31 15:20:09Z]
+- Task id: T008
+- What was implemented: Validated two concurrent sandboxes by starting `alpha` and `beta` together, confirming their published SSH/web ports, Docker volumes, and host extension export directories were all instance-specific, then destroying `alpha` and verifying `beta` still had a live PostgreSQL instance and cloned repository.
+- Files changed: `docs/plans/development-sandbox-environment/spec.md`, `docs/plans/development-sandbox-environment/tasks.json`, `docs/plans/development-sandbox-environment/ralph.txt`
+- **Learnings for future iterations:**
+  - Patterns discovered: Sandbox isolation can be proven quickly with `docker ps` for published ports and `docker inspect` for volume names because all lifecycle resources encode the sandbox id deterministically.
+  - Gotchas encountered: Parallel `make sandbox-start` runs can interleave noisy Docker build output even when both instances succeed, so capture the final printed SSH/web/export lines for each sandbox explicitly during validation.
+  - Useful context: This validation used `alpha` on SSH `2594` and web `8594`, `beta` on SSH `2236` and web `8236`, and confirmed `beta` stayed usable after `make sandbox-destroy name=alpha`.
 ---
