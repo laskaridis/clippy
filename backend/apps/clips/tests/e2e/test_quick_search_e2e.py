@@ -397,6 +397,72 @@ class QuickSearchE2ETests(StaticLiveServerTestCase):
                 context.close()
                 browser.close()
 
+    def test_url_opened_filter_drawer_restores_focus_to_trigger_on_close(
+        self,
+    ) -> None:
+        with sync_playwright() as playwright:
+            try:
+                browser: Browser = playwright.chromium.launch(
+                    channel="chromium",
+                    headless=True,
+                )
+            except Exception:
+                browser = playwright.chromium.launch(headless=True)
+            context: BrowserContext = browser.new_context(
+                viewport={"width": 390, "height": 844}
+            )
+            page: Page = context.new_page()
+            try:
+                self._login(page)
+                page.goto(
+                    f"{self.live_server_url}/clips/?panel=open",
+                    wait_until="domcontentloaded",
+                )
+                page.wait_for_function(
+                    """
+                    () => {
+                      return Boolean(
+                        window.ClippyBackendStimulus &&
+                          document.querySelector(
+                            '[data-controller~="filter-trigger-row"]'
+                          ) &&
+                          document.querySelector(
+                            '[data-controller~="filter-drawer"]'
+                          )
+                      )
+                    }
+                    """,
+                    timeout=10_000,
+                )
+                page.wait_for_selector(
+                    '[data-component="filter-drawer"][aria-hidden="false"]',
+                    timeout=10_000,
+                )
+
+                page.keyboard.press("Escape")
+
+                page.wait_for_function(
+                    """
+                    () => {
+                      const drawer = document.querySelector('[data-component="filter-drawer"]')
+                      const trigger = document.querySelector("[data-filter-drawer-trigger]")
+                      return Boolean(
+                        drawer?.getAttribute("aria-hidden") === "true" &&
+                          drawer.classList.contains("d-none") &&
+                          trigger?.getAttribute("aria-expanded") === "false" &&
+                          document.activeElement === trigger
+                      )
+                    }
+                    """,
+                    timeout=10_000,
+                )
+                self.assertEqual(
+                    page.url, f"{self.live_server_url}/clips/?panel=closed"
+                )
+            finally:
+                context.close()
+                browser.close()
+
     def test_drawer_label_toggle_updates_query_with_multiple_filter_roots_present(
         self,
     ) -> None:
