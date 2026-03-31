@@ -5,6 +5,7 @@
 - Only forward `SANDBOX_REPO_BRANCH` into the sandbox when that branch exists on `origin`; local-only feature branches will break first-boot checkout.
 - Host bind mounts used for sandbox export directories may reject `chown` on this Docker stack, so bootstrap must warn and continue instead of treating ownership changes as fatal.
 - For sandbox web access, keep the published backend port identical inside and outside the container, then export `DJANGO_DEV_PORT` and `DJANGO_DEV_BASE_URL` from the entrypoint so host browser URLs and extension runtime metadata stay aligned.
+- Sandbox documentation should describe the deterministic id-to-resource mapping and recovery semantics exactly as implemented in `Makefile`, because users rely on the printed SSH/web/export values instead of discovering container internals manually.
 
 ## [2026-03-31 13:49:21Z]
 - Task id: T001
@@ -50,4 +51,13 @@
   - Patterns discovered: Keeping the same backend port on both sides of the Docker port mapping lets existing backend/runtime metadata point at the real host URL without changing the repo’s backend or extension scripts.
   - Gotchas encountered: Validating sandbox repo commands via `docker exec` as `root` can trigger Git `safe.directory` checks and leave root-owned build artifacts; sandbox workflow verification should run as the `agent` user.
   - Useful context: The entrypoint now computes the sandbox worktree id from `/workspace/webclippings` and uses a background sync loop to mirror `extension/.local/worktrees/<id>/chrome` into `.local/sandboxes/<id>/exports/extension` on the host.
+---
+## [2026-03-31 16:15:00Z]
+- Task id: T006
+- What was implemented: Expanded the sandbox documentation to cover the required host secrets, default SSH key assumptions, exact `sandbox-start` access output, deterministic instance naming/resource mapping, idempotent rerun behavior, and the cleanup and port-collision recovery flow.
+- Files changed: `infra/sandbox/README.md`, `infra/sandbox/.env.example`, `docs/plans/development-sandbox-environment/spec.md`, `docs/plans/development-sandbox-environment/tasks.json`, `docs/plans/development-sandbox-environment/ralph.txt`
+- **Learnings for future iterations:**
+  - Patterns discovered: Sandbox-facing docs should mirror the exact `make sandbox-start` output contract so users can connect without inspecting Docker directly.
+  - Gotchas encountered: The sandbox requires a host SSH public key from the default `~/.ssh` locations; if none exists, the container still starts but SSH provisioning remains incomplete.
+  - Useful context: Recovery behavior is intentionally simple: rerun `make sandbox-start name=<id>` to reuse the same resources, and use `make sandbox-destroy name=<id>` only when a clean reset is actually needed.
 ---

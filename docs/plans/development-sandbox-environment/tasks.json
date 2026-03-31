@@ -103,7 +103,7 @@
     {
       "id": "T006",
       "title": "Document sandbox operating model and recovery behavior",
-      "status": "pending",
+      "status": "completed",
       "depends_on": [
         "T004",
         "T005"
