@@ -111,7 +111,7 @@ export default class extends Controller {
       return
     }
 
-    this.lastTrigger?.focus()
+    this.returnFocusTarget?.focus()
   }
 
   dispatchState(open) {
@@ -130,5 +130,21 @@ export default class extends Controller {
 
   get isOpen() {
     return !this.panelTarget.classList.contains("d-none")
+  }
+
+  get returnFocusTarget() {
+    if (this.lastTrigger instanceof HTMLElement) {
+      return this.lastTrigger
+    }
+
+    const panelId = this.panelTarget.getAttribute("id")
+
+    if (!panelId) {
+      return null
+    }
+
+    return document.querySelector(
+      `[data-filter-drawer-trigger][aria-controls="${panelId}"]`
+    )
   }
 }
