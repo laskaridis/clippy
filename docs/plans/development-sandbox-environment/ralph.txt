@@ -81,3 +81,12 @@
   - Gotchas encountered: Parallel `make sandbox-start` runs can interleave noisy Docker build output even when both instances succeed, so capture the final printed SSH/web/export lines for each sandbox explicitly during validation.
   - Useful context: This validation used `alpha` on SSH `2594` and web `8594`, `beta` on SSH `2236` and web `8236`, and confirmed `beta` stayed usable after `make sandbox-destroy name=alpha`.
 ---
+## [2026-03-31 15:22:38Z]
+- Task id: T009
+- What was implemented: Confirmed the remaining deferred cleanup is real and recorded it in `docs/TECH_DEBT_BACKLOG.md` as a toolchain-alignment follow-up for GitHub Actions and adjacent docs that still reference Python 3.12 / Node 20 instead of the sandbox's `.tool-versions` pins.
+- Files changed: `docs/TECH_DEBT_BACKLOG.md`, `docs/plans/development-sandbox-environment/spec.md`, `docs/plans/development-sandbox-environment/tasks.json`, `docs/plans/development-sandbox-environment/ralph.txt`
+- **Learnings for future iterations:**
+  - Patterns discovered: When a feature standardizes the repository on a canonical version source like `.tool-versions`, any intentionally deferred mismatches in CI or nearby docs should be captured immediately in `docs/TECH_DEBT_BACKLOG.md` instead of staying implicit in the spec notes.
+  - Gotchas encountered: Toolchain drift now spans both executable workflow config and human-facing docs, so follow-up work needs to update `.github/workflows/ci.yml`, `infra/ci/github/README.md`, and `backend/README.md` together to avoid a partial fix.
+  - Useful context: No further sandbox code changes were required for this task; the remaining action is a separate repo-wide alignment decision about whether CI should move to the `.tool-versions` pins or document a compatibility window explicitly.
+---

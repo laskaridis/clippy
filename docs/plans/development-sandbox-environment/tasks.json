@@ -162,7 +162,7 @@
     {
       "id": "T009",
       "title": "Capture deferred cleanup as tech debt if needed",
-      "status": "pending",
+      "status": "completed",
       "depends_on": [
         "T007"
       ],

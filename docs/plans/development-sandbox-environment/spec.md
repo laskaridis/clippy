@@ -21,6 +21,7 @@ The sandbox is the execution surface for coding, testing, and local runtime work
 - [x] (2026-03-31 16:15Z) Expanded the sandbox README/env template to document the exact required host secrets, SSH assumptions, user-facing start/connect/destroy flow, deterministic naming model, idempotent restart behavior, and port-collision recovery path.
 - [x] (2026-03-31 15:14Z) Validated single-sandbox readiness for `alpha`, including host-printed SSH/web access, in-sandbox toolchain probes, `make all-init`, `make all-run`, host reachability on the published URL, and host-visible extension export output.
 - [x] (2026-03-31 15:20Z) Validated multi-sandbox isolation by starting `alpha` and `beta` concurrently, confirming distinct SSH/web ports plus per-instance Docker volumes and host export directories, then destroying `alpha` while `beta` remained usable.
+- [x] (2026-03-31 15:22Z) Recorded the intentionally deferred toolchain drift follow-up in `docs/TECH_DEBT_BACKLOG.md` for GitHub Actions and adjacent docs that still reference Python 3.12 / Node 20 instead of the `.tool-versions` pins used by the sandbox.
 
 ## Surprises & Discoveries
 
@@ -69,6 +70,8 @@ Single-sandbox readiness is now validated end to end. `make sandbox-start name=a
 Multi-instance isolation is now validated too. Running `make sandbox-start name=alpha` and `make sandbox-start name=beta` together produced distinct SSH ports (`2594` and `2236`), distinct web ports (`8594` and `8236`), distinct Docker volumes (`webclippings-sandbox-<id>-workspace`, `-home`, and `-postgres`), and distinct host export directories under `.local/sandboxes/<id>/exports/extension`. Destroying `alpha` left `beta` running with PostgreSQL still accepting connections and the cloned repository still present.
 
 The remaining follow-up is limited to any intentionally deferred cleanup captured separately as tech debt. The lifecycle wiring, host-visible extension export flow, and sandbox runtime/toolchain contract are now exercised for both single-instance and parallel-instance use.
+
+The only deferred follow-up captured from this work is toolchain alignment outside the sandbox itself. GitHub Actions and nearby CI/backend documentation still reference Python 3.12 and Node 20, so that drift is now tracked explicitly in `docs/TECH_DEBT_BACKLOG.md` instead of being left implicit.
 
 ## Context and Orientation
 
