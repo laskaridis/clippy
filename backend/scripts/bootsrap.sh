@@ -110,6 +110,11 @@ done
 BACKEND_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 WORKTREE_ROOT="$(cd "${BACKEND_DIR}/.." && git rev-parse --show-toplevel)"
 WORKTREE_BASENAME="$(basename "${WORKTREE_ROOT}")"
+BACKEND_PYTHON="${BACKEND_DIR}/.venv/bin/python"
+
+if [[ ! -x "${BACKEND_PYTHON}" ]]; then
+  BACKEND_PYTHON="python"
+fi
 
 # Prefer GNU sha1sum but fall back to the macOS-default shasum implementation.
 if command -v sha1sum >/dev/null 2>&1; then
@@ -474,8 +479,8 @@ fi
 cd "${BACKEND_DIR}"
 start_worktree_postgres
 wait_for_external_database
-python manage.py migrate
-python manage.py shell -c "from apps.accounts.bootstrap import ensure_admin_user_from_env; print(ensure_admin_user_from_env())"
+"${BACKEND_PYTHON}" manage.py migrate
+"${BACKEND_PYTHON}" manage.py shell -c "from apps.accounts.bootstrap import ensure_admin_user_from_env; print(ensure_admin_user_from_env())"
 if [[ "${BOOTSTRAP_ONLY}" == "1" ]]; then
   info "bootstrap-only complete"
   exit 0
@@ -484,4 +489,4 @@ RUNSERVER_ARGS=("0.0.0.0:${PORT}")
 if [[ "${NO_RELOAD}" == "1" ]]; then
   RUNSERVER_ARGS+=("--noreload")
 fi
-python manage.py runserver "${RUNSERVER_ARGS[@]}"
+"${BACKEND_PYTHON}" manage.py runserver "${RUNSERVER_ARGS[@]}"

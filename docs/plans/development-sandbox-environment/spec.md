@@ -19,6 +19,7 @@ The sandbox is the execution surface for coding, testing, and local runtime work
 - [x] (2026-03-31 14:51Z) Added `make sandbox-start name=<id>` and `make sandbox-destroy name=<id>` with deterministic per-instance names, ports, volumes, host export paths, host `gh` token fallback, and validated start/destroy behavior plus `make all-verify`.
 - [x] (2026-03-31 15:00Z) Wired host-visible sandbox web/extension access by aligning the sandbox web port inside and outside the container, exporting localhost-focused backend runtime defaults for sandbox shells, and continuously syncing the sandbox unpacked extension output into `.local/sandboxes/<id>/exports/extension`.
 - [x] (2026-03-31 16:15Z) Expanded the sandbox README/env template to document the exact required host secrets, SSH assumptions, user-facing start/connect/destroy flow, deterministic naming model, idempotent restart behavior, and port-collision recovery path.
+- [x] (2026-03-31 15:14Z) Validated single-sandbox readiness for `alpha`, including host-printed SSH/web access, in-sandbox toolchain probes, `make all-init`, `make all-run`, host reachability on the published URL, and host-visible extension export output.
 - [ ] Validate that at least two named sandboxes can run in parallel with distinct SSH ports, web ports, database volumes, and extension export directories.
 
 ## Surprises & Discoveries
@@ -31,6 +32,9 @@ The sandbox is the execution surface for coding, testing, and local runtime work
 
 - Observation: The existing worktree for this feature is on branch `development-sandbox-env`, which does not satisfy the repository preflight rule requiring `feature/<slug>`.
   Evidence: Running `./scripts/agent-preflight.sh` in `.worktrees/development-sandbox-env` fails with `branch 'development-sandbox-env' must match feature/<slug>`.
+
+- Observation: `make all-init` alone was not sufficient for sandbox runtime validation because the backend bootstrap invoked bare `python manage.py ...` and skipped `backend/.venv`.
+  Evidence: The first `make all-run` inside sandbox `alpha` failed with `ModuleNotFoundError: No module named 'django'` until `backend/scripts/bootsrap.sh` was updated to prefer `backend/.venv/bin/python` when present.
 
 ## Decision Log
 
@@ -60,7 +64,9 @@ The first implementation milestone is now in place. The sandbox image can be bui
 
 The second milestone is now in place too. The container bootstrap is no longer a placeholder: it provisions SSH access, initializes or reuses PostgreSQL, creates the sandbox-local app role/database, persists `DATABASE_URL` plus OpenAI variables for login shells, authenticates `gh` when `GH_TOKEN` is available, and clones the repository only when the workspace volume is empty.
 
-The main remaining risk has shifted to lifecycle wiring and host integration. The runtime/toolchain base image and bootstrap contract are both validated now, but the Makefile lifecycle targets, host-visible extension export flow, and multi-instance port/resource isolation still need to be wired together and exercised end to end.
+Single-sandbox readiness is now validated end to end. `make sandbox-start name=alpha` produces a working SSH endpoint and host URL, the sandboxed repo can run `make all-init` and `make all-run`, the Django app is reachable from the host on the published localhost port, and the unpacked extension export appears under `.local/sandboxes/alpha/exports/extension`.
+
+The remaining risk is now narrowed to multi-instance isolation and any deferred cleanup that emerges from that validation. The lifecycle wiring, host-visible extension export flow, and sandbox runtime/toolchain contract are all exercised for one named instance.
 
 ## Context and Orientation
 

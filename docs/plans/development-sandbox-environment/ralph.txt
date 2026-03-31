@@ -6,6 +6,7 @@
 - Host bind mounts used for sandbox export directories may reject `chown` on this Docker stack, so bootstrap must warn and continue instead of treating ownership changes as fatal.
 - For sandbox web access, keep the published backend port identical inside and outside the container, then export `DJANGO_DEV_PORT` and `DJANGO_DEV_BASE_URL` from the entrypoint so host browser URLs and extension runtime metadata stay aligned.
 - Sandbox documentation should describe the deterministic id-to-resource mapping and recovery semantics exactly as implemented in `Makefile`, because users rely on the printed SSH/web/export values instead of discovering container internals manually.
+- Backend runtime entrypoints that call `manage.py` should prefer `backend/.venv/bin/python` when it exists, otherwise sandbox and other clean environments can pass `make all-init` but still fail at `make all-run`.
 
 ## [2026-03-31 13:49:21Z]
 - Task id: T001
@@ -60,4 +61,13 @@
   - Patterns discovered: Sandbox-facing docs should mirror the exact `make sandbox-start` output contract so users can connect without inspecting Docker directly.
   - Gotchas encountered: The sandbox requires a host SSH public key from the default `~/.ssh` locations; if none exists, the container still starts but SSH provisioning remains incomplete.
   - Useful context: Recovery behavior is intentionally simple: rerun `make sandbox-start name=<id>` to reuse the same resources, and use `make sandbox-destroy name=<id>` only when a clean reset is actually needed.
+---
+## [2026-03-31 15:14:50Z]
+- Task id: T007
+- What was implemented: Validated `make sandbox-start name=alpha` end to end, confirmed SSH and toolchain access inside the sandbox, ran `make all-init` and `make all-run` inside the sandbox, verified the host could reach `http://localhost:8594`, confirmed the unpacked extension export on the host, and fixed backend bootstrap to use `backend/.venv/bin/python` when available so sandbox runtime startup works after initialization.
+- Files changed: `backend/scripts/bootsrap.sh`, `docs/plans/development-sandbox-environment/spec.md`, `docs/plans/development-sandbox-environment/tasks.json`, `docs/plans/development-sandbox-environment/ralph.txt`
+- **Learnings for future iterations:**
+  - Patterns discovered: Backend runtime scripts should resolve the repo virtualenv explicitly instead of assuming a globally provisioned Python environment.
+  - Gotchas encountered: A sandbox clone sourced from `origin` will not automatically include in-progress branch edits, so local fixes may need to be copied into the running sandbox when validating uncommitted changes.
+  - Useful context: The validated `alpha` instance used SSH port `2594`, web port `8594`, and exported extension artifacts under `.local/sandboxes/alpha/exports/extension`.
 ---

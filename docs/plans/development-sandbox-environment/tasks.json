@@ -122,7 +122,7 @@
     {
       "id": "T007",
       "title": "Validate single-sandbox readiness",
-      "status": "pending",
+      "status": "completed",
       "depends_on": [
         "T004",
         "T005",
