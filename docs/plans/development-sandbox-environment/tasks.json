@@ -10,7 +10,7 @@
     {
       "id": "T001",
       "title": "Create sandbox asset skeleton",
-      "status": "pending",
+      "status": "completed",
       "depends_on": [],
       "scope": [
         "infra/sandbox/Dockerfile",

@@ -13,6 +13,7 @@ The sandbox is the execution surface for coding, testing, and local runtime work
 - [x] (2026-03-31 10:15Z) Reviewed repository workflow, toolchain pins, Makefile targets, backend bootstrap scripts, and CI to derive the real sandbox requirements.
 - [x] (2026-03-31 10:31Z) Aligned the design on self-contained multi-instance sandboxes with in-container PostgreSQL, only GitHub/OpenAI host secrets, host browser access for the web app, and host-visible unpacked extension exports.
 - [x] (2026-03-31 10:40Z) Removed the mistaken `feature/align-sandbox-spec` worktree and branch created in error.
+- [x] (2026-03-31 13:49Z) Restored workflow compliance on this task branch and created the initial `infra/sandbox/` scaffold (`Dockerfile`, `entrypoint.sh`, `.env.example`, `README.md`) required for the next implementation steps.
 - [ ] Implement sandbox assets under `infra/sandbox/` and the new Make targets in the root `Makefile`.
 - [ ] Add the sandbox README/env template and document the exact user-facing start, access, and destroy flows.
 - [ ] Validate that at least two named sandboxes can run in parallel with distinct SSH ports, web ports, database volumes, and extension export directories.

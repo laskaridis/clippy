@@ -1,0 +1,12 @@
+## Codebase Patterns
+- Use `make help` as the canonical discovery surface before adding or invoking repository workflow commands.
+
+## [2026-03-31 13:49:21Z]
+- Task id: T001
+- What was implemented: Created the initial `infra/sandbox/` scaffold with the canonical Dockerfile, entrypoint, env template, and README placeholders for the multi-instance sandbox workflow.
+- Files changed: `infra/sandbox/Dockerfile`, `infra/sandbox/entrypoint.sh`, `infra/sandbox/.env.example`, `infra/sandbox/README.md`, `docs/plans/development-sandbox-environment/tasks.json`, `docs/plans/development-sandbox-environment/ralph.txt`
+- **Learnings for future iterations:**
+  - Patterns discovered: Repository workflow automation is expected to surface through root `Makefile` targets, even when the concrete implementation lives under `infra/`.
+  - Gotchas encountered: `scripts/agent-preflight.sh` enforces the `feature/<slug>` branch rule; this worktree needed a branch rename before any compliant implementation work could start.
+  - Useful context: A fresh worktree may fail `make all-verify` until `make all-init` has created `backend/.venv` and installed extension dependencies.
+---
