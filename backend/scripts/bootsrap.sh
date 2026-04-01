@@ -14,6 +14,7 @@ set -euo pipefail
 #
 
 PRINT_JSON=0
+ENSURE_RUNTIME_JSON=0
 BOOTSTRAP_ONLY=0
 PRINT_ENV_PATH=0
 NO_RELOAD=0
@@ -55,6 +56,8 @@ Usage:
 Options:
   PORT              Optional positional override for the runserver port.
   --print-json      Print resolved worktree runtime values as JSON and exit.
+  --ensure-runtime-json
+                    Print runtime JSON after ensuring database/runtime artifacts exist.
   --print-env-path  Print per-worktree env file path and exit.
   --bootstrap-only  Prepare runtime (db/migrate/admin/runtime metadata) and exit.
   --no-reload       Pass --noreload to Django runserver (useful for automation).
@@ -82,6 +85,10 @@ while [[ $# -gt 0 ]]; do
       ;;
     --print-json)
       PRINT_JSON=1
+      shift
+      ;;
+    --ensure-runtime-json)
+      ENSURE_RUNTIME_JSON=1
       shift
       ;;
     --bootstrap-only)
@@ -454,6 +461,12 @@ if [[ "${PRINT_ENV_PATH}" == "1" ]]; then
 fi
 
 if [[ "${PRINT_JSON}" == "1" ]]; then
+  # Keep stdout machine-parseable for tooling that consumes this command.
+  emit_runtime_json
+  exit 0
+fi
+
+if [[ "${ENSURE_RUNTIME_JSON}" == "1" ]]; then
   # Keep stdout machine-parseable for tooling that consumes this command.
   start_worktree_postgres 1>&2
   wait_for_external_database 1>&2
