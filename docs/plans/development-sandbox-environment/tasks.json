@@ -1,0 +1,179 @@
+{
+  "plan": "development-sandbox-environment",
+  "source_spec": "docs/plans/development-sandbox-environment/spec.md",
+  "generated_at": "2026-03-31T10:15:10Z",
+  "notes": [
+    "Tasks are ordered by dependency and intended for direct implementation in the development-sandbox-env worktree.",
+    "The current worktree branch is development-sandbox-env, which does not satisfy the repository preflight rule requiring feature/<slug>."
+  ],
+  "tasks": [
+    {
+      "id": "T001",
+      "title": "Create sandbox asset skeleton",
+      "status": "completed",
+      "depends_on": [],
+      "scope": [
+        "infra/sandbox/Dockerfile",
+        "infra/sandbox/entrypoint.sh",
+        "infra/sandbox/.env.example",
+        "infra/sandbox/README.md"
+      ],
+      "description": "Add the new sandbox asset directory and the baseline files required by the spec. Keep the file layout minimal and focused on local Docker sandbox lifecycle only.",
+      "acceptance": [
+        "The infra/sandbox directory exists with the four expected files.",
+        "The README explains the sandbox purpose and points users to make sandbox-start and make sandbox-destroy.",
+        "The env template lists only GitHub/OpenAI-related host secrets as required or optional inputs."
+      ]
+    },
+    {
+      "id": "T002",
+      "title": "Build the sandbox image from pinned tool versions",
+      "status": "completed",
+      "depends_on": [
+        "T001"
+      ],
+      "scope": [
+        "infra/sandbox/Dockerfile"
+      ],
+      "description": "Implement the Docker image so it installs Python 3.13.5, Node.js 22.21.0, pnpm 9.15.1, gh, PostgreSQL server/client tooling, Codex CLI, Playwright, Chromium dependencies, SSH tooling, and the common CLI utilities the repository scripts rely on. Structure the Dockerfile for cache-friendly incremental rebuilds by keeping stable OS, runtime, and global CLI installation in early layers, copying sandbox scripts late, and not copying the repository into the image.",
+      "acceptance": [
+        "The Dockerfile uses .tool-versions as the source of truth for Python, Node.js, and pnpm versions.",
+        "The Dockerfile is organized for cache-friendly rebuilds: apt or system packages, language runtimes, and global CLI installs live in stable early layers, while sandbox scripts and config are copied in later layers.",
+        "The repository source tree is not copied into the image; the repo is cloned at container startup into the persistent workspace volume.",
+        "The built image provides jq, python, node, pnpm, gh, make, git, codex, psql, pg_isready, and playwright on PATH.",
+        "The image creates a non-root agent user suitable for SSH and VS Code Remote-SSH."
+      ]
+    },
+    {
+      "id": "T003",
+      "title": "Implement idempotent container bootstrap",
+      "status": "completed",
+      "depends_on": [
+        "T002"
+      ],
+      "scope": [
+        "infra/sandbox/entrypoint.sh"
+      ],
+      "description": "Implement the container entrypoint so each sandbox initializes and starts SSH and PostgreSQL, creates the local app database and role if missing, exports DATABASE_URL and OpenAI variables into login shells, configures gh auth from GH_TOKEN, and clones the repository on first boot only.",
+      "acceptance": [
+        "A first boot initializes PostgreSQL data, starts sshd, authenticates gh from GH_TOKEN, and clones the repo to /workspace/webclippings.",
+        "A later boot reuses the existing home, workspace, and database state without recloning or dropping data.",
+        "The sandbox shell environment exposes DATABASE_URL for the local Postgres instance and preserves OpenAI env vars for SSH and VS Code sessions.",
+        "Changing sandbox bootstrap scripts only invalidates late Docker layers and does not require reinstalling the full toolchain unless the runtime installation steps themselves changed."
+      ]
+    },
+    {
+      "id": "T004",
+      "title": "Add instance-aware sandbox lifecycle Make targets",
+      "status": "completed",
+      "depends_on": [
+        "T002",
+        "T003"
+      ],
+      "scope": [
+        "Makefile"
+      ],
+      "description": "Add exactly two user-facing targets, make sandbox-start name=<id> and make sandbox-destroy name=<id>. Derive deterministic container names, volumes, SSH ports, web ports, and host export directories from the instance id.",
+      "acceptance": [
+        "make help documents sandbox-start and sandbox-destroy.",
+        "sandbox-start builds or reuses the image, creates the required resources, and prints SSH, VS Code, web URL, repo path, and extension export path.",
+        "sandbox-destroy removes only the named container, its instance-specific volumes, and its host export directory while leaving the image cached."
+      ]
+    },
+    {
+      "id": "T005",
+      "title": "Wire host-visible web and extension access",
+      "status": "completed",
+      "depends_on": [
+        "T003",
+        "T004"
+      ],
+      "scope": [
+        "infra/sandbox/entrypoint.sh",
+        "Makefile",
+        "infra/sandbox/README.md"
+      ],
+      "description": "Publish one host web port per sandbox and provide a per-instance host export directory for the unpacked Chrome extension. Keep source editing inside the sandbox and expose only the built extension artifacts to the host.",
+      "acceptance": [
+        "The backend can bind to 0.0.0.0 inside the sandbox and be reached from the host at the printed localhost URL.",
+        "Each sandbox gets a host-visible extension export directory under .local/sandboxes/<id>/exports/extension.",
+        "The README documents that the host browser opens the web app and host Chrome loads the exported unpacked extension."
+      ]
+    },
+    {
+      "id": "T006",
+      "title": "Document sandbox operating model and recovery behavior",
+      "status": "completed",
+      "depends_on": [
+        "T004",
+        "T005"
+      ],
+      "scope": [
+        "infra/sandbox/README.md",
+        "infra/sandbox/.env.example"
+      ],
+      "description": "Document the required host secrets, SSH assumptions, multi-instance naming model, expected lifecycle commands, idempotent restart behavior, and cleanup/recovery path when sandbox startup fails or ports collide.",
+      "acceptance": [
+        "The README documents required host env vars as OPENAI_API_KEY and GH_TOKEN only, with the OpenAI optional variables listed separately.",
+        "The README explains how to connect with SSH and VS Code Remote-SSH and how to open the web app and extension outputs from the host.",
+        "The README describes failure handling for reruns, port collisions, and make sandbox-destroy cleanup."
+      ]
+    },
+    {
+      "id": "T007",
+      "title": "Validate single-sandbox readiness",
+      "status": "completed",
+      "depends_on": [
+        "T004",
+        "T005",
+        "T006"
+      ],
+      "scope": [
+        "infra/sandbox/Dockerfile",
+        "infra/sandbox/entrypoint.sh",
+        "Makefile"
+      ],
+      "description": "Start one sandbox instance and verify the image contents, SSH access, VS Code compatibility, local PostgreSQL wiring, backend reachability, and extension export behavior from end to end.",
+      "acceptance": [
+        "make sandbox-start name=alpha succeeds and prints connection details.",
+        "Inside alpha, python --version, node --version, pnpm --version, gh auth status, codex --version, and pg_isready succeed with the expected toolchain.",
+        "The host can open the alpha web URL and see the app after make all-init and make all-run in the sandbox.",
+        "pnpm run build:worktree in the sandbox produces a host-visible unpacked extension export for alpha."
+      ]
+    },
+    {
+      "id": "T008",
+      "title": "Validate multi-sandbox isolation",
+      "status": "completed",
+      "depends_on": [
+        "T007"
+      ],
+      "scope": [
+        "Makefile",
+        "infra/sandbox/README.md"
+      ],
+      "description": "Run at least two sandbox instances in parallel and verify deterministic isolation across container names, ports, volumes, PostgreSQL state, and host extension export paths.",
+      "acceptance": [
+        "make sandbox-start name=alpha and make sandbox-start name=beta can run concurrently.",
+        "Alpha and beta have different SSH ports, web ports, volumes, and extension export directories.",
+        "Destroying alpha leaves beta intact and usable."
+      ]
+    },
+    {
+      "id": "T009",
+      "title": "Capture deferred cleanup as tech debt if needed",
+      "status": "completed",
+      "depends_on": [
+        "T007"
+      ],
+      "scope": [
+        "docs/TECH_DEBT_BACKLOG.md"
+      ],
+      "description": "If implementation reveals follow-up work that is intentionally deferred, especially around version drift between .tool-versions, CI, and existing docs, record it explicitly in the tech debt backlog.",
+      "acceptance": [
+        "Any deferred cleanup discovered during implementation is captured in docs/TECH_DEBT_BACKLOG.md with concrete next steps.",
+        "No backlog item is added if no real deferred work remains."
+      ]
+    }
+  ]
+}

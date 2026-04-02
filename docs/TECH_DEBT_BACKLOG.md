@@ -53,3 +53,11 @@ Keep entries actionable and current.
 - Created: 2026-03-24
 - Related: `docs/plans/label-filter-sidebar/code-review-findings-2026-03-24.md` (ISSUE-01)
 - Next actions: Update `backend/apps/clips/static/clips/js/list.js` to enforce top-layer-first Escape behavior (e.g., stop propagation in quick search Escape handler and/or guard document-level drawer Escape handler when quick search is open), then add/extend tests for overlay keyboard interaction.
+
+### TD-005: Align CI and adjacent docs with `.tool-versions`
+- Scope: infra|docs
+- Impact: The sandbox now treats `.tool-versions` as the repository source of truth, but GitHub Actions and nearby docs still advertise Python 3.12 and Node 20, which makes local-vs-CI behavior harder to reason about and obscures the intended supported toolchain.
+- Status: Open
+- Created: 2026-03-31
+- Related: `docs/plans/development-sandbox-environment/spec.md`, `.github/workflows/ci.yml`, `infra/ci/github/README.md`, `backend/README.md`
+- Next actions: Decide whether to upgrade GitHub Actions to Python 3.13.5 and Node 22.21.0 or explicitly document the compatibility window, then update `.github/workflows/ci.yml`, `infra/ci/github/README.md`, and `backend/README.md` together so the declared toolchain is consistent.

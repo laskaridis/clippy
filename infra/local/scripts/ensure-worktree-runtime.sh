@@ -7,8 +7,8 @@ set -euo pipefail
 # Invariants: Treats runtime JSON as source of truth and fails fast on missing prerequisites.
 # Outcomes: Prints concise readiness summary after DB/runtime checks complete.
 # Artifacts:
-# - Delegated `backend/.local/worktree-env-<worktree-id>.env` generation via `bootsrap.sh --print-json` (runtime env contract).
-# - Delegated `backend/.local/worktree-runtime-<worktree-id>.json` generation via `bootsrap.sh --print-json` (runtime metadata for tooling).
+# - Delegated `backend/.local/worktree-env-<worktree-id>.env` generation via `bootsrap.sh --ensure-runtime-json` (runtime env contract).
+# - Delegated `backend/.local/worktree-runtime-<worktree-id>.json` generation via `bootsrap.sh --ensure-runtime-json` (runtime metadata for tooling).
 # - Delegated Docker Compose postgres runtime state when bootstrap resolves to managed worktree Postgres.
 #
 
@@ -46,7 +46,7 @@ if [[ ! -x "${BACKEND_BOOTSTRAP_SCRIPT}" ]]; then
 fi
 
 echo "[infra-local] ensuring worktree runtime and database availability"
-runtime_json="$("${BACKEND_BOOTSTRAP_SCRIPT}" --print-json)"
+runtime_json="$("${BACKEND_BOOTSTRAP_SCRIPT}" --ensure-runtime-json)"
 
 runtime_summary="$(
   RUNTIME_JSON="${runtime_json}" python - <<'PY'
