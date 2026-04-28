@@ -4,15 +4,7 @@ Guidelines for coding agents working in this repository.
 
 ## Context-Specific Guides
 
-Before doing any work **ALWAYS** read the `docs/README.md` first to learn about any context-specific documentation available in this project in case you need to access it later.
-
-## Development Workflow
-
-Before doing any code changes **ALWAYS** read the development workflow described in `docs/DEVELOPMENT_WORKFLOW.md` and ensure it is followed. Do **NOT** consider this optional, it's **MANDATORY** and **CRITICAL** to follow to the letter.
-
-## Code quality
-
-Before writing code of any kind **ALWAYS** read the core principles, rules and guidelines mentioned in `docs/CODE_QUALITY.md` document and ensure they are followed. Do **NOT** consider this optional.
+Before doing any work read the `docs/README.md` first to learn about any context-specific documentation available in this project in case you need to access it later.
 
 ## Canonical task entrypoints
 
@@ -23,10 +15,6 @@ When working with the codebase prefer `Makefile` as the primary surface of stabl
 - `make backend-*` and `make extension-*` targets are project-scoped entrypoints.
 
 If you need to do something **ALWAYS** check first if there is a Makefile target that you could use to complete your task. If you can't find one, consider creating one.
-
-## Test execution guardrail
-
-- Do not run overlapping backend verification commands that execute Django E2E tests at the same time (for example `make backend-test-e2e` in parallel with `make all-verify`), because they can race on the same test database and fail non-deterministically.
 
 ## Project Directory Outline
 
