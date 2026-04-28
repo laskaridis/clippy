@@ -14,7 +14,7 @@ moving on. If no root feature folder has been specified, stop and reply with an 
 
 ## Prerequisites
 
-The user MUST speficy a root feature folder with the following files inside:
+The user MUST specify a root feature folder with the following files inside:
 - `spec.md` detailing the specification of the feature, including the related stories
 - `tasks.json` detailing the implementation plan of the feature, broken down in tasks.
 
@@ -45,6 +45,7 @@ For each iteration APPEND to ralph.txt (NEVER replace, always append to maintain
 - Task id
 - What was implemented
 - Files changed
+- Tokens consumed
 - **Learnings for future iterations:**
   - Patterns discovered (e.g., "this codebase uses X for Y")
   - Gotchas encountered (e.g., "don't forget to update Z when changing W")
