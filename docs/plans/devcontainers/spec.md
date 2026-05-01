@@ -29,9 +29,6 @@ The observable success condition is simple. In two separate worktrees, two separ
 - Observation: the current runtime-management layer is larger than it first appears. It is not only `backend/scripts/bootsrap.sh`; it also includes PID and lock lifecycle scripts, infra compose wrappers, extension packaging, Make targets, tests, and agent skills.
   Evidence: `wc -l` across the directly affected scripts shows more than 2,200 lines tied to the legacy runtime flow, including `backend/scripts/bootsrap.sh` at 487 lines and `infra/local/scripts/manage-worktree-compose.sh` at 202 lines.
 
-- Observation: the existing devcontainer setup is not yet a full replacement for the old model.
-  Evidence: `.devcontainer/docker-compose.yml` currently publishes PostgreSQL on `5432:5432`, does not define the backend service startup contract, and only passes through environment variables; it does not yet encode the "one worktree, one backend port" workflow by itself.
-
 - Observation: the extension can be simplified more aggressively than the backend because it already supports a runtime URL override through `runtime-config.js`.
   Evidence: `extension/chrome/src/shared/config.ts` prefers `globalThis.WEBCLIPPINGS_RUNTIME_CONFIG.apiBaseUrl` before falling back to `manifest.json` host permissions.
 
