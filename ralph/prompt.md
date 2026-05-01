@@ -8,9 +8,7 @@ You are an autonomous coding agent working on a software project.
 $ARGUMENTS
 ```
 
-The user will specify a root feature folder with the input files you need to do your jop
-(will reference them in the instructions below). ALWAYS consider the user's input before
-moving on. If no root feature folder has been specified, stop and reply with an error.
+The user will specify a root feature folder with the input files you need to do your jop (will reference them in the instructions below). ALWAYS consider the user's input before moving on. If no root feature folder has been specified, stop and reply with an error.
 
 ## Prerequisites
 
@@ -21,31 +19,27 @@ The user MUST specify a root feature folder with the following files inside:
 ## Your Task
 
 1. Read the `spec.md` and `tasks.json` in the user-specified feature folder.
-2. Read the progress log at `ralph.txt` inside the same folder (check Codebase Patterns 
-   section first)
-3. Check that you're working on a feature branch named after the feature using a git 
-   worktree (if not, create one).
-4. Pick the **highest priority** task which is not implemented yet and doesn't have any
-   pending dependencies (HINT: you have access to `jq` cli tool).
+2. Read the progress log at `ralph.txt` inside the same folder (check Codebase Patterns section first).
+3. Check that you're working on a feature branch named after the feature using a git worktree (if not, create one).
+4. Pick the **highest priority** task which is not implemented yet and doesn't have any pending dependencies (HINT: you have access to `jq` cli tool).
 5. Implement that single task. 
-6. Run quality checks (e.g., typecheck, lint, test - use whatever your project requires)
-   and make sure they ALL pass.
+6. Run quality checks (e.g., typecheck, lint, test - use whatever your project requires) and make sure they ALL pass.
 7. Update AGENTS.md files if you discover reusable patterns (see below).
 8. Update `tasks.json` to mark the task as completed. 
 9. Append your progress to `ralph.txt` under the specified feature folder.
 10. Commit ALL your changes.
 
+**CRITICAL**: Ignore task-20 and task-21 from the backlog!
+
 ## Progress Report Format
 
-You leave notes to yourself in `ralph.txt` which you can revisit in successive iterations.
-For each iteration APPEND to ralph.txt (NEVER replace, always append to maintain traceability):
+You leave notes to yourself in `ralph.txt` which you can revisit in successive iterations.  For each iteration APPEND to ralph.txt (NEVER replace, always append to maintain traceability):
 
 ```
 ## [Timestamp]
 - Task id
 - What was implemented
 - Files changed
-- Tokens consumed
 - **Learnings for future iterations:**
   - Patterns discovered (e.g., "this codebase uses X for Y")
   - Gotchas encountered (e.g., "don't forget to update Z when changing W")
@@ -70,8 +64,7 @@ Only add patterns that are **general and reusable**, not task-specific details.
 
 ## Update documentation files
 
-Before committing, check if any edited files have learnings worth preserving in nearby `AGENTS.md` files
-or any other more specific markdown file referenced from there:
+Before committing, check if any edited files have learnings worth preserving in nearby `AGENTS.md` files or any other more specific markdown file referenced from there:
 
 1. **Identify directories with edited files** - Look at which directories you modified
 2. **Check for existing AGENTS.md** - Look for AGENTS.md in those directories or parent directories
