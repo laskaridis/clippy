@@ -1,12 +1,13 @@
 #!/usr/bin/env bash
 
 # Ralph script entrypoint.
-# Usage: ./ralph.sh --feature-dir <relative-path> [--max-iterations <number>]
+# Usage: ./ralph.sh --feature-dir <relative-path> [--max-iterations <number>] [--model <name>]
 #
 # Options:
 #   --help                     Show this help message.
 #   --feature-dir <path>       Specify a feature folder to use (relative to current working directory).
 #   --max-iterations <number>  Set the maximum number of iterations (default 50).
+#   --model <name>             Set the Codex model (default gpt-5.4-mini).
 
 set -euo pipefail
 
@@ -38,12 +39,13 @@ log_error() {
 
 usage() {
 	cat <<'EOF'
-Usage: ./ralph.sh --feature-dir <relative-path> [--max-iterations <number>]
+Usage: ./ralph.sh --feature-dir <relative-path> [--max-iterations <number>] [--model <name>]
 
 Options:
   --help                     Show this help message.
   --feature-dir <path>       Specify a feature folder to use (required, relative to current working directory).
   --max-iterations <number>  Set the maximum number of iterations (default: 50).
+  --model <name>             Set the Codex model (default: gpt-5.4-mini).
 EOF
 }
 
@@ -54,6 +56,7 @@ validate_positive_integer() {
 
 FEATURE_DIR=""
 MAX_ITERATIONS=50
+MODEL="gpt-5.4-mini"
 
 while [[ $# -gt 0 ]]; do
 	case "$1" in
@@ -78,6 +81,15 @@ while [[ $# -gt 0 ]]; do
 			exit 1
 		fi
 		MAX_ITERATIONS="$1"
+		;;
+	--model)
+		shift
+		if [[ $# -eq 0 || -z "${1:-}" ]]; then
+			log_error "Missing value for --model."
+			usage
+			exit 1
+		fi
+		MODEL="$1"
 		;;
 	*)
 		log_error "Unknown argument: $1"
@@ -136,10 +148,10 @@ PROMPT_TEMPLATE="$(cat "$PROMPT_FILE")"
 PROMPT_PAYLOAD="${PROMPT_TEMPLATE//\$ARGUMENTS/$FEATURE_DIR_PATH}"
 
 for ((iteration = 1; iteration <= MAX_ITERATIONS; iteration++)); do
-	log_info "Iteration ${iteration}/${MAX_ITERATIONS}: running Codex."
+	log_info "Iteration ${iteration}/${MAX_ITERATIONS}: running Codex with model ${MODEL}."
 
 	last_message_file="$(mktemp)"
-	if ! codex --ask-for-approval never -c shell_environment_policy.inherit=all exec --ephemeral --sandbox danger-full-access -o "$last_message_file" - <<<"$PROMPT_PAYLOAD"; then
+	if ! codex --model "$MODEL" --ask-for-approval never -c shell_environment_policy.inherit=all exec --ephemeral --sandbox danger-full-access -o "$last_message_file" - <<<"$PROMPT_PAYLOAD"; then
 		log_error "Codex execution failed on iteration $iteration."
 		rm -f "$last_message_file"
 		exit 1
