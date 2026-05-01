@@ -1,0 +1,679 @@
+{
+  "title": "Execution Tasks",
+  "source_plan": "docs/plans/devcontainers/spec.md",
+  "assumptions": [
+    "Task IDs are ordered for sequential execution when two tasks touch the same file.",
+    "Historical references inside `docs/plans/**` and the superseded ADR `docs/adrs/0003-worktree-backend-entrypoint-and-env-contract.md` may remain; other living code and docs must be updated.",
+    "All commands are run from the repository root unless a task explicitly says otherwise.",
+    "Tasks stay intentionally narrow so a low-reasoning implementation model can complete and verify each unit without needing broader repo context."
+  ],
+  "tasks": [
+    {
+      "id": "task-01",
+      "goal": "Make the devcontainer service contract match the new `dev-sandbox` runtime model and remove PostgreSQL host-port publishing.",
+      "files": [
+        ".devcontainer/docker-compose.yml",
+        ".devcontainer/devcontainer.json"
+      ],
+      "constraints": [
+        "Rename the compose service key `app` to `dev-sandbox`.",
+        "Keep the repository bind mount `..:/workspace` and `command: sleep infinity` unchanged.",
+        "Publish the backend port from container to host using `DJANGO_DEV_PORT`; do not hard-code a numeric port.",
+        "Keep PostgreSQL reachable on the compose network by service name, but remove any host `5432` port mapping.",
+        "Set `devcontainer.json` `service` to `dev-sandbox` and keep `postCreateCommand` as `bash .devcontainer/bootstrap.sh`."
+      ],
+      "acceptance_criteria": [
+        "`.devcontainer/docker-compose.yml` defines `services.dev-sandbox` and no longer defines `services.app`.",
+        "`.devcontainer/docker-compose.yml` contains a `ports` mapping for `dev-sandbox` that uses `DJANGO_DEV_PORT` for both host and container sides.",
+        "`.devcontainer/docker-compose.yml` does not contain `5432:5432` and the `postgres` service has no host port mapping.",
+        "`.devcontainer/devcontainer.json` sets `\"service\": \"dev-sandbox\"` and still references `docker-compose.yml` plus `bash .devcontainer/bootstrap.sh`."
+      ],
+      "dependencies": [],
+      "status": "pending",
+      "implementation_notes": [
+        "Verify by reading both files after the edit; no runtime command is required for this task.",
+        "Do not introduce any user-facing `docker compose up` instructions here; this task is config-only."
+      ]
+    },
+    {
+      "id": "task-02",
+      "goal": "Rewrite the tracked devcontainer environment example to document the new localhost-plus-port contract.",
+      "files": [
+        ".devcontainer/.env.example"
+      ],
+      "constraints": [
+        "Keep only the minimum local variables required by the plan: `DJANGO_DEV_PORT`, `ALLOWED_HOSTS`, `POSTGRES_HOST`, `POSTGRES_PORT`, `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD`, and `DATABASE_URL`.",
+        "Remove `DJANGO_DEV_HOST` and `DJANGO_DEV_BASE_URL` from the example.",
+        "Set `ALLOWED_HOSTS` to a localhost-oriented value that includes `localhost`, `127.0.0.1`, and `[::1]`.",
+        "Keep `POSTGRES_HOST=postgres` and `POSTGRES_PORT=5432` so the file documents the compose-network contract."
+      ],
+      "acceptance_criteria": [
+        "`.devcontainer/.env.example` contains the eight required variables named in the constraints.",
+        "`.devcontainer/.env.example` does not contain `DJANGO_DEV_HOST=` or `DJANGO_DEV_BASE_URL=`.",
+        "The example `DATABASE_URL` points at the `postgres` service rather than `localhost`."
+      ],
+      "dependencies": [
+        "task-01"
+      ],
+      "status": "pending",
+      "implementation_notes": [
+        "Keep the file as a plain `.env` example with one assignment per line.",
+        "Do not add extra optional variables; the objective is a minimal, explicit contract."
+      ]
+    },
+    {
+      "id": "task-03",
+      "goal": "Make backend dependency installation container-first and route devcontainer bootstrap through repository Make targets.",
+      "files": [
+        "Makefile",
+        ".devcontainer/bootstrap.sh"
+      ],
+      "constraints": [
+        "Change `backend-init` to install `backend/requirements-dev.txt` with `python -m pip` from the active environment; do not create or reference `backend/.venv`.",
+        "Update the `backend-init` help text so it no longer claims dependencies are installed into `backend/.venv`.",
+        "Make `.devcontainer/bootstrap.sh` run from `/workspace` and call `make backend-init` plus `make extension-init`.",
+        "Do not leave raw `pip install` or `pnpm install` commands in `.devcontainer/bootstrap.sh`; it must rely on Make targets only."
+      ],
+      "acceptance_criteria": [
+        "`Makefile` no longer defines `VENV_DIR := backend/.venv` or `PIP := $(VENV_DIR)/bin/pip`.",
+        "`make help` describes `backend-init` without mentioning `backend/.venv`.",
+        "`.devcontainer/bootstrap.sh` changes directory to `/workspace` and invokes `make backend-init` and `make extension-init`."
+      ],
+      "dependencies": [
+        "task-02"
+      ],
+      "status": "pending",
+      "implementation_notes": [
+        "Keep this task limited to installation/bootstrap behavior; do not remove runtime Make targets here.",
+        "Use the active container Python executable rather than hard-coded interpreter paths."
+      ]
+    },
+    {
+      "id": "task-04",
+      "goal": "Remove obsolete runtime-management targets from `Makefile` and make `all-test` compose existing test targets directly.",
+      "files": [
+        "Makefile"
+      ],
+      "constraints": [
+        "Remove `.PHONY`, help text, and recipes for `all-run`, `local-env-start`, `local-env-stop`, `local-env-status`, `local-env-teardown`, `backend-stop`, `backend-status`, and `extension-build-worktree`.",
+        "Update `all-test` to call existing Make targets with `$(MAKE)` instead of `./scripts/test_worktree.sh`.",
+        "Keep `worktree-start`, `backend-run`, `backend-test-unit`, `backend-test-e2e`, `extension-test-unit`, `extension-test-e2e`, `extension-test-a11y`, and `all-verify` intact.",
+        "Update `extension-clean` so it removes only artifacts that still exist after the migration; do not keep cleanup of deleted worktree-specific output directories."
+      ],
+      "acceptance_criteria": [
+        "`make help` no longer advertises any of the removed runtime-management targets.",
+        "`Makefile` no longer contains `test_worktree.sh`, `run_worktree_stack.sh`, `backend-stop:`, `backend-status:`, or `extension-build-worktree:`.",
+        "`all-test` is implemented only as `$(MAKE)` sub-target invocations."
+      ],
+      "dependencies": [
+        "task-03"
+      ],
+      "status": "pending",
+      "implementation_notes": [
+        "Do not change `backend-run` in this task; that is handled separately.",
+        "Keep the `help` output readable and grouped under the existing backend/extension/project headings."
+      ]
+    },
+    {
+      "id": "task-05",
+      "goal": "Redefine `make backend-run` as the direct Django startup command used inside the devcontainer.",
+      "files": [
+        "Makefile"
+      ],
+      "constraints": [
+        "Implement `backend-run` without calling `backend/scripts/start-server.sh`.",
+        "The recipe must run Django migrations, ensure the local admin user exists via `apps.accounts.bootstrap.ensure_admin_user_from_env`, and then start `python manage.py runserver 0.0.0.0:${DJANGO_DEV_PORT}` from `backend/`.",
+        "Update the `help` description so it says this command starts the backend inside the devcontainer rather than for the current worktree on the host.",
+        "Do not add any PID file, lock file, stop wrapper, or status wrapper behavior."
+      ],
+      "acceptance_criteria": [
+        "`Makefile` no longer contains `./scripts/start-server.sh`.",
+        "The `backend-run` recipe includes `python manage.py migrate`, a `python manage.py shell -c` call importing `ensure_admin_user_from_env`, and `python manage.py runserver 0.0.0.0:${DJANGO_DEV_PORT}`.",
+        "`make help` describes `backend-run` as a devcontainer-local backend start command."
+      ],
+      "dependencies": [
+        "task-04"
+      ],
+      "status": "pending",
+      "implementation_notes": [
+        "Keep the command sequence explicit in the Makefile; do not hide it behind a new wrapper script.",
+        "Preserve execution from the repository root by using `cd backend && ...`."
+      ]
+    },
+    {
+      "id": "task-06",
+      "goal": "Simplify the backend non-E2E test script so it runs directly in the prepared devcontainer environment.",
+      "files": [
+        "backend/scripts/test.sh"
+      ],
+      "constraints": [
+        "Remove all dependency on `infra/local/scripts/ensure-worktree-runtime.sh` and `backend/scripts/env.sh`.",
+        "Update the help text to describe a devcontainer-ready environment rather than a worktree-aware runtime bootstrap flow.",
+        "Keep the command behavior limited to `python manage.py test --exclude-tag=e2e \"$@\"` executed from `backend/`.",
+        "Do not source any generated env artifacts."
+      ],
+      "acceptance_criteria": [
+        "`backend/scripts/test.sh` does not contain `ensure-worktree-runtime`, `env.sh`, `source /dev/stdin`, or `worktree` bootstrap language.",
+        "`backend/scripts/test.sh` still accepts passthrough `manage.py test` arguments.",
+        "The script executes `python manage.py test --exclude-tag=e2e` from the `backend` directory."
+      ],
+      "dependencies": [
+        "task-03"
+      ],
+      "status": "pending",
+      "implementation_notes": [
+        "Preserve the existing `-h|--help` behavior.",
+        "Do not add Docker startup logic; assume the devcontainer already provides a valid environment."
+      ]
+    },
+    {
+      "id": "task-07",
+      "goal": "Simplify the backend E2E test script so it uses the active container environment and no worktree runtime artifacts.",
+      "files": [
+        "backend/scripts/test-e2e.sh"
+      ],
+      "constraints": [
+        "Remove all dependency on `infra/local/scripts/ensure-worktree-runtime.sh`, `backend/scripts/env.sh`, and `backend/.venv/bin/python`.",
+        "Run Playwright browser installation with `python -m playwright install chromium` when `BACKEND_E2E_SKIP_BROWSER_INSTALL` is not `1`.",
+        "Keep the default test target `apps.clips.tests.e2e.test_quick_search_e2e` when no explicit args are provided.",
+        "Execute `python manage.py test --tag=e2e ...` from `backend/`."
+      ],
+      "acceptance_criteria": [
+        "`backend/scripts/test-e2e.sh` does not contain `.venv`, `ensure-worktree-runtime`, `env.sh`, or `source /dev/stdin`.",
+        "`backend/scripts/test-e2e.sh` still supports passthrough test arguments and still defaults to `apps.clips.tests.e2e.test_quick_search_e2e`.",
+        "The browser-install step uses `python -m playwright install chromium` rather than a hard-coded venv interpreter."
+      ],
+      "dependencies": [
+        "task-03"
+      ],
+      "status": "pending",
+      "implementation_notes": [
+        "Keep the browser install as best-effort warning behavior if it already exists.",
+        "Do not auto-start Docker or derive a worktree identifier."
+      ]
+    },
+    {
+      "id": "task-08a",
+      "goal": "Delete the legacy backend lifecycle wrapper scripts after all live code references are removed.",
+      "files": [
+        "backend/scripts/start-server.sh",
+        "backend/scripts/stop-server.sh",
+        "backend/scripts/check-server.sh"
+      ],
+      "constraints": [
+        "Delete all three files completely.",
+        "Do not replace them with compatibility wrappers or stubs.",
+        "Only perform the deletions after `task-04` and `task-05` are complete."
+      ],
+      "acceptance_criteria": [
+        "None of the three files remain in the repository.",
+        "Running `rg -n \"start-server\\\\.sh|stop-server\\\\.sh|check-server\\\\.sh\" Makefile backend extension infra scripts .agents` returns no matches."
+      ],
+      "dependencies": [
+        "task-04",
+        "task-05"
+      ],
+      "status": "pending",
+      "implementation_notes": [
+        "Use file deletion only; this task should not rewrite docs or tests.",
+        "The later validation task will perform the final repository-wide reference audit."
+      ]
+    },
+    {
+      "id": "task-08b",
+      "goal": "Delete the legacy backend bootstrap and env scripts after dependent runtime helpers are removed.",
+      "files": [
+        "backend/scripts/bootsrap.sh",
+        "backend/scripts/env.sh"
+      ],
+      "constraints": [
+        "Delete both files completely.",
+        "Do not replace them with compatibility wrappers or stubs.",
+        "Only perform the deletions after backend tests and host-runtime helper deletions are complete."
+      ],
+      "acceptance_criteria": [
+        "Neither file remains in the repository.",
+        "Running `rg -n \"bootsrap\\\\.sh|backend/scripts/env\\\\.sh\" Makefile backend extension infra scripts .agents` returns no matches."
+      ],
+      "dependencies": [
+        "task-06",
+        "task-07",
+        "task-09a",
+        "task-09c",
+        "task-14"
+      ],
+      "status": "pending",
+      "implementation_notes": [
+        "Use file deletion only; this task should not rewrite docs or tests.",
+        "The later validation task will perform the final repository-wide reference audit."
+      ]
+    },
+    {
+      "id": "task-09a",
+      "goal": "Delete the infra worktree runtime helper scripts after backend test scripts no longer depend on them.",
+      "files": [
+        "infra/local/scripts/manage-worktree-compose.sh",
+        "infra/local/scripts/ensure-worktree-runtime.sh"
+      ],
+      "constraints": [
+        "Delete both files completely.",
+        "Do not replace them with no-op shells or deprecated wrappers.",
+        "Only perform the deletions after `task-06` and `task-07` are complete."
+      ],
+      "acceptance_criteria": [
+        "Neither file remains in the repository.",
+        "Running `rg -n \"manage-worktree-compose\\\\.sh|ensure-worktree-runtime\\\\.sh\" Makefile backend extension infra scripts .agents` returns no matches."
+      ],
+      "dependencies": [
+        "task-06",
+        "task-07"
+      ],
+      "status": "pending",
+      "implementation_notes": [
+        "Keep this task limited to deletion of obsolete host-runtime artifacts.",
+        "Do not modify docs in this task; documentation cleanup happens later."
+      ]
+    },
+    {
+      "id": "task-09b",
+      "goal": "Delete the obsolete infra local-env test after the local-env Make targets are removed.",
+      "files": [
+        "infra/local/scripts/tests/test_local_env_targets.sh"
+      ],
+      "constraints": [
+        "Delete the file completely.",
+        "Do not replace it with a deprecated or skipped test stub.",
+        "Only perform the deletion after `task-04` is complete."
+      ],
+      "acceptance_criteria": [
+        "The file no longer exists.",
+        "Running `rg -n \"test_local_env_targets\\\\.sh\" Makefile backend extension infra scripts .agents` returns no matches."
+      ],
+      "dependencies": [
+        "task-04"
+      ],
+      "status": "pending",
+      "implementation_notes": [
+        "Keep this task limited to deletion of obsolete host-runtime artifacts.",
+        "Do not modify docs in this task; documentation cleanup happens later."
+      ]
+    },
+    {
+      "id": "task-09c",
+      "goal": "Delete the root worktree runtime wrapper scripts after Makefile and delivery-gate references are removed.",
+      "files": [
+        "scripts/run_worktree_stack.sh",
+        "scripts/test_worktree.sh"
+      ],
+      "constraints": [
+        "Delete both files completely.",
+        "Do not replace them with no-op shells or deprecated wrappers.",
+        "Only perform the deletions after `task-04` and `task-14` are complete."
+      ],
+      "acceptance_criteria": [
+        "Neither file remains in the repository.",
+        "Running `rg -n \"run_worktree_stack\\\\.sh|test_worktree\\\\.sh\" Makefile backend extension infra scripts .agents` returns no matches."
+      ],
+      "dependencies": [
+        "task-04",
+        "task-14"
+      ],
+      "status": "pending",
+      "implementation_notes": [
+        "Keep this task limited to deletion of obsolete host-runtime artifacts.",
+        "Do not modify docs in this task; documentation cleanup happens later."
+      ]
+    },
+    {
+      "id": "task-10",
+      "goal": "Replace the extension worktree build flow with a simple runtime-config generator and updated package scripts.",
+      "files": [
+        "extension/package.json",
+        "extension/scripts/write-runtime-config.mjs",
+        "extension/chrome/runtime-config.js"
+      ],
+      "constraints": [
+        "Create `extension/scripts/write-runtime-config.mjs` that rewrites `extension/chrome/runtime-config.js` in place.",
+        "The generator input contract must be: use `WEBCLIPPINGS_API_BASE_URL` if set, otherwise derive `http://localhost:${DJANGO_DEV_PORT}` and default the port to `8000` when unset.",
+        "The generated output format must be a single `globalThis.WEBCLIPPINGS_RUNTIME_CONFIG = { apiBaseUrl: \"<origin>\" };` assignment plus trailing newline.",
+        "Remove `prepare:worktree`, `build:worktree`, and `test:e2e:worktree` from `extension/package.json`.",
+        "Add a `prepare:runtime-config` script and make both `test:e2e` and `test:a11y` run it before Playwright."
+      ],
+      "acceptance_criteria": [
+        "`extension/package.json` contains `prepare:runtime-config` and does not contain `prepare:worktree`, `build:worktree`, or `test:e2e:worktree`.",
+        "Running `node extension/scripts/write-runtime-config.mjs` updates `extension/chrome/runtime-config.js` without creating any `.local` files.",
+        "`extension/chrome/runtime-config.js` remains a small checked-in file containing only the global runtime-config assignment."
+      ],
+      "dependencies": [
+        "task-03"
+      ],
+      "status": "pending",
+      "implementation_notes": [
+        "Keep `build` as the TypeScript compile step only.",
+        "The generator should normalize any provided `WEBCLIPPINGS_API_BASE_URL` to its URL origin."
+      ]
+    },
+    {
+      "id": "task-11",
+      "goal": "Update the extension manifest and config helpers for localhost development across arbitrary backend ports with an explicit manifest fallback contract.",
+      "files": [
+        "extension/chrome/src/shared/config.ts",
+        "extension/chrome/src/shared/config.test.ts",
+        "extension/chrome/manifest.json"
+      ],
+      "constraints": [
+        "Preserve the precedence order in `config.ts`: runtime config first, manifest fallback second, hard-coded fallback last.",
+        "Replace the manifest local-development host permission `http://localhost:8000/*` with exactly `http://localhost/*` and `http://127.0.0.1/*`.",
+        "Keep manifest fallback behavior as 'first valid host permission in manifest order'.",
+        "Update unit tests to cover runtime override, localhost manifest fallback, invalid runtime override fallback, and hard-coded fallback when no valid host permission exists."
+      ],
+      "acceptance_criteria": [
+        "`extension/chrome/manifest.json` contains `http://localhost/*`, `http://127.0.0.1/*`, and does not contain `http://localhost:8000/*`.",
+        "`extension/chrome/src/shared/config.ts` still prefers `WEBCLIPPINGS_RUNTIME_CONFIG.apiBaseUrl`, then returns the first valid manifest host origin, then falls back to `http://localhost:8000`.",
+        "`extension/chrome/src/shared/config.test.ts` asserts all four required cases explicitly."
+      ],
+      "dependencies": [
+        "task-10"
+      ],
+      "status": "pending",
+      "implementation_notes": [
+        "Prefer localhost-oriented permissions such as `http://localhost/*` and `http://127.0.0.1/*` over enumerating many fixed ports.",
+        "Do not remove the final hard-coded fallback; keep it as the last-resort path."
+      ]
+    },
+    {
+      "id": "task-12",
+      "goal": "Rewrite the extension Playwright runtime helper to use environment inputs and load `extension/chrome` directly.",
+      "files": [
+        "extension/chrome/e2e/support/runtime.ts",
+        "extension/chrome/e2e/popup-auth.spec.ts"
+      ],
+      "constraints": [
+        "Remove all logic that reads `extension/.local/worktree-runtime-*.json`, derives a worktree ID, or loads backend env files.",
+        "Define the backend base URL with the same input contract as the runtime-config generator: `WEBCLIPPINGS_API_BASE_URL` first, otherwise `http://localhost:${DJANGO_DEV_PORT || 8000}`.",
+        "Load the unpacked extension from the checked-in `extension/chrome` directory, not from a generated `.local` directory.",
+        "If the backend is unreachable, start it via `make backend-run` from the repository root rather than invoking deleted bootstrap scripts.",
+        "Update stale comments or instructions in `popup-auth.spec.ts` so they no longer mention `build:worktree`."
+      ],
+      "acceptance_criteria": [
+        "`extension/chrome/e2e/support/runtime.ts` does not contain `worktree-runtime-`, `bootsrap.sh`, `envFile`, `extensionDir`, or worktree-ID hashing logic.",
+        "`extension/chrome/e2e/support/runtime.ts` points Playwright extension loading at the checked-in `extension/chrome` path.",
+        "`extension/chrome/e2e/popup-auth.spec.ts` contains no `build:worktree` reference."
+      ],
+      "dependencies": [
+        "task-05",
+        "task-10"
+      ],
+      "status": "pending",
+      "implementation_notes": [
+        "Keep the recent-backend-log capture behavior if practical; only remove the old runtime-artifact contract.",
+        "Use repo-root-relative commands so the helper works from `extension/` during `pnpm run test:e2e`."
+      ]
+    },
+    {
+      "id": "task-13",
+      "goal": "Delete the obsolete extension worktree build script after all package/runtime references are removed.",
+      "files": [
+        "extension/scripts/prepare-worktree-extension.mjs"
+      ],
+      "constraints": [
+        "Delete the file completely.",
+        "Do not leave a compatibility wrapper or deprecated script stub.",
+        "Only delete it after package scripts and Playwright support code stop referencing it."
+      ],
+      "acceptance_criteria": [
+        "`extension/scripts/prepare-worktree-extension.mjs` no longer exists.",
+        "A repository search outside historical plan files shows no live code references to `prepare-worktree-extension.mjs`, `prepare:worktree`, or `build:worktree`."
+      ],
+      "dependencies": [
+        "task-10",
+        "task-12"
+      ],
+      "status": "pending",
+      "implementation_notes": [
+        "This task is deletion-only.",
+        "Do not bundle README updates into this task."
+      ]
+    },
+    {
+      "id": "task-14",
+      "goal": "Update the feature-delivery gate skill so it validates the new devcontainer-first workflow.",
+      "files": [
+        ".agents/skills/feature-delivery-gate/scripts/gate.sh",
+        ".agents/skills/feature-delivery-gate/SKILL.md"
+      ],
+      "constraints": [
+        "Default gate behavior must run `./scripts/agent-preflight.sh`, `make backend-test-unit`, `make extension-test-unit`, and the open-PR check.",
+        "The `--full-tests` branch must run `make all-verify` instead of `./scripts/test_worktree.sh`.",
+        "Remove all sourcing of `.local/worktree-env-*.env` and any other dependence on worktree runtime artifacts.",
+        "Make the markdown skill description match the shell script behavior exactly."
+      ],
+      "acceptance_criteria": [
+        "`.agents/skills/feature-delivery-gate/scripts/gate.sh` contains no `test_worktree.sh` or `worktree-env-` references.",
+        "`.agents/skills/feature-delivery-gate/scripts/gate.sh` uses `make all-verify` for `--full-tests`.",
+        "`.agents/skills/feature-delivery-gate/SKILL.md` lists the same default checks that the script now performs."
+      ],
+      "dependencies": [
+        "task-04",
+        "task-06",
+        "task-07"
+      ],
+      "status": "pending",
+      "implementation_notes": [
+        "Keep the existing PR-presence enforcement with `gh pr list`.",
+        "Do not broaden the gate beyond the checks named in this task."
+      ]
+    },
+    {
+      "id": "task-15",
+      "goal": "Delete the obsolete worktree-bootstrap skill that exists only for the removed runtime scheme.",
+      "files": [
+        ".agents/skills/worktree-bootstrap/SKILL.md",
+        ".agents/skills/worktree-bootstrap/scripts/bootstrap.sh",
+        ".agents/skills/worktree-bootstrap/agents/openai.yaml"
+      ],
+      "constraints": [
+        "Delete all listed files completely.",
+        "Do not keep a placeholder skill directory or a deprecated stub.",
+        "Only perform the deletion after the replacement devcontainer workflow is represented in code and in the living docs updated by `task-16`, `task-17`, and `task-18`."
+      ],
+      "acceptance_criteria": [
+        "The `worktree-bootstrap` skill files no longer exist in the repository.",
+        "Running `rg -n \"worktree-bootstrap\" Makefile backend extension infra scripts .agents docs specs` returns matches only under `docs/plans/**`."
+      ],
+      "dependencies": [
+        "task-01",
+        "task-03",
+        "task-10",
+        "task-12",
+        "task-16",
+        "task-17",
+        "task-18"
+      ],
+      "status": "pending",
+      "implementation_notes": [
+        "Treat this as a pure removal task.",
+        "Leave the unrelated worktree creation, cleanup, and audit skills intact."
+      ]
+    },
+    {
+      "id": "task-16",
+      "goal": "Rewrite the core living docs so they describe one devcontainer-first development workflow and no deleted runtime contract.",
+      "files": [
+        "docs/DEVELOPMENT_WORKFLOW.md",
+        "docs/TESTING.md",
+        "docs/TECH_DEBT_BACKLOG.md"
+      ],
+      "constraints": [
+        "Describe the workflow in this order: create worktree, create `.devcontainer/.env`, open in Dev Containers, implement inside `dev-sandbox`, run `make backend-run` manually when needed, verify, and ship.",
+        "Remove or rewrite all mentions of `bootsrap.sh`, `local-env-`, `backend-status`, `backend-stop`, `extension-build-worktree`, `worktree-env-`, and `worktree-runtime-`.",
+        "In `docs/TECH_DEBT_BACKLOG.md`, remove or replace debt entries that discuss refactoring deleted runtime scripts."
+      ],
+      "acceptance_criteria": [
+        "Running `rg -n \"bootsrap.sh|local-env-|backend-status|backend-stop|extension-build-worktree|worktree-env-|worktree-runtime-\" docs/DEVELOPMENT_WORKFLOW.md docs/TESTING.md docs/TECH_DEBT_BACKLOG.md` returns no matches.",
+        "The updated docs explicitly name `dev-sandbox` and `DJANGO_DEV_PORT`.",
+        "The testing doc describes test commands as running inside the prepared devcontainer environment."
+      ],
+      "dependencies": [
+        "task-05",
+        "task-07",
+        "task-10",
+        "task-14"
+      ],
+      "status": "pending",
+      "implementation_notes": [
+        "Keep the docs prescriptive and command-oriented.",
+        "Do not document raw `docker compose up` as a supported user workflow."
+      ]
+    },
+    {
+      "id": "task-17",
+      "goal": "Rewrite the backend and infra README files around the new devcontainer-local runtime contract.",
+      "files": [
+        "backend/README.md",
+        "infra/docker/README.md"
+      ],
+      "constraints": [
+        "Update `backend/README.md` so the canonical backend startup command is `make backend-run` executed inside the devcontainer.",
+        "Document host verification using `http://localhost:<DJANGO_DEV_PORT>/accounts/login/`.",
+        "Update `infra/docker/README.md` so Dev Containers tooling is the only supported lifecycle entrypoint; do not document raw `docker compose` commands as the user workflow.",
+        "Remove all mentions of deleted scripts and generated worktree runtime artifacts."
+      ],
+      "acceptance_criteria": [
+        "Running `rg -n \"bootsrap.sh|start-server.sh|stop-server.sh|check-server.sh|local-env-|worktree-env-|worktree-runtime-\" backend/README.md infra/docker/README.md` returns no matches.",
+        "`backend/README.md` contains `make backend-run` and `http://localhost:<DJANGO_DEV_PORT>/accounts/login/`.",
+        "`infra/docker/README.md` describes the devcontainer service as `dev-sandbox`."
+      ],
+      "dependencies": [
+        "task-01",
+        "task-05",
+        "task-08a",
+        "task-08b",
+        "task-09a",
+        "task-09b",
+        "task-09c"
+      ],
+      "status": "pending",
+      "implementation_notes": [
+        "Keep these README updates focused on local-development runtime behavior.",
+        "Do not rewrite unrelated architecture sections."
+      ]
+    },
+    {
+      "id": "task-18",
+      "goal": "Rewrite extension and feature quickstart docs so they match the simplified extension and backend workflow.",
+      "files": [
+        "extension/README.md",
+        "specs/001-web-clipping-app/quickstart.md",
+        "specs/002-label-filter-sidebar/quickstart.md"
+      ],
+      "constraints": [
+        "Update `extension/README.md` to describe loading the unpacked extension directly from `extension/chrome` and generating runtime config with the new script.",
+        "Update both quickstart docs to use the devcontainer flow plus `make backend-run`; remove `bootsrap.sh` and `backend-status` usage.",
+        "Use localhost-plus-port backend examples rather than worktree-specific hostnames.",
+        "Do not mention generated extension `.local` output directories."
+      ],
+      "acceptance_criteria": [
+        "Running `rg -n \"bootsrap.sh|backend-status|build:worktree|prepare:worktree|worktree-runtime-|extension/.local\" extension/README.md specs/001-web-clipping-app/quickstart.md specs/002-label-filter-sidebar/quickstart.md` returns no matches.",
+        "`extension/README.md` references `extension/chrome`, `runtime-config.js`, and the new runtime-config generation step.",
+        "Both quickstarts show backend access through `http://localhost:<DJANGO_DEV_PORT>` or equivalent localhost-plus-port wording."
+      ],
+      "dependencies": [
+        "task-10",
+        "task-11",
+        "task-12",
+        "task-13"
+      ],
+      "status": "pending",
+      "implementation_notes": [
+        "Keep the quickstarts runnable without requiring the reader to infer deleted helper scripts.",
+        "You may mention Chrome loading from `extension/chrome`, but do not document any worktree-specific extension build directory."
+      ]
+    },
+    {
+      "id": "task-19",
+      "goal": "Add a new ADR that records the devcontainer-first local runtime architecture and explicitly supersedes ADR 0003.",
+      "files": [
+        "docs/adrs/0006-devcontainer-first-local-runtime-orchestration.md"
+      ],
+      "constraints": [
+        "Create a new ADR file numbered `0006`.",
+        "State clearly that it supersedes `0003-worktree-backend-entrypoint-and-env-contract` for local development.",
+        "Record these decisions explicitly: `dev-sandbox` is an idle sandbox container, `DJANGO_DEV_PORT` differentiates parallel worktrees, PostgreSQL is not published on a host port, and the extension loads directly from `extension/chrome`.",
+        "Do not rewrite ADR 0003 as if history changed."
+      ],
+      "acceptance_criteria": [
+        "`docs/adrs/0006-devcontainer-first-local-runtime-orchestration.md` exists and identifies itself as an ADR.",
+        "The new ADR contains an explicit supersession statement for ADR 0003.",
+        "The new ADR includes the four decisions listed in the constraints."
+      ],
+      "dependencies": [
+        "task-01",
+        "task-05",
+        "task-10",
+        "task-11",
+        "task-12"
+      ],
+      "status": "pending",
+      "implementation_notes": [
+        "Match the existing ADR tone and structure already used under `docs/adrs/`.",
+        "Keep the historical scope narrow: record the new decision instead of editing the old ADR narrative."
+      ]
+    },
+    {
+      "id": "task-20",
+      "goal": "Run the automated validation and reference-audit commands, then record the outcomes in the living ExecPlan.",
+      "files": [
+        "docs/plans/devcontainers/spec.md"
+      ],
+      "constraints": [
+        "Run these commands from the repository root: `make help`, `make backend-test-unit`, `make backend-test-e2e`, `make extension-test-unit`, `make extension-test-e2e`, `make extension-test-a11y`, and `make all-verify`.",
+        "Run `rg -n \"bootsrap.sh|worktree-runtime-|worktree-env-|local-env-|build:worktree|start-server.sh|stop-server.sh|check-server.sh\" .` and review the remaining matches.",
+        "Update the `Progress` and `Outcomes & Retrospective` sections in `docs/plans/devcontainers/spec.md` with dated notes that summarize pass/fail results.",
+        "If any command fails, record the exact failing command and leave unresolved items explicit; do not rewrite the plan as if validation passed."
+      ],
+      "acceptance_criteria": [
+        "`docs/plans/devcontainers/spec.md` contains a dated validation note that names each automated command.",
+        "The plan notes summarize the reference-audit result and explain any remaining intentional matches.",
+        "Any failing command is recorded verbatim in the plan instead of being silently omitted."
+      ],
+      "dependencies": [
+        "task-16",
+        "task-17",
+        "task-18",
+        "task-19"
+      ],
+      "status": "pending",
+      "implementation_notes": [
+        "This task is the automated handoff gate for the migration.",
+        "Keep the evidence concise but concrete: command names plus result summaries are sufficient."
+      ]
+    },
+    {
+      "id": "task-21",
+      "goal": "Perform the manual two-worktree devcontainer smoke check and capture the result in the ExecPlan.",
+      "files": [
+        "docs/plans/devcontainers/spec.md"
+      ],
+      "constraints": [
+        "Use two separate worktrees, each with its own untracked `.devcontainer/.env` file and a distinct `DJANGO_DEV_PORT` value.",
+        "Start both worktrees through Dev Containers tooling, run `make backend-run` inside each `dev-sandbox`, and verify both `/accounts/login/` pages load from the host browser at their own localhost ports.",
+        "Confirm the active extension can be loaded directly from each worktree's `extension/chrome` directory while targeting that worktree's backend.",
+        "Record the two concrete port numbers and the result in `docs/plans/devcontainers/spec.md`; if the check cannot be executed in the current environment, document the blocker instead of guessing."
+      ],
+      "acceptance_criteria": [
+        "`docs/plans/devcontainers/spec.md` records either two concrete localhost ports that passed the smoke check or an explicit blocker explaining why the check could not be completed.",
+        "The `Progress` section in the plan reflects the real completion state of the manual parallel-worktree check.",
+        "The recorded note explicitly mentions host-browser verification of `/accounts/login/` for both worktrees."
+      ],
+      "dependencies": [
+        "task-20"
+      ],
+      "status": "pending",
+      "implementation_notes": [
+        "This is the only task in the list that requires manual Dev Containers tooling interaction.",
+        "Do not mark it complete based on assumption; completion requires recorded evidence or a recorded blocker."
+      ]
+    }
+  ]
+}
