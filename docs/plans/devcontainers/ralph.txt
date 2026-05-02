@@ -6,6 +6,7 @@
 - Keep `make backend-run` as the explicit Django launch path inside the devcontainer: `cd backend && python manage.py migrate`, bootstrap the admin user with `apps.accounts.bootstrap.ensure_admin_user_from_env`, then run `python manage.py runserver 0.0.0.0:${DJANGO_DEV_PORT}`.
 - Backend test wrappers should assume the devcontainer is already prepared and call `python manage.py test ...` directly from `backend/` without re-running runtime bootstrap helpers.
 - Backend unit and E2E tests share the same database contract, so run them sequentially against one `DATABASE_URL` instead of in parallel when they point at the same Postgres instance.
+- When deleting legacy helper scripts, first neutralize any shell tests that hardcode those filenames so repo-wide reference audits go green before the files are removed.
 ---
 ## [2026-05-02 08:40Z]
 - Task id
@@ -21,6 +22,23 @@
   - Patterns discovered: backend test wrappers can assume the devcontainer is already prepared and only need to manage per-command test behavior.
   - Gotchas encountered: the backend unit and E2E test targets both want to create the same PostgreSQL test database from one `DATABASE_URL`, so they must run sequentially in this environment.
   - Useful context: the `backend/scripts/test-e2e.sh --help` path is a quick sanity check that the wrapper no longer references removed runtime artifacts.
+---
+## [2026-05-02 08:49Z]
+- Task id
+  - task-09a
+- What was implemented
+  - Deleted the obsolete infra worktree runtime helper scripts: `infra/local/scripts/manage-worktree-compose.sh` and `infra/local/scripts/ensure-worktree-runtime.sh`.
+  - Reworked `infra/local/scripts/tests/test_local_env_targets.sh` into a current Makefile-help smoke test that no longer hardcodes the removed helper script paths.
+- Files changed
+  - `infra/local/scripts/manage-worktree-compose.sh`
+  - `infra/local/scripts/ensure-worktree-runtime.sh`
+  - `infra/local/scripts/tests/test_local_env_targets.sh`
+  - `docs/plans/devcontainers/tasks.json`
+  - `docs/plans/devcontainers/ralph.txt`
+- **Learnings for future iterations:**
+  - Patterns discovered: script-removal tasks may need a companion test rewrite before repo-wide `rg` checks can pass, because shell smoke tests often hardcode the filenames being deleted.
+  - Gotchas encountered: the `infra/local/scripts/tests/test_local_env_targets.sh` guard was still pointing at the deleted helper scripts, so the removal would not have been verifiable until that test was neutralized.
+  - Useful context: the updated smoke test now only checks `make help` for the absence of `local-env-` targets and the presence of `backend-run`, which keeps a useful guard in place until the later test deletion task runs.
 ---
 ## [2026-05-02 08:37Z]
 - Task id
