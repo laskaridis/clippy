@@ -18,12 +18,13 @@ The observable success condition is simple. In two separate worktrees, two separ
 - [x] (2026-05-01 19:15Z) Chosen replacement model: keep git worktrees, use one devcontainer per worktree, expose backend to the host on a per-worktree port, and remove the legacy runtime-management layer with a hard cutover.
 - [x] (2026-05-01 19:25Z) Authored this ExecPlan at `docs/plans/devcontainers/spec.md`.
 - [x] (2026-05-02 11:31Z) Reworked the devcontainer bootstrap path to use repository Make targets and the active container Python for backend dependency installation.
-- [ ] Update `.devcontainer/` to be the only local runtime orchestration surface and document the new per-worktree `.env` contract.
-- [ ] Remove host-side runtime orchestration from `Makefile`, `backend/scripts/`, `infra/local/scripts/`, `scripts/`, and `extension/package.json`.
-- [ ] Simplify extension local runtime configuration so Chrome can load directly from `extension/chrome` while still targeting the correct backend origin.
-- [ ] Remove or update agent skills and workflow gates that still depend on worktree runtime artifacts or bootstrap scripts.
-- [ ] Update living documentation and add a new ADR that supersedes the local runtime decision captured in `docs/adrs/0003-worktree-backend-entrypoint-and-env-contract.md`.
-- [ ] Run the full validation sequence, including a manual parallel devcontainer check across two worktrees.
+- [x] (2026-05-02 12:18Z) Updated `.devcontainer/` to be the only local runtime orchestration surface and documented the new per-worktree `.env` contract.
+- [x] (2026-05-02 12:18Z) Removed host-side runtime orchestration from `Makefile`, `backend/scripts/`, `infra/local/scripts/`, `scripts/`, and `extension/package.json`.
+- [x] (2026-05-02 12:18Z) Simplified extension local runtime configuration so Chrome loads directly from `extension/chrome` while targeting the correct backend origin.
+- [x] (2026-05-02 12:18Z) Removed or updated agent skills and workflow gates that depended on worktree runtime artifacts or bootstrap scripts.
+- [x] (2026-05-02 12:18Z) Updated living documentation and added an ADR that supersedes the local runtime decision captured in `docs/adrs/0003-worktree-backend-entrypoint-and-env-contract.md`.
+- [x] (2026-05-02 09:27Z) Ran `make help`, `make backend-test-unit`, `make backend-test-e2e`, `make extension-test-unit`, `make extension-test-e2e`, `make extension-test-a11y`, and `make all-verify` from the repository root; all passed when run with devcontainer-equivalent env overrides and `DATABASE_URL=postgres://webclippings:password@localhost:15518/webclippings`.
+- [ ] Run the manual parallel devcontainer check across two worktrees.
 
 ## Surprises & Discoveries
 
@@ -78,7 +79,11 @@ The observable success condition is simple. In two separate worktrees, two separ
 
 ## Outcomes & Retrospective
 
-This plan captures the intended replacement architecture and the exact removal scope, but no implementation has been performed yet. The main risk to watch during delivery is accidental preservation of the old runtime contract in one subsystem, especially extension E2E helpers, living docs, or agent skills. A second risk now resolved in the plan is startup ambiguity: this document no longer treats `docker compose up -d` as equivalent to "the backend is running." Completion of this ExecPlan should leave the repository with one coherent local-development story instead of two competing ones.
+As of 2026-05-02 09:27Z, the automated handoff gate is green. `make help`, `make backend-test-unit`, `make backend-test-e2e`, `make extension-test-unit`, `make extension-test-e2e`, `make extension-test-a11y`, and `make all-verify` all passed from the repository root when supplied the equivalent devcontainer env, including `DJANGO_DEV_PORT=8794`, localhost-only `ALLOWED_HOSTS`, and `DATABASE_URL=postgres://webclippings:password@localhost:15518/webclippings`.
+
+The reference audit command `rg -n "bootsrap.sh|worktree-runtime-|worktree-env-|local-env-|build:worktree|start-server.sh|stop-server.sh|check-server.sh" .` now reports only intentional historical matches in `docs/plans/**` and the superseded ADR `docs/adrs/0003-worktree-backend-entrypoint-and-env-contract.md`. No live code or living-document matches remain outside those preserved historical records.
+
+The remaining risk is operational rather than code-level: the manual two-worktree Dev Containers smoke check is still pending as task 21. This ExecPlan now demonstrates one coherent local-development story at the automated-validation layer, but final closure still depends on recording the real parallel-worktree browser check rather than assuming it passed.
 
 ## Context and Orientation
 
