@@ -24,7 +24,7 @@ The observable success condition is simple. In two separate worktrees, two separ
 - [x] (2026-05-02 12:18Z) Removed or updated agent skills and workflow gates that depended on worktree runtime artifacts or bootstrap scripts.
 - [x] (2026-05-02 12:18Z) Updated living documentation and added an ADR that supersedes the local runtime decision captured in `docs/adrs/0003-worktree-backend-entrypoint-and-env-contract.md`.
 - [x] (2026-05-02 09:27Z) Ran `make help`, `make backend-test-unit`, `make backend-test-e2e`, `make extension-test-unit`, `make extension-test-e2e`, `make extension-test-a11y`, and `make all-verify` from the repository root; all passed when run with devcontainer-equivalent env overrides and `DATABASE_URL=postgres://webclippings:password@localhost:15518/webclippings`.
-- [ ] Run the manual parallel devcontainer check across two worktrees.
+- [x] (2026-05-02 09:37Z) Completed the manual parallel Dev Containers smoke check across `/Users/e.laskaridis/Projects/sandbox/webclippings/.worktrees/devcontainers` on port `8794` and `/Users/e.laskaridis/Projects/sandbox/webclippings/.worktrees/devcontainers-parallel` on port `8795`: both `devcontainer up` runs succeeded after restoring pinned `pnpm` availability in the image, `make backend-run` started Django in each `dev-sandbox`, host-browser Chromium checks loaded both `/accounts/login/` pages, and the unpacked extension loaded directly from each worktree's `extension/chrome` directory while targeting its matching localhost backend.
 
 ## Surprises & Discoveries
 
@@ -83,7 +83,7 @@ As of 2026-05-02 09:27Z, the automated handoff gate is green. `make help`, `make
 
 The reference audit command `rg -n "bootsrap.sh|worktree-runtime-|worktree-env-|local-env-|build:worktree|start-server.sh|stop-server.sh|check-server.sh" .` now reports only intentional historical matches in `docs/plans/**` and the superseded ADR `docs/adrs/0003-worktree-backend-entrypoint-and-env-contract.md`. No live code or living-document matches remain outside those preserved historical records.
 
-The remaining risk is operational rather than code-level: the manual two-worktree Dev Containers smoke check is still pending as task 21. This ExecPlan now demonstrates one coherent local-development story at the automated-validation layer, but final closure still depends on recording the real parallel-worktree browser check rather than assuming it passed.
+As of 2026-05-02 09:37Z, the manual two-worktree Dev Containers smoke check is also complete. Two separate worktrees were started through Dev Containers tooling with untracked `.devcontainer/.env` files and distinct backend ports `8794` and `8795`. Running `make backend-run` inside each `dev-sandbox` brought up Django successfully on both ports, host-browser Chromium verification loaded `http://localhost:8794/accounts/login/` and `http://localhost:8795/accounts/login/`, and the unpacked extension loaded directly from each worktree's `extension/chrome` directory with runtime config targeting `http://localhost:8794` and `http://localhost:8795` respectively. Evidence screenshots were captured at `docs/plans/devcontainers/login-8794.png`, `docs/plans/devcontainers/login-8795.png`, `docs/plans/devcontainers/extension-8794.png`, and `docs/plans/devcontainers/extension-8795.png`.
 
 ## Context and Orientation
 
