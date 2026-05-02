@@ -2,6 +2,23 @@
 - Use `dev-sandbox` as the Dev Containers service name for the local sandbox, and publish the backend on the same `DJANGO_DEV_PORT` value inside the container and on the host.
 - Keep `.devcontainer/.env.example` focused on the minimal localhost contract: `ALLOWED_HOSTS` should cover `localhost`, `127.0.0.1`, and `[::1]`, and per-worktree hostnames should not be documented there.
 - Use the active container Python interpreter for bootstrap installs via `python -m pip`, and keep `.devcontainer/bootstrap.sh` as a thin wrapper that delegates setup to `make backend-init` and `make extension-init`.
+- Prefer `$(MAKE)` subtarget composition for aggregate Makefile targets instead of shell wrapper scripts.
+---
+## [2026-05-02 08:33Z]
+- Task id
+  - task-04
+- What was implemented
+  - Removed the obsolete runtime-management entry from `Makefile`'s `.PHONY` list.
+  - Switched `all-test` to compose `backend-test-unit` and `backend-test-e2e` with `$(MAKE)` directly.
+  - Trimmed the remaining target comments so they no longer describe worktree-specific runtime artifacts.
+- Files changed
+  - `Makefile`
+  - `docs/plans/devcontainers/tasks.json`
+  - `docs/plans/devcontainers/ralph.txt`
+- **Learnings for future iterations:**
+  - Patterns discovered: aggregate project targets should invoke other Make targets directly with `$(MAKE)` so the command surface stays explicit.
+  - Gotchas encountered: `make all-test` still reaches the legacy backend E2E script, which currently expects later cleanup tasks and therefore fails on the old `.venv` path.
+  - Useful context: the top-level unit-test path is already healthy, so the remaining `all-test` failure is downstream of this task rather than caused by the Makefile refactor.
 ---
 ## [2026-05-02 11:31Z]
 - Task id

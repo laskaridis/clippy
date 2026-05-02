@@ -4,7 +4,7 @@ SHELL := /usr/bin/env bash
 
 PYTHON ?= python
 
-.PHONY: help all-init all-build all-test all-lint all-format all-typecheck all-run all-clean \
+.PHONY: help all-init all-build all-test all-lint all-format all-typecheck all-clean \
 	worktree-start \
 	backend-init backend-test-unit backend-test-e2e backend-lint backend-format backend-format-check backend-typecheck backend-run backend-clean \
 	extension-init extension-build extension-test-unit extension-test-e2e extension-test-a11y extension-lint extension-format extension-format-check extension-typecheck extension-clean \
@@ -17,7 +17,7 @@ help:
 	@echo ""
 	@echo "Backend development targets:"
 	@echo "  make backend-init              - Install backend dependencies"
-	@echo "  make backend-test-unit         - Run backend non-E2E tests (worktree-aware)"
+	@echo "  make backend-test-unit         - Run backend non-E2E tests"
 	@echo "  make backend-test-e2e          - Run backend browser E2E tests (Playwright, opt-in)"
 	@echo "  make backend-lint              - Run backend lint checks (ruff)"
 	@echo "  make backend-format            - Format backend source (black)"
@@ -37,7 +37,7 @@ help:
 	@echo "  make extension-format          - Format extension source (prettier)"
 	@echo "  make extension-format-check    - Check extension formatting compliance (prettier --check)"
 	@echo "  make extension-typecheck       - Run extension type checks (tsc --noEmit)"
-	@echo "  make extension-clean           - Remove extension build/worktree artifacts"
+	@echo "  make extension-clean           - Remove extension build artifacts"
 	@echo "  make extension-verify          - Run all extension releasability checks"
 	@echo ""
 	@echo "Project targets:"
@@ -63,7 +63,8 @@ all-build:
 
 # Run backend + extension test suites
 all-test:
-	@./scripts/test_worktree.sh
+	@$(MAKE) backend-test-unit
+	@$(MAKE) backend-test-e2e
 
 # Run lint checks across backend and extension
 all-lint:
@@ -104,7 +105,7 @@ backend-verify:
 backend-init:
 	@$(PYTHON) -m pip install -r backend/requirements-dev.txt
 
-# Run backend non-E2E tests (worktree-aware)
+# Run backend non-E2E tests
 backend-test-unit:
 	@cd backend && ./scripts/test.sh
 
@@ -181,6 +182,6 @@ extension-format-check:
 extension-typecheck:
 	@cd extension && pnpm run typecheck
 
-# Remove extension build/worktree artifacts
+# Remove extension build artifacts
 extension-clean:
 	@rm -rf extension/chrome/dist
