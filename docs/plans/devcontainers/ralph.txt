@@ -8,6 +8,7 @@
 - Backend unit and E2E tests share the same database contract, so run them sequentially against one `DATABASE_URL` instead of in parallel when they point at the same Postgres instance.
 - When deleting legacy helper scripts, first neutralize any shell tests that hardcode those filenames so repo-wide reference audits go green before the files are removed.
 - Obsolete host-runtime tests can be deleted once their Make-target dependencies are gone; keep repo-wide `rg` audits focused on the code and script surfaces that still matter after the deletion.
+- Rewrite `extension/chrome/runtime-config.js` in place from environment values using `WEBCLIPPINGS_API_BASE_URL` first and `DJANGO_DEV_PORT` as the localhost fallback; avoid creating `.local` extension artifacts for local development.
 ---
 ## [2026-05-02 12:00Z]
 - Task id
@@ -160,4 +161,20 @@
   - Patterns discovered: the remaining wrapper scripts should fail loudly once their direct backend entrypoints disappear rather than forwarding arguments into `make` unexpectedly.
   - Gotchas encountered: repository verification depends on a live PostgreSQL database named `webclippings`; the local container had the role but not the database, so I had to create it before rerunning the suite.
   - Useful context: `make all-verify` exercises the extension accessibility audit, which currently reports a serious color-contrast finding on the login page even though the backend and extension unit/e2e suites pass.
+---
+## [2026-05-02 08:52Z]
+- Task id
+  - task-10
+- What was implemented
+  - Added `extension/scripts/write-runtime-config.mjs` to rewrite `extension/chrome/runtime-config.js` in place from `WEBCLIPPINGS_API_BASE_URL` or `DJANGO_DEV_PORT` without creating worktree-specific `.local` artifacts.
+  - Rewired `extension/package.json` to remove the worktree-specific build scripts and run the runtime-config generator before Playwright e2e and a11y tests.
+- Files changed
+  - `extension/package.json`
+  - `extension/scripts/write-runtime-config.mjs`
+  - `docs/plans/devcontainers/tasks.json`
+  - `docs/plans/devcontainers/ralph.txt`
+- **Learnings for future iterations:**
+  - Patterns discovered: the extension can keep a tiny checked-in runtime config file as long as the local generator rewrites it in place from environment values.
+  - Gotchas encountered: passing `--list` through `pnpm run ... -- --list` forwards the separator literally to Playwright, so direct `pnpm exec playwright test ... --list` is the cleaner smoke check for script wiring.
+  - Useful context: `prepare:runtime-config` runs before both `test:e2e` and `test:a11y`, so any future extension Playwright helper should assume `runtime-config.js` already reflects the active devcontainer.
 ---

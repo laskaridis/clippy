@@ -12,11 +12,9 @@
     "format:check": "pnpm exec prettier --check \"chrome/src/**/*.{ts,js,css,html,json}\" \"scripts/**/*.mjs\" \"*.json\"",
     "typecheck": "tsc -p chrome/tsconfig.json --noEmit",
     "test": "pnpm run build && node --test chrome/dist/**/*.test.js",
-    "prepare:worktree": "node scripts/prepare-worktree-extension.mjs",
-    "build:worktree": "pnpm run build && pnpm run prepare:worktree",
-    "test:e2e": "pnpm run build:worktree && playwright test -c playwright.config.ts",
-    "test:a11y": "pnpm run build:worktree && playwright test -c playwright.config.ts --grep @a11y",
-    "test:e2e:worktree": "pnpm run test:e2e"
+    "prepare:runtime-config": "node scripts/write-runtime-config.mjs",
+    "test:e2e": "pnpm run build && pnpm run prepare:runtime-config && playwright test -c playwright.config.ts",
+    "test:a11y": "pnpm run build && pnpm run prepare:runtime-config && playwright test -c playwright.config.ts --grep @a11y"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.11.0",
