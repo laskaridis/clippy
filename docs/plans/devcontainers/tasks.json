@@ -186,7 +186,7 @@
       "dependencies": [
         "task-03"
       ],
-      "status": "pending",
+      "status": "completed",
       "implementation_notes": [
         "Keep the browser install as best-effort warning behavior if it already exists.",
         "Do not auto-start Docker or derive a worktree identifier."

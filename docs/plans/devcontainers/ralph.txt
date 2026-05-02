@@ -5,6 +5,22 @@
 - Prefer `$(MAKE)` subtarget composition for aggregate Makefile targets instead of shell wrapper scripts.
 - Keep `make backend-run` as the explicit Django launch path inside the devcontainer: `cd backend && python manage.py migrate`, bootstrap the admin user with `apps.accounts.bootstrap.ensure_admin_user_from_env`, then run `python manage.py runserver 0.0.0.0:${DJANGO_DEV_PORT}`.
 - Backend test wrappers should assume the devcontainer is already prepared and call `python manage.py test ...` directly from `backend/` without re-running runtime bootstrap helpers.
+- Backend unit and E2E tests share the same database contract, so run them sequentially against one `DATABASE_URL` instead of in parallel when they point at the same Postgres instance.
+---
+## [2026-05-02 08:40Z]
+- Task id
+  - task-07
+- What was implemented
+  - Simplified `backend/scripts/test-e2e.sh` so it no longer depends on legacy worktree runtime scripts or `.venv` paths.
+  - Kept Chromium installation as an optional best-effort `python -m playwright install chromium` step and preserved the default E2E test target plus passthrough arguments.
+- Files changed
+  - `backend/scripts/test-e2e.sh`
+  - `docs/plans/devcontainers/tasks.json`
+  - `docs/plans/devcontainers/ralph.txt`
+- **Learnings for future iterations:**
+  - Patterns discovered: backend test wrappers can assume the devcontainer is already prepared and only need to manage per-command test behavior.
+  - Gotchas encountered: the backend unit and E2E test targets both want to create the same PostgreSQL test database from one `DATABASE_URL`, so they must run sequentially in this environment.
+  - Useful context: the `backend/scripts/test-e2e.sh --help` path is a quick sanity check that the wrapper no longer references removed runtime artifacts.
 ---
 ## [2026-05-02 08:37Z]
 - Task id
