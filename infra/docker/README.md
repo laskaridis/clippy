@@ -10,49 +10,9 @@ The local stack is defined in `infra/docker/docker-compose.yml` and includes:
 
 ### How to configure the local environment
 
-Use the worktree-aware bootstrap flow from repository root.
-`make local-env-start` resolves deterministic per-worktree runtime metadata through `backend/scripts/bootsrap.sh`.
-You can inspect the resolved runtime directly from `backend/`:
-```bash
-cd backend
-./scripts/bootsrap.sh --print-json
-./scripts/bootsrap.sh --print-env-path
-```
-
-### Starting the stack
-
-Preferred (worktree-aware) command from repository root:
-
-```bash
-make local-env-start
-```
-
-### Stopping the stack
-
-Preferred (worktree-aware) command from repository root:
-
-```bash
-make local-env-stop
-```
-
-### Checking stack status
-
-Preferred (worktree-aware) command from repository root:
-
-```bash
-make local-env-status
-```
-
-### Tearing down the stack
-
-Preferred (worktree-aware, destructive) command from repository root:
-
-```bash
-make local-env-teardown
-```
-
-This command is destructive for the local database because it removes compose
-volumes for the active worktree.
+Dev Containers tooling is the supported lifecycle entrypoint for local worktree sandboxes.
+Use the `dev-sandbox` service defined under `.devcontainer/` for implementation work, then run project commands from inside that container.
+The only host-visible backend contract is the `DJANGO_DEV_PORT` exposed by the devcontainer; PostgreSQL stays on the compose network and does not publish a host port.
 
 ## Next Services
 

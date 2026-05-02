@@ -50,7 +50,7 @@ pnpm exec playwright install chromium
 pnpm run test:e2e
 ```
 
-E2E backend startup/bootstrap is delegated to `backend/scripts/bootsrap.sh` to keep backend lifecycle logic centralized.
+If the backend is not already reachable, the Playwright helper starts it with `make backend-run` from the repository root.
 
 This validates the signed-out popup experience end-to-end (status message, login button, and hidden save/label controls).
 It also validates signed-in state by logging in through `/accounts/login/` and confirming
