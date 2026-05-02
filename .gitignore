@@ -13,6 +13,7 @@ staticfiles/
 
 # Node / front-end
 node_modules/
+.pnpm-store/
 
 # Build artifacts
 build/
