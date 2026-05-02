@@ -37,56 +37,47 @@ test("getApiBaseUrl prefers runtime config over manifest host_permissions", () =
   resetChrome();
 
   global.WEBCLIPPINGS_RUNTIME_CONFIG = {
-    apiBaseUrl: "http://clippy-123abc.localhost:8123",
+    apiBaseUrl: "http://localhost:8123",
   };
-  setManifest({ host_permissions: ["https://api.example.com/*"] });
+  setManifest({
+    host_permissions: ["http://localhost/*", "http://127.0.0.1/*"],
+  });
 
   const baseUrl = getApiBaseUrl();
-  assert.equal(baseUrl, "http://clippy-123abc.localhost:8123");
+  assert.equal(baseUrl, "http://localhost:8123");
+});
+
+test("getApiBaseUrl falls back to the first valid manifest host in order", () => {
+  resetChrome();
+
+  setManifest({
+    host_permissions: ["http://localhost/*", "http://127.0.0.1/*"],
+  });
+
+  const baseUrl = getApiBaseUrl();
+  assert.equal(baseUrl, "http://localhost");
 });
 
 test("getApiBaseUrl ignores invalid runtime config and falls back to manifest host_permissions", () => {
   resetChrome();
 
   global.WEBCLIPPINGS_RUNTIME_CONFIG = { apiBaseUrl: "invalid-url" };
-  setManifest({ host_permissions: ["https://api.example.com/*"] });
-
-  const baseUrl = getApiBaseUrl();
-  assert.equal(baseUrl, "https://api.example.com");
-});
-
-test("getApiBaseUrl uses first host_permission when localhost is not present", () => {
-  resetChrome();
-
   setManifest({
-    host_permissions: [
-      "https://api.example.com/*",
-      "https://other.example.com/*",
-    ],
+    host_permissions: ["not-a-valid-url", "http://127.0.0.1/*"],
   });
 
   const baseUrl = getApiBaseUrl();
-  assert.equal(baseUrl, "https://api.example.com");
+  assert.equal(baseUrl, "http://127.0.0.1");
 });
 
-test("getApiBaseUrl uses manifest order when multiple host_permissions exist", () => {
+test("getApiBaseUrl returns localhost when no valid host permission exists", () => {
   resetChrome();
 
   setManifest({
-    host_permissions: ["https://api.example.com/*", "http://localhost:8000/*"],
+    host_permissions: ["not-a-valid-url", "", null],
   });
 
   const baseUrl = getApiBaseUrl();
-  assert.equal(baseUrl, "https://api.example.com");
-});
-
-test("getApiBaseUrl returns localhost when host_permissions are missing or empty", () => {
-  resetChrome();
-
-  setManifest({});
-  assert.equal(getApiBaseUrl(), "http://localhost:8000");
-
-  setManifest({ host_permissions: [] });
   assert.equal(getApiBaseUrl(), "http://localhost:8000");
 });
 
@@ -115,10 +106,10 @@ test("getApiBaseUrl skips invalid host entries and uses the first valid one", ()
 test("getClipsEndpoint appends /api/clips/ to base URL", () => {
   resetChrome();
 
-  setManifest({ host_permissions: ["https://api.example.com/*"] });
+  setManifest({ host_permissions: ["http://localhost/*"] });
 
   const endpoint = getClipsEndpoint();
-  assert.equal(endpoint, "https://api.example.com/api/clips/");
+  assert.equal(endpoint, "http://localhost/api/clips/");
 });
 
 test("getClipsEndpoint uses localhost base URL when chrome is missing", () => {
@@ -131,8 +122,8 @@ test("getClipsEndpoint uses localhost base URL when chrome is missing", () => {
 test("getLoginPageUrl appends /accounts/login/ to base URL", () => {
   resetChrome();
 
-  setManifest({ host_permissions: ["https://api.example.com/*"] });
+  setManifest({ host_permissions: ["http://localhost/*"] });
 
   const endpoint = getLoginPageUrl();
-  assert.equal(endpoint, "https://api.example.com/accounts/login/");
+  assert.equal(endpoint, "http://localhost/accounts/login/");
 });

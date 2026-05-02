@@ -33,7 +33,7 @@ function getApiBaseUrl() {
         ? manifest.host_permissions
         : [];
 
-    // host_permissions are like "http://localhost:8000/*"; strip the path.
+    // host_permissions are like "http://localhost/*"; strip the path.
     for (let i = 0; i < hosts.length; i += 1) {
       const candidate = hosts[i];
       if (!candidate || typeof candidate !== "string") {
