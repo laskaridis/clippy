@@ -2,14 +2,13 @@
 set -euo pipefail
 
 #
-# Intent: Verify local-env Make targets and compose manager CLI contract.
+# Intent: Verify the Makefile help surface no longer advertises local-env targets.
 # Preconditions: Run from repository root.
 # Invariants: Tests are non-destructive and do not invoke Docker lifecycle commands.
-# Outcomes: Fails fast when target wiring/help output regress.
+# Outcomes: Fails fast when the help output regresses.
 #
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../../.." && pwd)"
-SCRIPT_PATH="${ROOT_DIR}/infra/local/scripts/manage-worktree-compose.sh"
 MAKEFILE_PATH="${ROOT_DIR}/Makefile"
 
 fail() {
@@ -26,40 +25,17 @@ assert_contains() {
   fi
 }
 
-if [[ ! -x "${SCRIPT_PATH}" ]]; then
-  fail "expected executable script at ${SCRIPT_PATH}"
-fi
-
 if [[ ! -f "${MAKEFILE_PATH}" ]]; then
   fail "missing Makefile at ${MAKEFILE_PATH}"
 fi
 
-script_help="$("${SCRIPT_PATH}" --help)"
-assert_contains "${script_help}" "Commands:" "script help output"
-assert_contains "${script_help}" "start" "script help output"
-assert_contains "${script_help}" "stop" "script help output"
-assert_contains "${script_help}" "status" "script help output"
-assert_contains "${script_help}" "teardown" "script help output"
-
-set +e
-invalid_output="$("${SCRIPT_PATH}" invalid 2>&1)"
-invalid_exit=$?
-set -e
-if [[ ${invalid_exit} -eq 0 ]]; then
-  fail "invalid command should fail"
-fi
-assert_contains "${invalid_output}" "unsupported command 'invalid'" "invalid command output"
-
 make_help_output="$(cd "${ROOT_DIR}" && make help)"
-assert_contains "${make_help_output}" "make local-env-start" "make help output"
-assert_contains "${make_help_output}" "make local-env-stop" "make help output"
-assert_contains "${make_help_output}" "make local-env-status" "make help output"
-assert_contains "${make_help_output}" "make local-env-teardown" "make help output"
+assert_contains "${make_help_output}" "make backend-run" "make help output"
+if [[ "${make_help_output}" == *"local-env-"* ]]; then
+  fail "make help output should not advertise local-env targets"
+fi
 
 makefile_contents="$(cat "${MAKEFILE_PATH}")"
-assert_contains "${makefile_contents}" "./infra/local/scripts/manage-worktree-compose.sh start" "Makefile wiring"
-assert_contains "${makefile_contents}" "./infra/local/scripts/manage-worktree-compose.sh stop" "Makefile wiring"
-assert_contains "${makefile_contents}" "./infra/local/scripts/manage-worktree-compose.sh status" "Makefile wiring"
-assert_contains "${makefile_contents}" "./infra/local/scripts/manage-worktree-compose.sh teardown" "Makefile wiring"
+assert_contains "${makefile_contents}" "backend-run" "Makefile wiring"
 
 echo "[test-local-env-targets] ok"
