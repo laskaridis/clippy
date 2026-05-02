@@ -1,5 +1,18 @@
 ## Codebase Patterns
 - Use `dev-sandbox` as the Dev Containers service name for the local sandbox, and publish the backend on the same `DJANGO_DEV_PORT` value inside the container and on the host.
+- Keep `.devcontainer/.env.example` focused on the minimal localhost contract: `ALLOWED_HOSTS` should cover `localhost`, `127.0.0.1`, and `[::1]`, and per-worktree hostnames should not be documented there.
+---
+## [2026-05-02 08:29Z]
+- Task id
+  - task-02
+- What was implemented
+  - Simplified `.devcontainer/.env.example` to the localhost-plus-port contract by removing `DJANGO_DEV_HOST` and `DJANGO_DEV_BASE_URL` and narrowing `ALLOWED_HOSTS`.
+- Files changed
+  - `.devcontainer/.env.example`
+- **Learnings for future iterations:**
+  - Patterns discovered: the tracked devcontainer env example should only document the minimal localhost contract needed for browser access.
+  - Gotchas encountered: the example file still had the old `clippy.localhost` hostname, so future edits should strip any remaining worktree-specific origin values.
+  - Useful context: `POSTGRES_HOST=postgres` and `DATABASE_URL` already encode the compose-network database contract, so only the frontend-facing host settings needed trimming.
 ---
 ## [2026-05-02 00:00Z]
 - Task id
