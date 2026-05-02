@@ -53,7 +53,6 @@ help:
 
 # Install dependencies/hooks for all sub-projects
 all-init:
-	@./scripts/setup-git-hooks.sh
 	@$(MAKE) backend-init
 	@$(MAKE) extension-init
 
