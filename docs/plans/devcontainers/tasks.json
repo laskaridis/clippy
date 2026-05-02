@@ -55,7 +55,7 @@
       "dependencies": [
         "task-01"
       ],
-      "status": "pending",
+      "status": "completed",
       "implementation_notes": [
         "Keep the file as a plain `.env` example with one assignment per line.",
         "Do not add extra optional variables; the objective is a minimal, explicit contract."
