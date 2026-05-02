@@ -1,0 +1,18 @@
+## Codebase Patterns
+- Use `dev-sandbox` as the Dev Containers service name for the local sandbox, and publish the backend on the same `DJANGO_DEV_PORT` value inside the container and on the host.
+---
+## [2026-05-02 00:00Z]
+- Task id
+  - task-01
+- What was implemented
+  - Renamed the devcontainer service from `app` to `dev-sandbox`.
+  - Removed the legacy `DJANGO_DEV_HOST` and `DJANGO_DEV_BASE_URL` passthroughs.
+  - Removed the PostgreSQL host port binding and added a backend port mapping driven by `DJANGO_DEV_PORT`.
+- Files changed
+  - `.devcontainer/docker-compose.yml`
+  - `.devcontainer/devcontainer.json`
+- **Learnings for future iterations:**
+  - Patterns discovered: the devcontainer service name is now `dev-sandbox`, and host-visible backend access should be keyed off `DJANGO_DEV_PORT`.
+  - Gotchas encountered: PostgreSQL should stay internal to the compose network; only the backend needs host exposure for browser verification.
+  - Useful context: `devcontainer.json` still points at `.devcontainer/bootstrap.sh`, so later tasks can update bootstrap behavior without reworking the service name again.
+---

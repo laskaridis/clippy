@@ -1,7 +1,7 @@
 {
     "name": "webclipper-devcontainer",
     "dockerComposeFile": "docker-compose.yml",
-    "service": "app",
+    "service": "dev-sandbox",
 
     "workspaceFolder": "/workspace",
 
