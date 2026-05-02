@@ -292,7 +292,7 @@
       "dependencies": [
         "task-04"
       ],
-      "status": "pending",
+      "status": "completed",
       "implementation_notes": [
         "Keep this task limited to deletion of obsolete host-runtime artifacts.",
         "Do not modify docs in this task; documentation cleanup happens later."

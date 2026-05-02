@@ -7,6 +7,21 @@
 - Backend test wrappers should assume the devcontainer is already prepared and call `python manage.py test ...` directly from `backend/` without re-running runtime bootstrap helpers.
 - Backend unit and E2E tests share the same database contract, so run them sequentially against one `DATABASE_URL` instead of in parallel when they point at the same Postgres instance.
 - When deleting legacy helper scripts, first neutralize any shell tests that hardcode those filenames so repo-wide reference audits go green before the files are removed.
+- Obsolete host-runtime tests can be deleted once their Make-target dependencies are gone; keep repo-wide `rg` audits focused on the code and script surfaces that still matter after the deletion.
+---
+## [2026-05-02 12:00Z]
+- Task id
+  - task-09b
+- What was implemented
+  - Deleted the obsolete `infra/local/scripts/tests/test_local_env_targets.sh` shell test now that the legacy local-env Make targets are gone.
+- Files changed
+  - `infra/local/scripts/tests/test_local_env_targets.sh`
+  - `docs/plans/devcontainers/tasks.json`
+  - `docs/plans/devcontainers/ralph.txt`
+- **Learnings for future iterations:**
+  - Patterns discovered: obsolete test files can be removed cleanly once their dependent Make targets disappear, without needing a replacement stub.
+  - Gotchas encountered: the task-specific `rg` audit intentionally excludes `docs/plans/**`, so updating the task tracker itself does not affect the reference check.
+  - Useful context: this deletion keeps the infra tree aligned with the new devcontainer-first workflow and clears the path for later gate/skill cleanups.
 ---
 ## [2026-05-02 08:40Z]
 - Task id
