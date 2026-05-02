@@ -2,14 +2,12 @@ SHELL := /usr/bin/env bash
 .SHELLFLAGS := -euo pipefail -c
 .DEFAULT_GOAL := help
 
-PYTHON ?= python3
-VENV_DIR := backend/.venv
-PIP := $(VENV_DIR)/bin/pip
+PYTHON ?= python
 
 .PHONY: help all-init all-build all-test all-lint all-format all-typecheck all-run all-clean \
-	worktree-start local-env-start local-env-stop local-env-status local-env-teardown \
-	backend-init backend-test-unit backend-test-e2e backend-lint backend-format backend-format-check backend-typecheck backend-run backend-stop backend-status backend-clean \
-	extension-init extension-build extension-build-worktree extension-test-unit extension-test-e2e extension-test-a11y extension-lint extension-format extension-format-check extension-typecheck extension-clean \
+	worktree-start \
+	backend-init backend-test-unit backend-test-e2e backend-lint backend-format backend-format-check backend-typecheck backend-run backend-clean \
+	extension-init extension-build extension-test-unit extension-test-e2e extension-test-a11y extension-lint extension-format extension-format-check extension-typecheck extension-clean \
 	all-verify backend-verify extension-verify
 
 # Show available commands
@@ -18,23 +16,20 @@ help:
 	@echo "========================"
 	@echo ""
 	@echo "Backend development targets:"
-	@echo "  make backend-init              - Install backend dependencies in backend/.venv"
+	@echo "  make backend-init              - Install backend dependencies"
 	@echo "  make backend-test-unit         - Run backend non-E2E tests (worktree-aware)"
 	@echo "  make backend-test-e2e          - Run backend browser E2E tests (Playwright, opt-in)"
 	@echo "  make backend-lint              - Run backend lint checks (ruff)"
 	@echo "  make backend-format            - Format backend source (black)"
 	@echo "  make backend-format-check      - Check backend formatting compliance (black --check)"
 	@echo "  make backend-typecheck         - Run backend type checks (mypy)"
-	@echo "  make backend-run               - Start backend server for current worktree"
-	@echo "  make backend-stop              - Stop backend server for current worktree"
-	@echo "  make backend-status            - Check backend server status/url for current worktree"
+	@echo "  make backend-run               - Start backend server inside the devcontainer"
 	@echo "  make backend-clean             - Remove backend cache artifacts"
 	@echo "  make backend-verify            - Run all backend releasability checks"
 	@echo ""
 	@echo "Extension development targets:"
 	@echo "  make extension-init            - Install extension dependencies"
 	@echo "  make extension-build           - Build extension artifacts"
-	@echo "  make extension-build-worktree  - Build extension for current worktree runtime"
 	@echo "  make extension-test-unit       - Run extension unit tests"
 	@echo "  make extension-test-e2e        - Run extension end-to-end tests"
 	@echo "  make extension-test-a11y       - Run extension/frontend accessibility audits (WCAG 2.1 A/AA)"
@@ -52,16 +47,9 @@ help:
 	@echo "  make all-lint                  - Run lint checks across backend and extension"
 	@echo "  make all-format                - Format backend and extension source"
 	@echo "  make all-typecheck             - Run type checks across backend and extension"
-	@echo "  make all-run                   - Start local worktree stack (backend + extension build)"
 	@echo "  make all-clean                 - Remove local build and cache artifacts"
 	@echo "  make all-verify                - Run all checks (test, lint, typecheck, format)"
 	@echo "  make worktree-start            - Create a feature worktree (slug required)"
-	@echo ""
-	@echo "Local environment targets:"
-	@echo "  make local-env-start           - Start worktree-scoped local Docker services"
-	@echo "  make local-env-stop            - Stop worktree-scoped local Docker services"
-	@echo "  make local-env-status          - Show worktree-scoped local Docker service status"
-	@echo "  make local-env-teardown        - Remove worktree-scoped local Docker services and volumes"
 
 # Install dependencies/hooks for all sub-projects
 all-init:
@@ -89,10 +77,6 @@ all-format:
 all-typecheck:
 	@./scripts/typecheck.sh
 
-# Start local worktree stack (backend + extension build)
-all-run:
-	@./scripts/run_worktree_stack.sh
-
 # Remove local build and cache artifacts
 all-clean:
 	@$(MAKE) backend-clean
@@ -108,22 +92,6 @@ all-verify:
 worktree-start:
 	@./scripts/start-worktree-task.sh $(slug) $(base)
 
-# Start worktree-scoped local Docker services
-local-env-start:
-	@./infra/local/scripts/manage-worktree-compose.sh start
-
-# Stop worktree-scoped local Docker services
-local-env-stop:
-	@./infra/local/scripts/manage-worktree-compose.sh stop
-
-# Show worktree-scoped local Docker service status
-local-env-status:
-	@./infra/local/scripts/manage-worktree-compose.sh status
-
-# Remove worktree-scoped local Docker services and volumes
-local-env-teardown:
-	@./infra/local/scripts/manage-worktree-compose.sh teardown
-
 # Runs all backend checks (test, lint, typecheck, format) to verify that the backend is releasable.
 backend-verify:
 	@$(MAKE) backend-test-unit
@@ -132,10 +100,9 @@ backend-verify:
 	@$(MAKE) backend-typecheck
 	@$(MAKE) backend-format-check
 
-# Install backend dependencies in backend/.venv
+# Install backend dependencies
 backend-init:
-	@$(PYTHON) -m venv $(VENV_DIR)
-	@$(PIP) install -r backend/requirements-dev.txt
+	@$(PYTHON) -m pip install -r backend/requirements-dev.txt
 
 # Run backend non-E2E tests (worktree-aware)
 backend-test-unit:
@@ -161,17 +128,9 @@ backend-format-check:
 backend-typecheck:
 	@cd backend && python -m mypy .
 
-# Start backend server for current worktree
+# Start backend server inside the devcontainer
 backend-run:
 	@cd backend && ./scripts/start-server.sh
-
-# Stop backend server for current worktree
-backend-stop:
-	@cd backend && ./scripts/stop-server.sh
-
-# Check backend server status/url for current worktree
-backend-status:
-	@cd backend && ./scripts/check-server.sh
 
 # Remove backend cache artifacts
 backend-clean:
@@ -184,10 +143,6 @@ extension-init:
 # Build extension artifacts
 extension-build:
 	@cd extension && pnpm run build
-
-# Build extension for current worktree runtime
-extension-build-worktree:
-	@cd extension && pnpm run build:worktree
 
 # Runs all extension checks (test, lint, typecheck, format) to verify that the extension is releasable.
 extension-verify:
@@ -229,4 +184,3 @@ extension-typecheck:
 # Remove extension build/worktree artifacts
 extension-clean:
 	@rm -rf extension/chrome/dist
-	@rm -rf extension/.local/worktrees
