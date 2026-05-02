@@ -108,3 +108,23 @@
   - Gotchas encountered: the shell needs `$$` in the Makefile recipe so `DJANGO_DEV_PORT` is expanded at execution time rather than by `make`.
   - Useful context: `make backend-test-unit` still passes after the recipe change, which gives a clean baseline before the later backend script deletions.
 ---
+## [2026-05-02 08:47Z]
+- Task id
+  - task-08a
+- What was implemented
+  - Deleted the legacy backend lifecycle scripts: `backend/scripts/start-server.sh`, `backend/scripts/stop-server.sh`, and `backend/scripts/check-server.sh`.
+  - Removed the remaining live reference from `scripts/run_worktree_stack.sh` so it now calls `make backend-run` directly and rejects obsolete passthrough arguments.
+  - Trimmed `backend/README.md` to describe the devcontainer-local backend start flow instead of the removed lifecycle wrappers.
+- Files changed
+  - `backend/README.md`
+  - `backend/scripts/check-server.sh`
+  - `backend/scripts/start-server.sh`
+  - `backend/scripts/stop-server.sh`
+  - `docs/plans/devcontainers/tasks.json`
+  - `docs/plans/devcontainers/ralph.txt`
+  - `scripts/run_worktree_stack.sh`
+- **Learnings for future iterations:**
+  - Patterns discovered: the remaining wrapper scripts should fail loudly once their direct backend entrypoints disappear rather than forwarding arguments into `make` unexpectedly.
+  - Gotchas encountered: repository verification depends on a live PostgreSQL database named `webclippings`; the local container had the role but not the database, so I had to create it before rerunning the suite.
+  - Useful context: `make all-verify` exercises the extension accessibility audit, which currently reports a serious color-contrast finding on the login page even though the backend and extension unit/e2e suites pass.
+---
