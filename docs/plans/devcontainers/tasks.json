@@ -160,7 +160,7 @@
       "dependencies": [
         "task-03"
       ],
-      "status": "pending",
+      "status": "completed",
       "implementation_notes": [
         "Preserve the existing `-h|--help` behavior.",
         "Do not add Docker startup logic; assume the devcontainer already provides a valid environment."

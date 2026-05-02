@@ -13,6 +13,7 @@ When working with the codebase prefer `Makefile` as the primary surface of stabl
 - For the live command list, run `make help`.
 - `make all-*` targets are the canonical cross-project entrypoints.
 - `make backend-*` and `make extension-*` targets are project-scoped entrypoints.
+- Backend script wrappers should assume the devcontainer is already prepared and call project commands directly from `backend/` rather than re-running runtime bootstrap helpers.
 
 If you need to do something **ALWAYS** check first if there is a Makefile target that you could use to complete your task. If you can't find one, consider creating one.
 
