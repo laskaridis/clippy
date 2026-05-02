@@ -4,6 +4,21 @@
 - Use the active container Python interpreter for bootstrap installs via `python -m pip`, and keep `.devcontainer/bootstrap.sh` as a thin wrapper that delegates setup to `make backend-init` and `make extension-init`.
 - Prefer `$(MAKE)` subtarget composition for aggregate Makefile targets instead of shell wrapper scripts.
 - Keep `make backend-run` as the explicit Django launch path inside the devcontainer: `cd backend && python manage.py migrate`, bootstrap the admin user with `apps.accounts.bootstrap.ensure_admin_user_from_env`, then run `python manage.py runserver 0.0.0.0:${DJANGO_DEV_PORT}`.
+- Backend test wrappers should assume the devcontainer is already prepared and call `python manage.py test ...` directly from `backend/` without re-running runtime bootstrap helpers.
+---
+## [2026-05-02 08:37Z]
+- Task id
+  - task-06
+- What was implemented
+  - Simplified `backend/scripts/test.sh` to drop the worktree-runtime bootstrap and run `python manage.py test --exclude-tag=e2e` directly inside `backend/`.
+- Files changed
+  - `backend/scripts/test.sh`
+  - `docs/plans/devcontainers/tasks.json`
+  - `docs/plans/devcontainers/ralph.txt`
+- **Learnings for future iterations:**
+  - Patterns discovered: backend test wrappers should be thin devcontainer-local shims that forward arguments directly to `manage.py test`.
+  - Gotchas encountered: the backend test target still needs a valid `DATABASE_URL`; outside the devcontainer I had to point it at the already-running Postgres container to get the verification pass.
+  - Useful context: `backend/scripts/test.sh --help` remains a useful smoke check because it now reflects the prepared-devcontainer contract without needing database access.
 ---
 ## [2026-05-02 08:33Z]
 - Task id
