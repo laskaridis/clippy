@@ -82,7 +82,7 @@
       "dependencies": [
         "task-02"
       ],
-      "status": "pending",
+      "status": "completed",
       "implementation_notes": [
         "Keep this task limited to installation/bootstrap behavior; do not remove runtime Make targets here.",
         "Use the active container Python executable rather than hard-coded interpreter paths."

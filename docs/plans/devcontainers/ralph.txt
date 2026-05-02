@@ -1,6 +1,22 @@
 ## Codebase Patterns
 - Use `dev-sandbox` as the Dev Containers service name for the local sandbox, and publish the backend on the same `DJANGO_DEV_PORT` value inside the container and on the host.
 - Keep `.devcontainer/.env.example` focused on the minimal localhost contract: `ALLOWED_HOSTS` should cover `localhost`, `127.0.0.1`, and `[::1]`, and per-worktree hostnames should not be documented there.
+- Use the active container Python interpreter for bootstrap installs via `python -m pip`, and keep `.devcontainer/bootstrap.sh` as a thin wrapper that delegates setup to `make backend-init` and `make extension-init`.
+---
+## [2026-05-02 11:31Z]
+- Task id
+  - task-03
+- What was implemented
+  - Reworked `backend-init` to install backend dev requirements with the active container Python instead of creating `backend/.venv`.
+  - Updated `make help` so backend bootstrap and backend run descriptions match the container-first workflow.
+  - Replaced raw install commands in `.devcontainer/bootstrap.sh` with `make backend-init` and `make extension-init`.
+- Files changed
+  - `Makefile`
+  - `.devcontainer/bootstrap.sh`
+- **Learnings for future iterations:**
+  - Patterns discovered: devcontainer bootstrap should delegate to repository Make targets from `/workspace` instead of duplicating package-manager commands.
+  - Gotchas encountered: `make backend-init` now runs against the active Python environment, so later tasks should avoid reintroducing `backend/.venv` assumptions anywhere in the command surface.
+  - Useful context: the bootstrap script now relies on `make` being available inside the devcontainer image, which is consistent with the container-first setup in this plan.
 ---
 ## [2026-05-02 08:29Z]
 - Task id

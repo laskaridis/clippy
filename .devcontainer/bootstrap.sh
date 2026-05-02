@@ -1,6 +1,7 @@
-#! /bin/bash
+#!/usr/bin/env bash
 
-set -e
+set -euo pipefail
 
-cd /workspace/backend
-pip install -r requirements-dev.txt
+cd /workspace
+make backend-init
+make extension-init

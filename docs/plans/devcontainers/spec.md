@@ -17,6 +17,7 @@ The observable success condition is simple. In two separate worktrees, two separ
 - [x] (2026-05-01 19:05Z) Audited the repository surfaces tied to the current worktree runtime model, including Make targets, backend scripts, extension build scripts, infra helpers, skills, and living docs.
 - [x] (2026-05-01 19:15Z) Chosen replacement model: keep git worktrees, use one devcontainer per worktree, expose backend to the host on a per-worktree port, and remove the legacy runtime-management layer with a hard cutover.
 - [x] (2026-05-01 19:25Z) Authored this ExecPlan at `docs/plans/devcontainers/spec.md`.
+- [x] (2026-05-02 11:31Z) Reworked the devcontainer bootstrap path to use repository Make targets and the active container Python for backend dependency installation.
 - [ ] Update `.devcontainer/` to be the only local runtime orchestration surface and document the new per-worktree `.env` contract.
 - [ ] Remove host-side runtime orchestration from `Makefile`, `backend/scripts/`, `infra/local/scripts/`, `scripts/`, and `extension/package.json`.
 - [ ] Simplify extension local runtime configuration so Chrome can load directly from `extension/chrome` while still targeting the correct backend origin.
