@@ -643,7 +643,7 @@
         "task-18",
         "task-19"
       ],
-      "status": "pending",
+      "status": "completed",
       "implementation_notes": [
         "This task is the automated handoff gate for the migration.",
         "Keep the evidence concise but concrete: command names plus result summaries are sufficient."

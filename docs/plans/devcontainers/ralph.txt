@@ -35,6 +35,22 @@
   - Gotchas encountered: the extension README still had a leftover `.local` artifact reference in the contents list, which had to be removed to stay within the task constraints.
   - Useful context: the two feature quickstarts now line up with the repository-wide devcontainer order of operations, so future docs changes should keep the same worktree -> devcontainer -> `make backend-run` progression.
 ---
+## [2026-05-02 09:27Z]
+- Task id
+  - task-20
+- What was implemented
+  - Ran the automated validation gate from the repository root: `make help`, `make backend-test-unit`, `make backend-test-e2e`, `make extension-test-unit`, `make extension-test-e2e`, `make extension-test-a11y`, and `make all-verify`.
+  - Ran the required runtime-reference audit and confirmed the remaining matches are limited to `docs/plans/**` plus the intentionally superseded ADR `docs/adrs/0003-worktree-backend-entrypoint-and-env-contract.md`.
+  - Updated `docs/plans/devcontainers/spec.md` so the `Progress` and `Outcomes & Retrospective` sections record the dated automated validation result and leave the manual two-worktree smoke check explicitly pending.
+- Files changed
+  - `docs/plans/devcontainers/spec.md`
+  - `docs/plans/devcontainers/tasks.json`
+  - `docs/plans/devcontainers/ralph.txt`
+- **Learnings for future iterations:**
+  - Patterns discovered: the final automated handoff gate for this feature is the exact command set listed in task 20, and the living ExecPlan should record those command names verbatim instead of summarizing them loosely.
+  - Gotchas encountered: there is no checked-in `.devcontainer/.env` in this worktree, so replaying the automated gate from a host shell requires injecting the devcontainer-equivalent env and pointing `DATABASE_URL` at the already-published Postgres port.
+  - Useful context: the repo-wide runtime cleanup audit is now expected to return only historical references under `docs/plans/**` and the superseded ADR 0003; any new non-historical match is regression signal.
+---
 ## [2026-05-02 09:19Z]
 - Task id
   - task-19
