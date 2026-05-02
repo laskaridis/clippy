@@ -4,7 +4,6 @@ This module includes browser extensions (currently only for Chrome) that clip
 texts and save them using the API published by the backend.
 
 ## Contents
-`.local`  # local environment artifacts
 `chrome`  # source code for Chrome browser extension
 `scripts` # helper scripts used to assist development workflow
 
@@ -56,6 +55,13 @@ This validates the signed-out popup experience end-to-end (status message, login
 It also validates signed-in state by logging in through `/accounts/login/` and confirming
 the save controls are shown while login controls are hidden.
 
+Before running the extension in a browser outside Playwright, generate the checked-in runtime config in place:
+
+```bash
+cd extension
+pnpm run prepare:runtime-config
+```
+
 ## Accessibility audits (WCAG 2.1 AA)
 
 Run automated accessibility audits for both:
@@ -72,10 +78,11 @@ This command reports all findings and fails when `serious` or `critical` issues 
 ## Load in Chrome (unpacked)
 
 1. Build the extension first (`pnpm run build`).
-2. Open Chrome and go to `chrome://extensions`.
-3. Enable **Developer mode** (top-right).
-4. Click **Load unpacked**.
-5. Select the folder: `extension/chrome`.
+2. Generate the runtime config in place (`pnpm run prepare:runtime-config`).
+3. Open Chrome and go to `chrome://extensions`.
+4. Enable **Developer mode** (top-right).
+5. Click **Load unpacked**.
+6. Select the folder: `extension/chrome`.
 
 Chrome reads the checked-in `manifest.json` and `runtime-config.js` from `extension/chrome`.
 

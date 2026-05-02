@@ -16,6 +16,24 @@
 - Keep the feature-delivery gate shell script and its `SKILL.md` description in sync; if the script switches from a wrapper to `make` targets, update the skill text in the same pass.
 - Include `.agents/skills/` in repo-wide reference audits for runtime cleanup, because skill wrappers can keep obsolete filenames alive even after code and README cleanup.
 ---
+## [2026-05-02 09:18Z]
+- Task id
+  - task-18
+- What was implemented
+  - Rewrote `extension/README.md` to describe loading the unpacked extension directly from `extension/chrome` and to call out `pnpm run prepare:runtime-config` as the in-place runtime-config generation step.
+  - Updated `specs/001-web-clipping-app/quickstart.md` to use the devcontainer-first sequence, `make backend-run`, and localhost-plus-port backend examples.
+  - Updated `specs/002-label-filter-sidebar/quickstart.md` to remove `backend-status`, assume the devcontainer workflow, and use `http://localhost:<DJANGO_DEV_PORT>` for manual verification.
+- Files changed
+  - `extension/README.md`
+  - `specs/001-web-clipping-app/quickstart.md`
+  - `specs/002-label-filter-sidebar/quickstart.md`
+  - `docs/plans/devcontainers/tasks.json`
+  - `docs/plans/devcontainers/ralph.txt`
+- **Learnings for future iterations:**
+  - Patterns discovered: the extension README should present `pnpm run prepare:runtime-config` as the browser-facing config step, while Playwright continues to own backend startup fallback logic.
+  - Gotchas encountered: the extension README still had a leftover `.local` artifact reference in the contents list, which had to be removed to stay within the task constraints.
+  - Useful context: the two feature quickstarts now line up with the repository-wide devcontainer order of operations, so future docs changes should keep the same worktree -> devcontainer -> `make backend-run` progression.
+---
 ## [2026-05-02 09:16Z]
 - Task id
   - task-17
