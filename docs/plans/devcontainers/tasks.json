@@ -29,7 +29,7 @@
         "`.devcontainer/devcontainer.json` sets `\"service\": \"dev-sandbox\"` and still references `docker-compose.yml` plus `bash .devcontainer/bootstrap.sh`."
       ],
       "dependencies": [],
-      "status": "pending",
+      "status": "completed",
       "implementation_notes": [
         "Verify by reading both files after the edit; no runtime command is required for this task.",
         "Do not introduce any user-facing `docker compose up` instructions here; this task is config-only."
