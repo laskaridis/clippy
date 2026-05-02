@@ -29,8 +29,6 @@ The user MUST specify a root feature folder with the following files inside:
 9. Append your progress to `ralph.txt` under the specified feature folder.
 10. Commit ALL your changes.
 
-**CRITICAL**: Ignore task-20 and task-21 from the backlog!
-
 ## Progress Report Format
 
 You leave notes to yourself in `ralph.txt` which you can revisit in successive iterations.  For each iteration APPEND to ralph.txt (NEVER replace, always append to maintain traceability):
