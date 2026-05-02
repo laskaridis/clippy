@@ -13,6 +13,29 @@
 - Keep the extension shared config precedence fixed: runtime config first, the first valid `manifest.json` host permission second, and `http://localhost:8000` last.
 - When removing obsolete helper scripts, delete any thin wrappers that still invoke them and scrub live README references before running repo-wide reference audits.
 - Keep the feature-delivery gate shell script and its `SKILL.md` description in sync; if the script switches from a wrapper to `make` targets, update the skill text in the same pass.
+- Include `.agents/skills/` in repo-wide reference audits for runtime cleanup, because skill wrappers can keep obsolete filenames alive even after code and README cleanup.
+---
+## [2026-05-02 09:13Z]
+- Task id
+  - task-08b
+- What was implemented
+  - Deleted the obsolete backend bootstrap and env scripts: `backend/scripts/bootsrap.sh` and `backend/scripts/env.sh`.
+  - Removed the remaining live references from the old worktree test wrapper, extension README, infra Docker README, and worktree-bootstrap skill so the repo-wide reference audit is clean.
+- Files changed
+  - `backend/scripts/bootsrap.sh`
+  - `backend/scripts/env.sh`
+  - `scripts/test_worktree.sh`
+  - `extension/README.md`
+  - `infra/docker/README.md`
+  - `.agents/skills/worktree-bootstrap/SKILL.md`
+  - `.agents/skills/worktree-bootstrap/scripts/bootstrap.sh`
+  - `.agents/skills/worktree-bootstrap/agents/openai.yaml`
+  - `docs/plans/devcontainers/tasks.json`
+  - `docs/plans/devcontainers/ralph.txt`
+- **Learnings for future iterations:**
+  - Patterns discovered: repo-wide reference audits for runtime cleanup need to include shell wrappers, docs, and skill files, not just backend and infra code.
+  - Gotchas encountered: `make backend-test-unit` needs an explicit `DATABASE_URL` in this shell because the devcontainer env file is not loaded here; using the live compose Postgres instance on `localhost:15518` kept verification honest.
+  - Useful context: deleting the backend bootstrap layer before the later docs cleanup still works as long as every stale filename reference is removed from scripts and skills in the same pass.
 ---
 ## [2026-05-02 09:03Z]
 - Task id

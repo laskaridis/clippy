@@ -1,4 +1,0 @@
-interface:
-  display_name: "Worktree Runtime Bootstrap"
-  short_description: "Bootstrap and verify per-worktree local runtime."
-  default_prompt: "Use $worktree-runtime-bootstrap to bootstrap and verify backend and extension runtime for this worktree."
