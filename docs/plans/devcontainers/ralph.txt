@@ -3,6 +3,7 @@
 - Keep `.devcontainer/.env.example` focused on the minimal localhost contract: `ALLOWED_HOSTS` should cover `localhost`, `127.0.0.1`, and `[::1]`, and per-worktree hostnames should not be documented there.
 - Use the active container Python interpreter for bootstrap installs via `python -m pip`, and keep `.devcontainer/bootstrap.sh` as a thin wrapper that delegates setup to `make backend-init` and `make extension-init`.
 - Prefer `$(MAKE)` subtarget composition for aggregate Makefile targets instead of shell wrapper scripts.
+- Keep `make backend-run` as the explicit Django launch path inside the devcontainer: `cd backend && python manage.py migrate`, bootstrap the admin user with `apps.accounts.bootstrap.ensure_admin_user_from_env`, then run `python manage.py runserver 0.0.0.0:${DJANGO_DEV_PORT}`.
 ---
 ## [2026-05-02 08:33Z]
 - Task id
@@ -61,4 +62,18 @@
   - Patterns discovered: the devcontainer service name is now `dev-sandbox`, and host-visible backend access should be keyed off `DJANGO_DEV_PORT`.
   - Gotchas encountered: PostgreSQL should stay internal to the compose network; only the backend needs host exposure for browser verification.
   - Useful context: `devcontainer.json` still points at `.devcontainer/bootstrap.sh`, so later tasks can update bootstrap behavior without reworking the service name again.
+---
+## [2026-05-02 11:50Z]
+- Task id
+  - task-05
+- What was implemented
+  - Redefined `make backend-run` to run migrations, ensure the local admin user exists, and start Django directly inside `backend/` on `0.0.0.0:${DJANGO_DEV_PORT}`.
+- Files changed
+  - `Makefile`
+  - `docs/plans/devcontainers/tasks.json`
+  - `docs/plans/devcontainers/ralph.txt`
+- **Learnings for future iterations:**
+  - Patterns discovered: backend startup commands should stay explicit in the Makefile so the devcontainer workflow does not depend on hidden wrapper scripts.
+  - Gotchas encountered: the shell needs `$$` in the Makefile recipe so `DJANGO_DEV_PORT` is expanded at execution time rather than by `make`.
+  - Useful context: `make backend-test-unit` still passes after the recipe change, which gives a clean baseline before the later backend script deletions.
 ---

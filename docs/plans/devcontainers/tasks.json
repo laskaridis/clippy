@@ -134,7 +134,7 @@
       "dependencies": [
         "task-04"
       ],
-      "status": "pending",
+      "status": "completed",
       "implementation_notes": [
         "Keep the command sequence explicit in the Makefile; do not hide it behind a new wrapper script.",
         "Preserve execution from the repository root by using `cd backend && ...`."

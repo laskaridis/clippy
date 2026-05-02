@@ -131,7 +131,9 @@ backend-typecheck:
 
 # Start backend server inside the devcontainer
 backend-run:
-	@cd backend && ./scripts/start-server.sh
+	@cd backend && python manage.py migrate
+	@cd backend && python manage.py shell -c "from apps.accounts.bootstrap import ensure_admin_user_from_env; print(ensure_admin_user_from_env())"
+	@cd backend && python manage.py runserver 0.0.0.0:$${DJANGO_DEV_PORT}
 
 # Remove backend cache artifacts
 backend-clean:
