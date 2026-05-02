@@ -8,19 +8,12 @@ Backend application publishing an API and a web application to manage clippings.
 - `backend/apps/accounts/` auth views/templates/tests
 - `backend/webclippings/` settings, URL routing, auth class
 
-## Prerequisites
+## Local development
 
-- Python 3.12+
-- `pip`
-
-## Install dependencies
-
-```bash
-cd backend
-python -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-```
+Create or reuse the worktree, set up the worktree's `.devcontainer/.env`, and
+open the checkout in Dev Containers. The `dev-sandbox` service is the sandbox
+for implementation work and stays idle until you run project commands inside
+it.
 
 ## Run server
 
@@ -32,6 +25,12 @@ make backend-run
 
 That command runs migrations, ensures the local admin user exists, and starts
 `python manage.py runserver 0.0.0.0:${DJANGO_DEV_PORT}` from `backend/`.
+
+From the host browser, verify the login page at:
+
+```text
+http://localhost:${DJANGO_DEV_PORT}/accounts/login/
+```
 
 ## Tests
 
