@@ -614,7 +614,7 @@
         "task-11",
         "task-12"
       ],
-      "status": "pending",
+      "status": "completed",
       "implementation_notes": [
         "Match the existing ADR tone and structure already used under `docs/adrs/`.",
         "Keep the historical scope narrow: record the new decision instead of editing the old ADR narrative."
