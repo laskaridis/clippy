@@ -30,21 +30,6 @@ cd extension
 pnpm run build
 ```
 
-## Build for git worktree development
-
-Prepare a worktree-scoped unpacked extension directory (manifest + runtime backend URL):
-
-```bash
-cd extension
-pnpm run build:worktree
-```
-
-This writes:
-- `extension/.local/worktree-runtime-<worktree-id>.json` (resolved backend/runtime metadata)
-- `extension/.local/worktrees/<worktree-id>/chrome` (load this in Chrome)
-
-`build:worktree` resolves backend runtime through `backend/scripts/bootsrap.sh --print-json` and consumes the generated backend env/runtime artifacts.
-
 ## Unit tests
 
 Run the extension test suite (build + Node test runner):
@@ -86,17 +71,17 @@ This command reports all findings and fails when `serious` or `critical` issues 
 
 ## Load in Chrome (unpacked)
 
-1. Build the extension for this worktree first (`pnpm run build:worktree`).
+1. Build the extension first (`pnpm run build`).
 2. Open Chrome and go to `chrome://extensions`.
 3. Enable **Developer mode** (top-right).
 4. Click **Load unpacked**.
-5. Select the folder: `extension/.local/worktrees/<worktree-id>/chrome`.
+5. Select the folder: `extension/chrome`.
 
-Chrome reads the generated `manifest.json`, which is scoped to this worktree backend origin.
+Chrome reads the checked-in `manifest.json` and `runtime-config.js` from `extension/chrome`.
 
 ## Iterate during development
 
 After changing `.ts` files:
 
-1. Run `pnpm run build:worktree` again.
+1. Run `pnpm run build` again.
 2. In `chrome://extensions`, click the **Reload** button on the WebClippings extension.

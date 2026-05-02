@@ -11,6 +11,7 @@
 - Rewrite `extension/chrome/runtime-config.js` in place from environment values using `WEBCLIPPINGS_API_BASE_URL` first and `DJANGO_DEV_PORT` as the localhost fallback; avoid creating `.local` extension artifacts for local development.
 - Extension Playwright helpers should load the checked-in `extension/chrome` directory directly and start the backend with `make backend-run` from the repo root when they need a fallback startup path; do not depend on generated worktree runtime files.
 - Keep the extension shared config precedence fixed: runtime config first, the first valid `manifest.json` host permission second, and `http://localhost:8000` last.
+- When removing obsolete helper scripts, delete any thin wrappers that still invoke them and scrub live README references before running repo-wide reference audits.
 ---
 ## [2026-05-02 09:03Z]
 - Task id
@@ -182,6 +183,25 @@
   - Patterns discovered: backend startup commands should stay explicit in the Makefile so the devcontainer workflow does not depend on hidden wrapper scripts.
   - Gotchas encountered: the shell needs `$$` in the Makefile recipe so `DJANGO_DEV_PORT` is expanded at execution time rather than by `make`.
   - Useful context: `make backend-test-unit` still passes after the recipe change, which gives a clean baseline before the later backend script deletions.
+---
+## [2026-05-02 09:06Z]
+- Task id
+  - task-13
+- What was implemented
+  - Deleted the obsolete `extension/scripts/prepare-worktree-extension.mjs` build helper and the dead `scripts/run_worktree_stack.sh` wrapper that still invoked `pnpm run build:worktree`.
+  - Removed the stale `build:worktree` instructions from `extension/README.md` so the live repo no longer advertises the removed build path.
+  - Recorded the cleanup pattern in `AGENTS.md` and marked the task complete in the feature tracker.
+- Files changed
+  - `extension/README.md`
+  - `extension/scripts/prepare-worktree-extension.mjs`
+  - `scripts/run_worktree_stack.sh`
+  - `AGENTS.md`
+  - `docs/plans/devcontainers/tasks.json`
+  - `docs/plans/devcontainers/ralph.txt`
+- **Learnings for future iterations:**
+  - Patterns discovered: when a build helper disappears, any thin wrapper or README example that still calls it will keep repo-wide reference audits red, so delete or rewrite those touchpoints in the same pass.
+  - Gotchas encountered: the task-specific `rg` audit needs to exclude `docs/plans/**`, otherwise historical plan text will still mention the deleted helper by design.
+  - Useful context: `extension/README.md` now points unpacked Chrome loading directly at `extension/chrome`, which matches the simplified local extension workflow already described in the plan.
 ---
 ## [2026-05-02 08:47Z]
 - Task id

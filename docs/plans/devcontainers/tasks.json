@@ -429,7 +429,7 @@
         "task-10",
         "task-12"
       ],
-      "status": "pending",
+      "status": "completed",
       "implementation_notes": [
         "This task is deletion-only.",
         "Do not bundle README updates into this task."

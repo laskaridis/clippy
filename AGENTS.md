@@ -37,3 +37,4 @@ Before writing any code that includes any kind of **front-end** changes **ALLWAY
 
 For the browser extension shared config, keep the precedence order explicit: runtime config first, manifest host_permissions second, and the hard-coded localhost fallback last. When updating `extension/chrome/manifest.json`, keep localhost wildcard permissions before any non-local example host so the manifest fallback stays deterministic.
 Extension Playwright helpers should load the checked-in `extension/chrome` directory directly and, when they need to self-start the backend, do so with `make backend-run` from the repository root instead of any generated worktree runtime file or deleted bootstrap script.
+When removing obsolete helper scripts, delete any thin wrappers that still invoke them and scrub live README references before running repo-wide reference audits.
