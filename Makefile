@@ -140,7 +140,7 @@ backend-clean:
 
 # Install extension dependencies
 extension-init:
-	@cd extension && pnpm install --frozen-lockfile
+	@cd extension && CI=1 COREPACK_ENABLE_DOWNLOAD_PROMPT=0 pnpm install --frozen-lockfile --config.confirmModulesPurge=false
 
 # Build extension artifacts
 extension-build:
