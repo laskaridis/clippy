@@ -16,6 +16,26 @@
 - Keep the feature-delivery gate shell script and its `SKILL.md` description in sync; if the script switches from a wrapper to `make` targets, update the skill text in the same pass.
 - Include `.agents/skills/` in repo-wide reference audits for runtime cleanup, because skill wrappers can keep obsolete filenames alive even after code and README cleanup.
 - When superseding an ADR, create a new numbered ADR with an explicit supersession statement instead of rewriting the older ADR's historical narrative.
+- If `.devcontainer/bootstrap.sh` delegates extension setup to `make extension-init`, the devcontainer image itself must install the pinned `pnpm` version first; otherwise `devcontainer up` fails during post-create.
+---
+## [2026-05-02 09:37Z]
+- Task id
+  - task-21
+- What was implemented
+  - Fixed the devcontainer image so post-create can run `make extension-init` by enabling Corepack and activating the pinned `pnpm@9.15.1` version in `.devcontainer/Dockerfile`.
+  - Started two Dev Containers worktrees with separate untracked `.devcontainer/.env` files, using `DJANGO_DEV_PORT=8794` in `feature/devcontainers` and `DJANGO_DEV_PORT=8795` in a temporary parallel worktree.
+  - Ran `make backend-run` inside each `dev-sandbox`, verified `http://localhost:8794/accounts/login/` and `http://localhost:8795/accounts/login/` from a host Chromium session, and loaded the unpacked extension directly from each worktree's `extension/chrome` directory with matching runtime targets.
+  - Captured verification screenshots at `docs/plans/devcontainers/login-8794.png`, `docs/plans/devcontainers/login-8795.png`, `docs/plans/devcontainers/extension-8794.png`, and `docs/plans/devcontainers/extension-8795.png`.
+- Files changed
+  - `.devcontainer/Dockerfile`
+  - `AGENTS.md`
+  - `docs/plans/devcontainers/spec.md`
+  - `docs/plans/devcontainers/tasks.json`
+  - `docs/plans/devcontainers/ralph.txt`
+- **Learnings for future iterations:**
+  - Patterns discovered: the devcontainer image has to provide the pinned `pnpm` toolchain before post-create runs, because the bootstrap path intentionally delegates to `make extension-init` instead of installing package managers inline.
+  - Gotchas encountered: `pnpm install` may prompt before replacing an incompatible `extension/node_modules` tree, so a stale host-side install can make `devcontainer up` appear hung even after the package manager itself is present.
+  - Useful context: the successful smoke check used two real worktrees and host-browser Chromium verification, so the evidence in `docs/plans/devcontainers/*.png` is the concrete closure artifact for the parallel-worktree requirement.
 ---
 ## [2026-05-02 09:18Z]
 - Task id

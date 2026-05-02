@@ -3,6 +3,7 @@ FROM mcr.microsoft.com/devcontainers/base:ubuntu
 ARG DEBIAN_FRONTEND=noninteractive
 ARG PYTHON_VERSION=3.12.13
 ARG NODE_VERSION=22.22.2
+ARG PNPM_VERSION=9.15.1
 ARG CODEX_VERSION=0.125.0
 ARG GH_VERSION=2.90.0
 
@@ -16,21 +17,36 @@ RUN update-ca-certificates
 # Install system dependencies plus toolchain build dependencies.
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
+        libasound2t64 \
+        libatk-bridge2.0-0t64 \
+        libatk1.0-0t64 \
+        libatspi2.0-0t64 \
         build-essential \
         ca-certificates \
+        libcairo2 \
+        libcups2t64 \
         curl \
+        libdbus-1-3 \
+        libgbm1 \
+        libglib2.0-0t64 \
         libbz2-dev \
         libffi-dev \
         libgdbm-dev \
         liblzma-dev \
         libncurses5-dev \
         libnss3-dev \
+        libpango-1.0-0 \
         libreadline-dev \
         libsqlite3-dev \
         libssl-dev \
         postgresql-client \
         tk-dev \
         uuid-dev \
+        libxcomposite1 \
+        libxdamage1 \
+        libxfixes3 \
+        libxkbcommon0 \
+        libxrandr2 \
         xz-utils \
         zlib1g-dev \
     && rm -rf /var/lib/apt/lists/*
@@ -58,6 +74,10 @@ RUN arch="$(dpkg --print-architecture)" \
     && curl -fsSL "https://nodejs.org/download/release/v${NODE_VERSION}/node-v${NODE_VERSION}-linux-${node_arch}.tar.xz" -o /tmp/node.tar.xz \
     && tar -xJf /tmp/node.tar.xz -C /usr/local --strip-components=1 --no-same-owner \
     && rm -f /tmp/node.tar.xz
+
+# Enable the pinned pnpm version expected by the extension toolchain.
+RUN corepack enable \
+    && corepack prepare "pnpm@${PNPM_VERSION}" --activate
 
 # Install a pinned GitHub CLI release.
 RUN arch="$(dpkg --print-architecture)" \

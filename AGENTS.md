@@ -18,6 +18,7 @@ When working with the codebase prefer `Makefile` as the primary surface of stabl
 If you need to do something **ALWAYS** check first if there is a Makefile target that you could use to complete your task. If you can't find one, consider creating one.
 
 For local-development docs, keep the narrative in the devcontainer-first order: worktree, `.devcontainer/.env`, Dev Containers, `dev-sandbox`, then `make backend-run` when a live backend is needed. Avoid reintroducing host-side bootstrap stories in living docs.
+When `.devcontainer/bootstrap.sh` delegates to `make extension-init`, keep the devcontainer image responsible for providing the pinned `pnpm` toolchain up front; do not rely on post-create steps to install the package manager itself.
 
 ## Project Directory Outline
 
