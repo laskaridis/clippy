@@ -108,7 +108,7 @@
       "dependencies": [
         "task-03"
       ],
-      "status": "pending",
+      "status": "completed",
       "implementation_notes": [
         "Do not change `backend-run` in this task; that is handled separately.",
         "Keep the `help` output readable and grouped under the existing backend/extension/project headings."
