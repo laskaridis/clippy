@@ -347,7 +347,7 @@
       "dependencies": [
         "task-03"
       ],
-      "status": "pending",
+      "status": "completed",
       "implementation_notes": [
         "Keep `build` as the TypeScript compile step only.",
         "The generator should normalize any provided `WEBCLIPPINGS_API_BASE_URL` to its URL origin."
