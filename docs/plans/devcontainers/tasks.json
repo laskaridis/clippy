@@ -458,7 +458,7 @@
         "task-06",
         "task-07"
       ],
-      "status": "pending",
+      "status": "completed",
       "implementation_notes": [
         "Keep the existing PR-presence enforcement with `gh pr list`.",
         "Do not broaden the gate beyond the checks named in this task."

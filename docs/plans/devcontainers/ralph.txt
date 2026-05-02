@@ -12,6 +12,7 @@
 - Extension Playwright helpers should load the checked-in `extension/chrome` directory directly and start the backend with `make backend-run` from the repo root when they need a fallback startup path; do not depend on generated worktree runtime files.
 - Keep the extension shared config precedence fixed: runtime config first, the first valid `manifest.json` host permission second, and `http://localhost:8000` last.
 - When removing obsolete helper scripts, delete any thin wrappers that still invoke them and scrub live README references before running repo-wide reference audits.
+- Keep the feature-delivery gate shell script and its `SKILL.md` description in sync; if the script switches from a wrapper to `make` targets, update the skill text in the same pass.
 ---
 ## [2026-05-02 09:03Z]
 - Task id
@@ -238,4 +239,21 @@
   - Patterns discovered: the extension can keep a tiny checked-in runtime config file as long as the local generator rewrites it in place from environment values.
   - Gotchas encountered: passing `--list` through `pnpm run ... -- --list` forwards the separator literally to Playwright, so direct `pnpm exec playwright test ... --list` is the cleaner smoke check for script wiring.
   - Useful context: `prepare:runtime-config` runs before both `test:e2e` and `test:a11y`, so any future extension Playwright helper should assume `runtime-config.js` already reflects the active devcontainer.
+---
+## [2026-05-02 09:09Z]
+- Task id
+  - task-14
+- What was implemented
+  - Updated `.agents/skills/feature-delivery-gate/scripts/gate.sh` so the default gate now runs `scripts/agent-preflight.sh`, `make backend-test-unit`, `make extension-test-unit`, and the open-PR check.
+  - Switched `--full-tests` to `make all-verify` and removed the old worktree-runtime env sourcing and `test_worktree.sh` dependency.
+  - Synced `.agents/skills/feature-delivery-gate/SKILL.md` to match the shell script behavior exactly.
+- Files changed
+  - `.agents/skills/feature-delivery-gate/SKILL.md`
+  - `.agents/skills/feature-delivery-gate/scripts/gate.sh`
+  - `docs/plans/devcontainers/tasks.json`
+  - `docs/plans/devcontainers/ralph.txt`
+- **Learnings for future iterations:**
+  - Patterns discovered: delivery-gate skills should describe the same checks the shell wrapper enforces, otherwise the documentation becomes stale the moment the gate changes.
+  - Gotchas encountered: the gate no longer needs any `.local/worktree-env-*.env` discovery, so future cleanup work should treat that pattern as legacy-only in this area.
+  - Useful context: `--full-tests` now follows the repo’s primary verification target (`make all-verify`), which keeps the feature gate aligned with the rest of the devcontainer-first workflow.
 ---
