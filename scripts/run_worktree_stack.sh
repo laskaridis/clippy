@@ -3,13 +3,13 @@ set -euo pipefail
 
 #
 # Intent: Build extension runtime artifacts and start the backend server for this worktree.
-# Preconditions: Requires extension dependencies and executable backend start script.
-# Invariants: Ensures extension build step runs unless skipped and delegates backend lifecycle to start-server.sh.
+# Preconditions: Requires extension dependencies and a devcontainer-local backend start command.
+# Invariants: Ensures extension build step runs unless skipped and delegates backend lifecycle to `make backend-run`.
 # Outcomes: Starts a worktree-scoped local stack with deterministic runtime metadata.
 #
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-BACKEND_SCRIPT="${ROOT_DIR}/backend/scripts/start-server.sh"
+BACKEND_DIR="${ROOT_DIR}/backend"
 EXTENSION_DIR="${ROOT_DIR}/extension"
 
 SKIP_EXTENSION_BUILD=0
@@ -28,8 +28,8 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-if [[ ! -x "${BACKEND_SCRIPT}" ]]; then
-  echo "[run-worktree-stack] error: missing executable ${BACKEND_SCRIPT}" >&2
+if [[ ${#PASSTHROUGH_ARGS[@]} -gt 0 ]]; then
+  echo "[run-worktree-stack] error: passthrough args are no longer supported; run make backend-run directly" >&2
   exit 1
 fi
 
@@ -42,7 +42,7 @@ if [[ "${SKIP_EXTENSION_BUILD}" == "0" ]]; then
 fi
 
 echo "[run-worktree-stack] starting backend"
-if [[ ${#PASSTHROUGH_ARGS[@]} -gt 0 ]]; then
-  exec "${BACKEND_SCRIPT}" "${PASSTHROUGH_ARGS[@]}"
-fi
-exec "${BACKEND_SCRIPT}"
+(
+  cd "${BACKEND_DIR}"
+  exec make backend-run
+)

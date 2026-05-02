@@ -22,94 +22,16 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-## Configure current worktree environment
-
-```bash
-cd backend
-./scripts/bootsrap.sh --bootstrap-only
-```
-
-Resolves deterministic per-worktree defaults for:
-- PostgreSQL runtime via `infra/docker/docker-compose.yml` (when `DATABASE_URL` is not already set)
-- backend port (with automatic fallback to the next free port in range)
-- backend host/base URL
-- a shared per-worktree env file: `backend/.local/worktree-env-<worktree-id>.env`
-
 ## Run server
 
-```bash
-cd backend
-./scripts/start-server.sh
-```
-
-Resolved URL is worktree-specific and deterministic (port can fall forward if busy).
-Check the active URL with:
+Inside the devcontainer, start Django directly with:
 
 ```bash
-cd backend
-./scripts/check-server.sh
+make backend-run
 ```
 
-This also ensures that the current environment is configured (similarly to `--bootstrap-only`).
-
-Stop server:
-
-```bash
-cd backend
-./scripts/stop-server.sh
-```
-
-Check server status:
-
-```bash
-cd backend
-./scripts/check-server.sh
-```
-
-## Local environment introspection
-
-You can inspect resolved runtime values without starting Django:
-
-```bash
-cd backend
-./scripts/bootsrap.sh --print-json
-```
-
-You can print the resolved env-file path:
-
-```bash
-cd backend
-./scripts/bootsrap.sh --print-env-path
-```
-
-Alternatively, you can resolve runtime values by inspecting the runtime
-metadata for the worktree environment:
-```bash
-cd backend
-cat ./.local/worktree-runtime-<worktree-id>.json
-```
-Here, `<worktree-id>` is `<worktree-basename>-<sha1-prefix>` derived from the
-worktree root directory path (also emitted by the `--print-json` option).
-
-For full options:
-
-```bash
-cd backend
-./scripts/bootsrap.sh --help
-```
-
-## Source local environment variables 
-
-```bash
-cd backend
-source ./scripts/env.sh --setup
-```
-
-For more options:
-
-```bash
-./scripts/env.sh --help
-```
+That command runs migrations, ensures the local admin user exists, and starts
+`python manage.py runserver 0.0.0.0:${DJANGO_DEV_PORT}` from `backend/`.
 
 ## Tests
 

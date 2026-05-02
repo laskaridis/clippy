@@ -213,7 +213,7 @@
         "task-04",
         "task-05"
       ],
-      "status": "pending",
+      "status": "completed",
       "implementation_notes": [
         "Use file deletion only; this task should not rewrite docs or tests.",
         "The later validation task will perform the final repository-wide reference audit."
