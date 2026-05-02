@@ -32,16 +32,10 @@ fi
 ./scripts/agent-preflight.sh
 
 if [[ "$FULL_TESTS" -eq 1 ]]; then
-  ./scripts/test_worktree.sh
+  make all-verify
 else
-  (
-    cd backend
-    ENV_FILE="$(ls -1 .local/worktree-env-*.env 2>/dev/null | head -n 1 || true)"
-    if [[ -n "$ENV_FILE" ]]; then
-      set -a && source "$ENV_FILE" && set +a
-    fi
-    python manage.py test --noinput
-  )
+  make backend-test-unit
+  make extension-test-unit
 fi
 
 BRANCH="$(git branch --show-current)"
