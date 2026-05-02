@@ -3,14 +3,13 @@
 **Feature**: [specs/001-web-clipping-app/spec.md](specs/001-web-clipping-app/spec.md)  
 **Plan**: [specs/001-web-clipping-app/plan.md](specs/001-web-clipping-app/plan.md)
 
-This quickstart explains how to run the Django backend, PostgreSQL, and (later) the Chrome extension in a local, cloud-native-friendly way.
+This quickstart explains how to run the Django backend, PostgreSQL, and the Chrome extension in a devcontainer-first local workflow.
 
 ---
 
 ## Prerequisites
 
-- Python 3.11+ (ideally 3.12)
-- Docker and Docker Compose
+- Docker and Dev Containers support
 - A recent version of Google Chrome
 - Git and access to this repository
 
@@ -21,49 +20,43 @@ This quickstart explains how to run the Django backend, PostgreSQL, and (later) 
 ```bash
 git clone <repo-url>
 cd webclippings
-python -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
+cp .devcontainer/.env.example .devcontainer/.env
 ```
 
-Create a `.env` file (or equivalent) with environment variables for local development, for example:
+Set a unique backend port when another worktree may be running at the same time. Keep the host settings localhost-oriented:
 
 ```bash
 DJANGO_SECRET_KEY=changeme
 DJANGO_DEBUG=true
-DATABASE_URL=postgres://webclippings:password@localhost:5432/webclippings
-ALLOWED_HOSTS=localhost,127.0.0.1
+DJANGO_DEV_PORT=8010
+ALLOWED_HOSTS=localhost,127.0.0.1,[::1]
 ```
 
 ---
 
-## 2. Run PostgreSQL (Local via Docker)
+## 2. Open the Worktree in Dev Containers
 
-```bash
-docker run --name webclippings-postgres -e POSTGRES_USER=webclippings \
-  -e POSTGRES_PASSWORD=password -e POSTGRES_DB=webclippings \
-  -p 5432:5432 -d postgres:16
-```
+Use the checked-in `.devcontainer/` configuration and let the `dev-sandbox` service start idle.
 
 ---
 
 ## 3. Run Django Backend Locally
 
-Start the backend with the worktree-aware helper script:
+Start the backend explicitly from inside `dev-sandbox`:
 
 ```bash
-./backend/scripts/bootsrap.sh
+make backend-run
 ```
 
-The script automatically ensures database readiness, runs migrations, ensures an admin user exists, emits worktree runtime/env metadata, and picks deterministic per-worktree backend/database ports so multiple worktrees can run in parallel without collisions.
+This runs migrations, ensures the local admin user exists, and starts Django on `0.0.0.0:${DJANGO_DEV_PORT}`.
+From the host browser, reach it at `http://localhost:<DJANGO_DEV_PORT>/accounts/login/`.
 
 By default it provisions local credentials `admin` / `admin`. Override admin credentials with `DJANGO_ADMIN_USERNAME`, `DJANGO_ADMIN_EMAIL`, and `DJANGO_ADMIN_PASSWORD`. Set `DJANGO_ENV=production` (or `ENVIRONMENT=production`) to disable this auto-bootstrap.
 
 Optional overrides:
 
 ```bash
-DJANGO_DEV_PORT=8010 ./backend/scripts/bootsrap.sh
-DJANGO_DEV_DB_PORT=16432 ./backend/scripts/bootsrap.sh
+DJANGO_DEV_PORT=8010 make backend-run
 ```
 
 ---
@@ -86,10 +79,11 @@ Once implemented, you can use tools like `curl`, HTTPie, or your browser to inte
 
 Once the Chrome extension directory exists (see plan structure), you will be able to:
 
-1. Open `chrome://extensions` in Chrome.
-2. Enable "Developer mode".
-3. Click "Load unpacked" and point to the `extension/chrome` directory.
-4. Confirm that the extension icon appears in the browser toolbar.
+1. Run `cd extension && pnpm run prepare:runtime-config`.
+2. Open `chrome://extensions` in Chrome.
+3. Enable "Developer mode".
+4. Click "Load unpacked" and point to the `extension/chrome` directory.
+5. Confirm that the extension icon appears in the browser toolbar.
 
 The extension will:
 - Read the current tab’s title, URL, and selected text.

@@ -584,7 +584,7 @@
         "task-12",
         "task-13"
       ],
-      "status": "pending",
+      "status": "completed",
       "implementation_notes": [
         "Keep the quickstarts runnable without requiring the reader to infer deleted helper scripts.",
         "You may mention Chrome loading from `extension/chrome`, but do not document any worktree-specific extension build directory."

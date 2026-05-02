@@ -9,9 +9,8 @@ This quickstart describes how to run and validate the label-filter sidebar/drawe
 
 ## Prerequisites
 
-- Python 3.12 environment for backend development
+- Docker and Dev Containers support
 - Node 18+ and pnpm (for extension/tooling commands where needed)
-- Docker available if local PostgreSQL auto-provisioning is used
 - Repository initialized in a compliant feature worktree
 
 ---
@@ -29,17 +28,13 @@ make extension-init
 
 ## 2. Start Backend in Current Worktree
 
-Use the canonical worktree-aware backend entrypoint:
+Open the worktree in Dev Containers, then start Django explicitly from inside `dev-sandbox`:
 
 ```bash
 make backend-run
 ```
 
-Optional status check:
-
-```bash
-make backend-status
-```
+If another worktree is already serving Django, set a unique `DJANGO_DEV_PORT` in `.devcontainer/.env` before starting the container.
 
 ---
 
@@ -57,7 +52,7 @@ You can use existing admin tools or fixtures in backend tests for deterministic 
 
 ## 4. Manual Verification Flow
 
-1. Open `/clips/` while authenticated.
+1. Open `http://localhost:<DJANGO_DEV_PORT>/clips/` while authenticated.
 2. Select one label and verify only matching clips appear.
 3. Select multiple labels and verify clips must contain all selected labels.
 4. Confirm URL contains repeated label slugs: `?label=work&label=research`.
