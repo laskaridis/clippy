@@ -5,7 +5,8 @@
   "description": "Capture selected text as clippings and send to the WebClippings app.",
   "permissions": ["activeTab", "contextMenus"],
   "host_permissions": [
-    "http://localhost:8000/*",
+    "http://localhost/*",
+    "http://127.0.0.1/*",
     "https://api.example.com/*"
   ],
   "action": {

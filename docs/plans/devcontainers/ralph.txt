@@ -9,6 +9,27 @@
 - When deleting legacy helper scripts, first neutralize any shell tests that hardcode those filenames so repo-wide reference audits go green before the files are removed.
 - Obsolete host-runtime tests can be deleted once their Make-target dependencies are gone; keep repo-wide `rg` audits focused on the code and script surfaces that still matter after the deletion.
 - Rewrite `extension/chrome/runtime-config.js` in place from environment values using `WEBCLIPPINGS_API_BASE_URL` first and `DJANGO_DEV_PORT` as the localhost fallback; avoid creating `.local` extension artifacts for local development.
+- Keep the extension shared config precedence fixed: runtime config first, the first valid `manifest.json` host permission second, and `http://localhost:8000` last.
+---
+## [2026-05-02 12:18Z]
+- Task id
+  - task-11
+- What was implemented
+  - Updated the extension manifest to allow localhost development across arbitrary backend ports via `http://localhost/*` and `http://127.0.0.1/*`.
+  - Tightened the shared config tests to cover runtime override precedence, manifest-order fallback, invalid runtime override fallback, and the hard-coded localhost fallback.
+  - Kept the shared config implementation precedence unchanged while updating the host-permission comment to match the new localhost wildcard contract.
+- Files changed
+  - `extension/chrome/manifest.json`
+  - `extension/chrome/src/shared/config.ts`
+  - `extension/chrome/src/shared/config.test.ts`
+  - `extension/scripts/write-runtime-config.mjs`
+  - `AGENTS.md`
+  - `docs/plans/devcontainers/tasks.json`
+  - `docs/plans/devcontainers/ralph.txt`
+- **Learnings for future iterations:**
+  - Patterns discovered: the extension config helper should always resolve API origins in three tiers, with manifest host permissions acting as the explicit fallback layer.
+  - Gotchas encountered: `make extension-verify` also checks formatting, so an unrelated Prettier drift in `extension/scripts/write-runtime-config.mjs` had to be fixed before the task could be considered done.
+  - Useful context: the manifest fallback now expects localhost wildcard permissions in order, which lets local development work across arbitrary backend ports without reintroducing worktree-specific hostnames.
 ---
 ## [2026-05-02 12:00Z]
 - Task id

@@ -29,7 +29,7 @@
         "`.devcontainer/devcontainer.json` sets `\"service\": \"dev-sandbox\"` and still references `docker-compose.yml` plus `bash .devcontainer/bootstrap.sh`."
       ],
       "dependencies": [],
-      "status": "completed",
+      "status": "pending",
       "implementation_notes": [
         "Verify by reading both files after the edit; no runtime command is required for this task.",
         "Do not introduce any user-facing `docker compose up` instructions here; this task is config-only."
@@ -55,7 +55,7 @@
       "dependencies": [
         "task-01"
       ],
-      "status": "completed",
+      "status": "pending",
       "implementation_notes": [
         "Keep the file as a plain `.env` example with one assignment per line.",
         "Do not add extra optional variables; the objective is a minimal, explicit contract."
@@ -318,7 +318,7 @@
         "task-04",
         "task-14"
       ],
-      "status": "pending",
+      "status": "completed",
       "implementation_notes": [
         "Keep this task limited to deletion of obsolete host-runtime artifacts.",
         "Do not modify docs in this task; documentation cleanup happens later."
@@ -375,7 +375,7 @@
       "dependencies": [
         "task-10"
       ],
-      "status": "pending",
+      "status": "completed",
       "implementation_notes": [
         "Prefer localhost-oriented permissions such as `http://localhost/*` and `http://127.0.0.1/*` over enumerating many fixed ports.",
         "Do not remove the final hard-coded fallback; keep it as the last-resort path."

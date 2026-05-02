@@ -4,7 +4,11 @@ import { fileURLToPath } from "node:url";
 
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const extensionDir = path.resolve(scriptDir, "..");
-const runtimeConfigPath = path.join(extensionDir, "chrome", "runtime-config.js");
+const runtimeConfigPath = path.join(
+  extensionDir,
+  "chrome",
+  "runtime-config.js",
+);
 
 function normalizeApiBaseUrl(input) {
   return new URL(input).origin;
