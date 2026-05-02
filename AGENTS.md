@@ -36,3 +36,4 @@ If you need to do something **ALWAYS** check first if there is a Makefile target
 Before writing any code that includes any kind of **front-end** changes **ALLWAYS** read `docs/frontend.md` to learn about the core principles, rules and guidelines followed in this project.
 
 For the browser extension shared config, keep the precedence order explicit: runtime config first, manifest host_permissions second, and the hard-coded localhost fallback last. When updating `extension/chrome/manifest.json`, keep localhost wildcard permissions before any non-local example host so the manifest fallback stays deterministic.
+Extension Playwright helpers should load the checked-in `extension/chrome` directory directly and, when they need to self-start the backend, do so with `make backend-run` from the repository root instead of any generated worktree runtime file or deleted bootstrap script.

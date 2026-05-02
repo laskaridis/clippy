@@ -404,7 +404,7 @@
         "task-05",
         "task-10"
       ],
-      "status": "pending",
+      "status": "completed",
       "implementation_notes": [
         "Keep the recent-backend-log capture behavior if practical; only remove the old runtime-artifact contract.",
         "Use repo-root-relative commands so the helper works from `extension/` during `pnpm run test:e2e`."

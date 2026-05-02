@@ -2,7 +2,6 @@ import { chromium, BrowserContext, Page } from "@playwright/test";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { createHash } from "node:crypto";
 import { spawn, spawnSync, ChildProcess } from "node:child_process";
 
 const E2E_EMAIL = "extension-e2e-user@example.com";
@@ -10,7 +9,7 @@ const E2E_PASSWORD = "Password123!";
 
 const REPO_ROOT = path.resolve(process.cwd(), "..");
 const BACKEND_DIR = path.join(REPO_ROOT, "backend");
-const BACKEND_WORKTREE_SCRIPT = path.join(BACKEND_DIR, "scripts", "bootsrap.sh");
+const EXTENSION_DIR = path.join(REPO_ROOT, "extension", "chrome");
 const BACKEND_LOG_LINE_LIMIT = 80;
 
 let backendProcess: ChildProcess | null = null;
@@ -18,38 +17,22 @@ let backendStartupError: Error | null = null;
 const backendStdoutBuffer: string[] = [];
 const backendStderrBuffer: string[] = [];
 
-function calculateWorktreeId(worktreeRoot: string): string {
-  return createHash("sha1").update(worktreeRoot).digest("hex").slice(0, 6);
+function normalizeApiBaseUrl(input: string): string {
+  return new URL(input).origin;
 }
 
-const WORKTREE_RUNTIME_FILE = path.resolve(
-  process.cwd(),
-  ".local",
-  `worktree-runtime-${path.basename(REPO_ROOT)}-${calculateWorktreeId(REPO_ROOT)}.json`
-);
-
-type WorktreeRuntime = {
-  backendBaseUrl: string;
-  backendHost: string;
-  backendPort: number;
-  databaseUrl: string;
-  envFile: string;
-  extensionDir: string;
-};
-
-function loadWorktreeRuntime(): WorktreeRuntime {
-  if (!fs.existsSync(WORKTREE_RUNTIME_FILE)) {
-    throw new Error(
-      "Missing extension/.local/worktree-runtime-<worktree-id>.json. Run `pnpm run prepare:worktree` in extension/ first."
-    );
+function resolveBackendBaseUrl(): string {
+  const explicitApiBaseUrl = process.env.WEBCLIPPINGS_API_BASE_URL;
+  if (explicitApiBaseUrl) {
+    return normalizeApiBaseUrl(explicitApiBaseUrl);
   }
-  const raw = fs.readFileSync(WORKTREE_RUNTIME_FILE, "utf8");
-  return JSON.parse(raw) as WorktreeRuntime;
+
+  const djangoDevPort = process.env.DJANGO_DEV_PORT || "8000";
+  return normalizeApiBaseUrl(`http://localhost:${djangoDevPort}`);
 }
 
-export const RUNTIME = loadWorktreeRuntime();
-export const BACKEND_BASE_URL = RUNTIME.backendBaseUrl;
-const BACKEND_HEALTHCHECK_URL = `http://127.0.0.1:${RUNTIME.backendPort}/accounts/login/`;
+export const BACKEND_BASE_URL = resolveBackendBaseUrl();
+const BACKEND_HEALTHCHECK_URL = `${BACKEND_BASE_URL}/accounts/login/`;
 
 function appendLogLines(buffer: string[], chunk: string): void {
   const lines = chunk
@@ -98,37 +81,7 @@ function collectBackendStartupLogs(process: ChildProcess): void {
   });
 }
 
-function loadBackendEnv(): NodeJS.ProcessEnv {
-  const command = `set -a; source "${RUNTIME.envFile}"; set +a; env -0`;
-  const result = spawnSync("bash", ["-lc", command], {
-    encoding: "utf8",
-    cwd: BACKEND_DIR,
-    env: process.env,
-    maxBuffer: 1024 * 1024 * 8,
-  });
-  if (result.status !== 0) {
-    throw new Error(
-      `Failed to load backend env file ${RUNTIME.envFile}\n${result.stdout}\n${result.stderr}`
-    );
-  }
-
-  const merged: NodeJS.ProcessEnv = { ...process.env };
-  for (const entry of result.stdout.split("\0")) {
-    if (!entry) {
-      continue;
-    }
-    const separator = entry.indexOf("=");
-    if (separator <= 0) {
-      continue;
-    }
-    const key = entry.slice(0, separator);
-    const value = entry.slice(separator + 1);
-    merged[key] = value;
-  }
-  return merged;
-}
-
-const BACKEND_ENV = loadBackendEnv();
+const BACKEND_ENV = process.env;
 
 export function runBackendCommand(args: string[]): string {
   const result = spawnSync("python", ["manage.py", ...args], {
@@ -182,8 +135,8 @@ export async function ensureBackendRunning(): Promise<void> {
   }
 
   resetBackendStartupLogs();
-  backendProcess = spawn(BACKEND_WORKTREE_SCRIPT, [String(RUNTIME.backendPort), "--no-reload"], {
-    cwd: BACKEND_DIR,
+  backendProcess = spawn("make", ["backend-run"], {
+    cwd: REPO_ROOT,
     stdio: "pipe",
     env: BACKEND_ENV,
   });
@@ -192,6 +145,16 @@ export async function ensureBackendRunning(): Promise<void> {
 
   backendProcess.on("error", (error) => {
     backendStartupError = error;
+  });
+
+  backendProcess.on("exit", (code, signal) => {
+    if (backendStartupError) {
+      return;
+    }
+
+    const exitReason =
+      code !== null ? `code ${code}` : signal !== null ? `signal ${signal}` : "unknown reason";
+    backendStartupError = new Error(`make backend-run exited with ${exitReason}`);
   });
 
   await waitForBackend();
@@ -233,8 +196,8 @@ export async function launchExtensionContext(): Promise<{
     headless,
     ignoreDefaultArgs: ["--disable-extensions"],
     args: [
-      `--disable-extensions-except=${RUNTIME.extensionDir}`,
-      `--load-extension=${RUNTIME.extensionDir}`,
+      `--disable-extensions-except=${EXTENSION_DIR}`,
+      `--load-extension=${EXTENSION_DIR}`,
       "--disable-crash-reporter",
     ],
   });
