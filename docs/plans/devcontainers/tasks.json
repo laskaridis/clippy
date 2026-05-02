@@ -553,7 +553,7 @@
         "task-09b",
         "task-09c"
       ],
-      "status": "pending",
+      "status": "completed",
       "implementation_notes": [
         "Keep these README updates focused on local-development runtime behavior.",
         "Do not rewrite unrelated architecture sections."

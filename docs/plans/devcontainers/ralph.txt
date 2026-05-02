@@ -16,6 +16,23 @@
 - Keep the feature-delivery gate shell script and its `SKILL.md` description in sync; if the script switches from a wrapper to `make` targets, update the skill text in the same pass.
 - Include `.agents/skills/` in repo-wide reference audits for runtime cleanup, because skill wrappers can keep obsolete filenames alive even after code and README cleanup.
 ---
+## [2026-05-02 09:16Z]
+- Task id
+  - task-17
+- What was implemented
+  - Rewrote `backend/README.md` to remove the host-side venv/bootstrap story, describe the devcontainer-first local development flow, and document `make backend-run` plus the host login URL.
+  - Reworked `infra/docker/README.md` so it names `dev-sandbox` explicitly and frames Dev Containers tooling as the supported local lifecycle entrypoint.
+  - Marked the task complete in `docs/plans/devcontainers/tasks.json`.
+- Files changed
+  - `backend/README.md`
+  - `infra/docker/README.md`
+  - `docs/plans/devcontainers/tasks.json`
+  - `docs/plans/devcontainers/ralph.txt`
+- **Learnings for future iterations:**
+  - Patterns discovered: backend-facing local docs should consistently point developers to `make backend-run` inside the devcontainer and verify the login page on `http://localhost:${DJANGO_DEV_PORT}/accounts/login/`.
+  - Gotchas encountered: removing the old venv/install section from `backend/README.md` can leave formatting drift if list bullets are not rechecked carefully.
+  - Useful context: `infra/docker/README.md` is still a good place to restate that Dev Containers tooling, not raw `docker compose`, is the supported lifecycle for the local sandbox.
+---
 ## [2026-05-02 09:13Z]
 - Task id
   - task-08b
