@@ -1,4 +1,5 @@
 ## Codebase Patterns
+- Keep the core local workflow documentation in the order: worktree, `.devcontainer/.env`, Dev Containers, `dev-sandbox`, then `make backend-run` for an explicit live backend.
 - Use `dev-sandbox` as the Dev Containers service name for the local sandbox, and publish the backend on the same `DJANGO_DEV_PORT` value inside the container and on the host.
 - Keep `.devcontainer/.env.example` focused on the minimal localhost contract: `ALLOWED_HOSTS` should cover `localhost`, `127.0.0.1`, and `[::1]`, and per-worktree hostnames should not be documented there.
 - Use the active container Python interpreter for bootstrap installs via `python -m pip`, and keep `.devcontainer/bootstrap.sh` as a thin wrapper that delegates setup to `make backend-init` and `make extension-init`.
@@ -279,4 +280,23 @@
   - Patterns discovered: delivery-gate skills should describe the same checks the shell wrapper enforces, otherwise the documentation becomes stale the moment the gate changes.
   - Gotchas encountered: the gate no longer needs any `.local/worktree-env-*.env` discovery, so future cleanup work should treat that pattern as legacy-only in this area.
   - Useful context: `--full-tests` now follows the repo’s primary verification target (`make all-verify`), which keeps the feature gate aligned with the rest of the devcontainer-first workflow.
+---
+## [2026-05-02 09:15Z]
+- Task id
+  - task-16
+- What was implemented
+  - Rewrote `docs/DEVELOPMENT_WORKFLOW.md` around the devcontainer-first sequence: worktree, `.devcontainer/.env`, Dev Containers, `dev-sandbox`, and explicit `make backend-run` when a live backend is needed.
+  - Updated `docs/TESTING.md` so test commands are framed as running inside the prepared devcontainer environment, with `make backend-run` called out before browser-dependent checks.
+  - Removed the deleted runtime-script debt entry from `docs/TECH_DEBT_BACKLOG.md` and recorded the workflow pattern in both `AGENTS.md` and the feature pattern log.
+- Files changed
+  - `docs/DEVELOPMENT_WORKFLOW.md`
+  - `docs/TESTING.md`
+  - `docs/TECH_DEBT_BACKLOG.md`
+  - `AGENTS.md`
+  - `docs/plans/devcontainers/tasks.json`
+  - `docs/plans/devcontainers/ralph.txt`
+- **Learnings for future iterations:**
+  - Patterns discovered: the repo's living workflow docs should always present the devcontainer path first, with `dev-sandbox` as the implementation shell and `DJANGO_DEV_PORT` as the host-visible differentiator.
+  - Gotchas encountered: updating the task tracker with a blind JSON patch can hit the wrong `status` field, so it is safer to re-read the targeted task block before assuming the update landed.
+  - Useful context: `make help` remains a useful smoke check for docs-only work because it confirms the command surface still advertises `backend-run` as the container-local backend entrypoint.
 ---

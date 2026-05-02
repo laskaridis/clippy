@@ -22,14 +22,6 @@ Keep entries actionable and current.
 
 ## Backlog
 
-### TD-001: Refactor bootsrap.sh into modular units
-- Scope: backend|infra
-- Impact: `backend/scripts/bootsrap.sh` is monolithic and tightly couples argument parsing, runtime resolution, docker orchestration, and Django lifecycle, which increases regression risk and slows safe iteration.
-- Status: Open
-- Created: 2026-02-28
-- Related: bootsrap.sh review finding (2)
-- Next actions: Split responsibilities into focused functions/files, keep the entrypoint as a thin orchestrator, and add targeted script-level tests for each execution path.
-
 ### TD-002: Remove unused Clip `(user, domain)` index
 - Scope: backend
 - Impact: The `(user, domain)` index appears unused by current product query paths; keeping it adds unnecessary write/storage overhead and schema complexity.

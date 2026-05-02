@@ -490,7 +490,7 @@
         "task-17",
         "task-18"
       ],
-      "status": "pending",
+      "status": "completed",
       "implementation_notes": [
         "Treat this as a pure removal task.",
         "Leave the unrelated worktree creation, cleanup, and audit skills intact."
@@ -520,7 +520,7 @@
         "task-10",
         "task-14"
       ],
-      "status": "pending",
+      "status": "completed",
       "implementation_notes": [
         "Keep the docs prescriptive and command-oriented.",
         "Do not document raw `docker compose up` as a supported user workflow."
