@@ -12,16 +12,8 @@ import {
 /**
  * Popup authentication E2E tests.
  *
- * This suite runs against a real Chromium extension runtime and Django backend.
- *
- * Worktree/runtime assumptions:
- * - `pnpm run build:worktree` has prepared
- *   `extension/.local/worktree-runtime-<worktree-id>.json`.
- * - The runtime file provides:
- *   - backendBaseUrl (browser-facing host/origin used for auth/cookies)
- *   - backendPort (local port used for health checks and backend startup)
- *   - envFile (worktree-scoped backend env file consumed by test helpers)
- *   - extensionDir (generated unpacked extension directory to load in Chromium)
+ * This suite runs against the checked-in `extension/chrome` tree and a Django
+ * backend started on demand by the shared test helper.
  *
  * Coverage:
  * - Signed-out popup shows login controls and hides save controls.
