@@ -29,6 +29,13 @@ The user MUST specify a root feature folder with the following files inside:
 9. Append your progress to `ralph.txt` under the specified feature folder.
 10. Commit ALL your changes.
 
+## Constraints
+
+- Validation tasks are read-only except for evidence/reporting files such as tasks.json and ralph.txt.
+- If validation finds a defect, record the blocker and generate a follow-up fix task instead of fixing product code inside the validation task.
+- Every task marked completed must have a matching progress entry in ralph.txt using the exact task id.
+- Only explicit bookkeeping files like tasks.json and ralph.txt may be edited implicitly; any other file must appear in the task’s files list.
+
 ## Progress Report Format
 
 You leave notes to yourself in `ralph.txt` which you can revisit in successive iterations.  For each iteration APPEND to ralph.txt (NEVER replace, always append to maintain traceability):
@@ -36,16 +43,28 @@ You leave notes to yourself in `ralph.txt` which you can revisit in successive i
 ```
 ## [Timestamp]
 - Task id
-- What was implemented
-- Files changed
-- **Learnings for future iterations:**
+- What was implemented:
+  - ...
+- Files changed:
+  - ...
+- Verification:
+  Records concrete evidence on how you know the task is actually done, for example:
+  - commands run and their outcome
+  - checks performed
+  - observed runtime results
+  - artifacts prduced
+  - ...
+- Learnings for future iterations:
   - Patterns discovered (e.g., "this codebase uses X for Y")
   - Gotchas encountered (e.g., "don't forget to update Z when changing W")
   - Useful context (e.g., "the evaluation panel is in component X")
+- Scope deviations:
+  -  Must explicitly list all unplanned files touched and why.
+- Follow up needed: If a validation or smoke-check task finds a defect, explicitly name the new fix task instead of silently folding the fix into the validation enty.
 ---
 ```
 
-The learnings section is CRITICAL - it helps future iterations avoid repeating mistakes and understand the codebase better.
+Keeping all sections are important - they help future iterations avoid repeating mistakes and understand the codebase better.
 
 ## Consolidate Patterns
 
