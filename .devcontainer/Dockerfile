@@ -1,3 +1,4 @@
+# syntax=docker/dockerfile:1.7
 FROM mcr.microsoft.com/devcontainers/base:ubuntu
 
 ARG DEBIAN_FRONTEND=noninteractive
@@ -90,6 +91,27 @@ RUN arch="$(dpkg --print-architecture)" \
     && tar -xzf /tmp/gh.tar.gz -C /tmp \
     && install "/tmp/gh_${GH_VERSION}_linux_${gh_arch}/bin/gh" /usr/local/bin/gh \
     && rm -rf "/tmp/gh_${GH_VERSION}_linux_${gh_arch}" /tmp/gh.tar.gz
+
+# Install a reusable askpass helper so Git can reuse the sandbox token after startup.
+RUN cat >/usr/local/bin/devcontainer-git-askpass.sh <<'EOF'
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+case "${1:-}" in
+  *Username*)
+    printf '%s\n' "x-access-token"
+    ;;
+  *Password*)
+    printf '%s\n' "${GIT_AUTH_TOKEN:?GIT_AUTH_TOKEN must be set}"
+    ;;
+  *)
+    printf '\n'
+    ;;
+esac
+EOF
+RUN chmod 0755 /usr/local/bin/devcontainer-git-askpass.sh \
+    && git config --system core.askPass /usr/local/bin/devcontainer-git-askpass.sh
 
 # Install Codex during the image build so repeated container starts hit Docker cache.
 RUN npm config set cafile /etc/ssl/certs/ca-certificates.crt \

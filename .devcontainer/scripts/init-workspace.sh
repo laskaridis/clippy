@@ -5,6 +5,7 @@ set -euo pipefail
 workspace_dir=/workspace
 workspace_git_dir="${workspace_dir}/.git"
 metadata_file="${workspace_git_dir}/devcontainer-sandbox.env"
+askpass_script=/usr/local/bin/devcontainer-git-askpass.sh
 
 require_input() {
   local name="$1"
@@ -17,29 +18,6 @@ require_input() {
 require_input SANDBOX_REPO_URL
 require_input GIT_AUTH_TOKEN
 require_input SANDBOX_ID
-
-askpass_script="$(mktemp /tmp/init-workspace-askpass.XXXXXX)"
-cleanup() {
-  rm -f "${askpass_script}"
-}
-trap cleanup EXIT
-
-cat >"${askpass_script}" <<'EOF'
-#!/usr/bin/env bash
-
-case "${1:-}" in
-  *Username*)
-    printf '%s\n' "x-access-token"
-    ;;
-  *Password*)
-    printf '%s\n' "${GIT_AUTH_TOKEN:?GIT_AUTH_TOKEN must be set}"
-    ;;
-  *)
-    printf '\n'
-    ;;
-esac
-EOF
-chmod 0700 "${askpass_script}"
 
 git_with_auth() {
   GIT_TERMINAL_PROMPT=0 GIT_ASKPASS="${askpass_script}" git "$@"

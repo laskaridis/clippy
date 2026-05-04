@@ -4,6 +4,7 @@
 - Feature quickstarts should describe the launcher-side host checkout, the sandbox input/preflight contract, Dev Containers attach, and `make backend-run` in that order.
 - Use `dev-sandbox` as the Dev Containers service name for the local sandbox, and publish the backend on the same `DJANGO_DEV_PORT` value inside the container and on the host.
 - Keep sandbox clone metadata under the repo's `.git/` directory and gate reopen logic on both the marker contents and `origin` remote URL so the working tree stays clean.
+- For devcontainer Git auth that must survive beyond workspace startup, bake a reusable askpass helper into the image and point Git's system config at it instead of relying on a one-shot temp helper.
 - Keep `.devcontainer/.env.example` focused on the minimal localhost contract: `ALLOWED_HOSTS` should cover `localhost`, `127.0.0.1`, and `[::1]`, and per-worktree hostnames should not be documented there.
 - Use the active container Python interpreter for bootstrap installs via `python -m pip`, and keep `.devcontainer/bootstrap.sh` as a thin wrapper that delegates setup to `make backend-init` and `make extension-init`.
 - Host-side devcontainer preflight scripts should reject dirty trees, require explicit sandbox inputs, and generate `.devcontainer/.env` from `.devcontainer/.env.example` instead of hard-coding duplicated defaults.
@@ -22,6 +23,32 @@
 - Include `.agents/skills/` in repo-wide reference audits for runtime cleanup, because skill wrappers can keep obsolete filenames alive even after code and README cleanup.
 - When superseding an ADR, create a new numbered ADR with an explicit supersession statement instead of rewriting the older ADR's historical narrative.
 - If `.devcontainer/bootstrap.sh` delegates extension setup to `make extension-init`, the devcontainer image itself must install the pinned `pnpm` version first; otherwise `devcontainer up` fails during post-create.
+---
+## [2026-05-04 10:55Z]
+- Task id
+  - task-29
+- What was implemented:
+  - Ran the final isolated-clone validation pass against authenticated local sandboxes `devcontainer-final-a2` and `devcontainer-final-b2`.
+  - Verified first-start clone into `/workspace`, same-`SANDBOX_ID` reopen reuse with the `.git` marker preserved, and parallel `SANDBOX_ID` isolation with distinct compose projects and named workspace volumes.
+  - Confirmed the remaining Git-auth gap: `git fetch` from inside the sandbox failed because the transient askpass helper created during clone does not survive after `init-workspace.sh` exits, so `git push` is blocked for the same reason.
+- Files changed:
+  - `docs/plans/devcontainers/spec.md`
+  - `docs/plans/devcontainers/tasks.json`
+  - `docs/plans/devcontainers/ralph.txt`
+- Verification:
+  - `SANDBOX_REPO_URL=http://host.docker.internal:18081/repo.git GIT_AUTH_TOKEN=test-token SANDBOX_ID=devcontainer-final-a2 bash .devcontainer/scripts/preflight.sh` generated a valid `.devcontainer/.env` for the first sandbox.
+  - `docker compose --env-file /tmp/devcontainer-final-a2.env -f .devcontainer/docker-compose.yml up -d --build dev-sandbox` started the first sandbox and cloned `origin/master` into `/workspace` on local `master`.
+  - `docker compose --env-file /tmp/devcontainer-final-a2.env -f .devcontainer/docker-compose.yml down && docker compose --env-file /tmp/devcontainer-final-a2.env -f .devcontainer/docker-compose.yml up -d dev-sandbox` reopened the same sandbox and preserved `/workspace/.git/validation-marker`.
+  - `docker compose --env-file /tmp/devcontainer-final-b2.env -f .devcontainer/docker-compose.yml up -d --build dev-sandbox` started a second sandbox with a different `SANDBOX_ID` and a distinct named workspace volume.
+  - `docker compose --env-file /tmp/devcontainer-final-a2.env -f .devcontainer/docker-compose.yml exec -T dev-sandbox bash -lc 'cd /workspace; git fetch origin; ...'` failed with `fatal: could not read Username for 'http://host.docker.internal:18081': No such device or address`, proving the token-backed helper is not available for post-clone fetch/push yet.
+- Learnings for future iterations:
+  - Patterns discovered: first-clone auth can succeed while later fetch/push still fail if the askpass helper is only scoped to the clone command.
+  - Gotchas encountered: the validation remote must be reachable from the container, and `host.docker.internal` works only when the test HTTP server binds to all interfaces rather than loopback.
+  - Useful context: the restart/reopen behavior is correct; the remaining work is entirely about making the token helper available for subsequent Git operations without persisting credentials into repository metadata.
+- Scope deviations:
+  - None.
+- Follow up needed:
+  - `task-30`
 ---
 ## [2026-05-04 10:47Z]
 - Task id
@@ -468,6 +495,35 @@
   - Useful context: `initializeCommand` is the right host-side hook for the sandbox-input gate because it runs before container startup and before any post-create bootstrap.
 - Scope deviations:
   - `AGENTS.md` was updated to record the reusable preflight pattern for future devcontainer work.
+- Follow up needed:
+  - None.
+---
+## [2026-05-04 11:01Z]
+- Task id
+  - task-30
+- What was implemented:
+  - Baked a reusable `devcontainer-git-askpass.sh` helper into the devcontainer image and configured Git's system config to use it so HTTPS auth keeps working after `init-workspace.sh` exits.
+  - Updated `.devcontainer/devcontainer.json` to advertise the askpass helper in `remoteEnv` and keep terminal prompting disabled.
+  - Simplified `.devcontainer/scripts/init-workspace.sh` to use the baked helper path instead of creating a one-shot temp script.
+  - Recorded the new devcontainer Git-auth pattern in the repo guidance so future work reuses the same approach.
+- Files changed:
+  - `.devcontainer/Dockerfile`
+  - `.devcontainer/devcontainer.json`
+  - `.devcontainer/scripts/init-workspace.sh`
+  - `AGENTS.md`
+  - `docs/plans/devcontainers/tasks.json`
+  - `docs/plans/devcontainers/ralph.txt`
+- Verification:
+  - `bash -n .devcontainer/scripts/init-workspace.sh` succeeded.
+  - `git diff --check` succeeded.
+  - `docker build -t devcontainer-git-auth-check -f .devcontainer/Dockerfile .devcontainer` completed successfully, including the heredoc helper and `git config --system core.askPass` layer.
+  - `docker run --rm -e GIT_AUTH_TOKEN=test-token devcontainer-git-auth-check bash -lc '... authenticated fetch/push smoke test passed'` proved clone, `git fetch`, and `git push` work against a local authenticated Git HTTP server using only the sandbox token and without embedding credentials in the remote URL.
+- Learnings for future iterations:
+  - Patterns discovered: the askpass helper must be image-baked and paired with system Git config if it needs to survive beyond the workspace initialization shell.
+  - Gotchas encountered: Dockerfile heredoc support needs an explicit `# syntax=docker/dockerfile:1.7` directive at the top of the file.
+  - Useful context: the `devcontainer` launcher and the in-container Git config now agree on the same helper path, which keeps clone-time and interactive auth behavior aligned.
+- Scope deviations:
+  - `AGENTS.md` was updated to preserve the reusable devcontainer Git-auth pattern, even though it was not listed in task-30's file set.
 - Follow up needed:
   - None.
 ---

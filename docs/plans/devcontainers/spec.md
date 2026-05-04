@@ -22,6 +22,7 @@ This follow-on change replaces that live bind mount with a per-sandbox Docker na
 - [ ] Add token-backed Git auth inside the sandbox for clone, fetch, and push without persisting the token to `.git/config` or remote URLs.
 - [ ] Update living docs, quickstarts, and the architecture record to describe the isolated-clone sandbox workflow instead of the bind-mounted workflow.
 - [ ] Run the isolated-clone validation flow and record evidence for first clone, same-`SANDBOX_ID` reopen, parallel sandboxes, host-change isolation, and in-sandbox Git operations.
+- [x] (2026-05-04 10:55Z) Ran the final isolated-clone validation sweep on `devcontainer-final-a2` and `devcontainer-final-b2`: first-start clone, same-`SANDBOX_ID` reopen, and parallel `SANDBOX_ID` isolation passed, but `git fetch` and `git push` from inside `/workspace` still fail because the transient askpass helper does not survive past the clone step. Follow-up: `task-30`.
 
 ## Surprises & Discoveries
 
@@ -36,6 +37,9 @@ This follow-on change replaces that live bind mount with a per-sandbox Docker na
 
 - Observation: the new source-isolation requirement shifts the critical contract from “unique `DJANGO_DEV_PORT` per worktree” to “stable `SANDBOX_ID` per sandbox plus unique backend ports when two sandboxes run live backends at once”.
   Evidence: the named-volume workspace and compose project identity are now derived from `SANDBOX_ID`, while host-browser verification still uses `DJANGO_DEV_PORT`.
+
+- Observation: the current `init-workspace.sh` askpass helper only covers the initial clone invocation; later `git fetch` and `git push` inside the sandbox no longer have credentials once the script exits.
+  Evidence: `git fetch origin` from inside `/workspace` failed with `fatal: could not read Username for 'http://host.docker.internal:18081': No such device or address` during the final validation pass.
 
 ## Decision Log
 
@@ -63,6 +67,10 @@ This follow-on change replaces that live bind mount with a per-sandbox Docker na
   Rationale: HTTPS token auth is the required v1 mode, but the token should not be persisted into repository metadata that can leak through later inspection or commits.
   Date/Author: 2026-05-03 / Codex
 
+- Decision: token-backed Git auth must remain available to subsequent shell commands in `/workspace`, not just the one-time clone step.
+  Rationale: the validation target includes `git fetch` and `git push`, and clone-only auth is insufficient for the accepted sandbox workflow.
+  Date/Author: 2026-05-04 / Codex
+
 - Decision: keep `dev-sandbox` as an idle development sandbox and keep `make backend-run` as the explicit backend start command inside the cloned workspace.
   Rationale: the source-isolation change does not alter the runtime-process contract established by the first migration.
   Date/Author: 2026-05-03 / Codex
@@ -71,7 +79,7 @@ This follow-on change replaces that live bind mount with a per-sandbox Docker na
 
 The previous phase of work achieved its intended outcome for the bind-mounted devcontainer model: the repository has one clear local runtime story, the legacy bootstrap layer is gone, and the existing validation evidence is recorded in this file. That work should remain visible here because the isolated-clone plan builds on it rather than replacing it with an unrelated workflow.
 
-That said, the old plan now overstates completion if read as the current target state. The repository is not finished with sandbox isolation while `.devcontainer/docker-compose.yml` still bind-mounts the host checkout into `/workspace`. This follow-on plan reopens the ExecPlan with a narrower goal: preserve the successful runtime simplification, but move source isolation into a named Docker volume populated by an in-container clone.
+The isolated-clone work is now largely in place. The follow-on change moved `/workspace` onto a per-sandbox named volume, proved first clone and reopen reuse, and confirmed that two `SANDBOX_ID` values create separate workspace volumes. The remaining open issue is narrower: token-backed Git auth still needs to survive past workspace initialization so `git fetch` and `git push` work from an already-cloned sandbox without writing credentials into `.git/config`.
 
 ## Context and Orientation
 
@@ -176,6 +184,8 @@ The current repo fact that shaped this plan is worth recording directly.
 That host remote must remain informational only. The sandbox still requires explicit `SANDBOX_REPO_URL` so startup does not silently depend on host git metadata.
 
 The earlier bind-mounted migration remains valid historical context, but it is no longer the finish line for sandbox isolation.
+
+The final validation pass on 2026-05-04 confirmed the runtime isolation pieces and also surfaced the remaining Git-auth blocker.
 
 ## Interfaces and Dependencies
 
