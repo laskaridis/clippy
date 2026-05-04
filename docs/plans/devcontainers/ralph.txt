@@ -3,6 +3,7 @@
 - Use `dev-sandbox` as the Dev Containers service name for the local sandbox, and publish the backend on the same `DJANGO_DEV_PORT` value inside the container and on the host.
 - Keep `.devcontainer/.env.example` focused on the minimal localhost contract: `ALLOWED_HOSTS` should cover `localhost`, `127.0.0.1`, and `[::1]`, and per-worktree hostnames should not be documented there.
 - Use the active container Python interpreter for bootstrap installs via `python -m pip`, and keep `.devcontainer/bootstrap.sh` as a thin wrapper that delegates setup to `make backend-init` and `make extension-init`.
+- Host-side devcontainer preflight scripts should reject dirty trees, require explicit sandbox inputs, and generate `.devcontainer/.env` from `.devcontainer/.env.example` instead of hard-coding duplicated defaults.
 - Prefer `$(MAKE)` subtarget composition for aggregate Makefile targets instead of shell wrapper scripts.
 - Keep `make backend-run` as the explicit Django launch path inside the devcontainer: `cd backend && python manage.py migrate`, bootstrap the admin user with `apps.accounts.bootstrap.ensure_admin_user_from_env`, then run `python manage.py runserver 0.0.0.0:${DJANGO_DEV_PORT}`.
 - Backend test wrappers should assume the devcontainer is already prepared and call `python manage.py test ...` directly from `backend/` without re-running runtime bootstrap helpers.
@@ -388,4 +389,31 @@
   - Patterns discovered: the repo's living workflow docs should always present the devcontainer path first, with `dev-sandbox` as the implementation shell and `DJANGO_DEV_PORT` as the host-visible differentiator.
   - Gotchas encountered: updating the task tracker with a blind JSON patch can hit the wrong `status` field, so it is safer to re-read the targeted task block before assuming the update landed.
   - Useful context: `make help` remains a useful smoke check for docs-only work because it confirms the command surface still advertises `backend-run` as the container-local backend entrypoint.
+---
+## [2026-05-04 10:24Z]
+- Task id
+  - task-22
+- What was implemented:
+  - Added `.devcontainer/scripts/preflight.sh` to reject dirty host trees, require `SANDBOX_REPO_URL`, `GIT_AUTH_TOKEN`, and `SANDBOX_ID`, and generate `.devcontainer/.env` from `.env.example` plus `COMPOSE_PROJECT_NAME`.
+  - Wired `.devcontainer/devcontainer.json` to run the preflight step via `initializeCommand`.
+  - Expanded `.devcontainer/.env.example` with comments documenting the required sandbox inputs alongside the existing Django/Postgres contract.
+- Files changed:
+  - `.devcontainer/devcontainer.json`
+  - `.devcontainer/.env.example`
+  - `.devcontainer/scripts/preflight.sh`
+  - `AGENTS.md`
+  - `docs/plans/devcontainers/tasks.json`
+  - `docs/plans/devcontainers/ralph.txt`
+- Verification:
+  - `bash -n .devcontainer/scripts/preflight.sh` succeeded.
+  - In a throwaway clean git repo that tracked the script and env example, the preflight script rejected a dirty tree, rejected a missing `SANDBOX_ID`, and wrote `.devcontainer/.env` with quoted sandbox inputs plus the preserved Django/Postgres values.
+  - Confirmed `initializeCommand` in `.devcontainer/devcontainer.json` points at `.devcontainer/scripts/preflight.sh`.
+- Learnings for future iterations:
+  - Patterns discovered: host-side devcontainer preflight scripts should fail fast on a dirty tree and generate `.devcontainer/.env` from the tracked example contract rather than embedding duplicate defaults.
+  - Gotchas encountered: the validation repo needed `.gitignore` entries for `.env` so the generated compose env file did not make the clean-tree check fail after a successful run.
+  - Useful context: `initializeCommand` is the right host-side hook for the sandbox-input gate because it runs before container startup and before any post-create bootstrap.
+- Scope deviations:
+  - `AGENTS.md` was updated to record the reusable preflight pattern for future devcontainer work.
+- Follow up needed:
+  - None.
 ---

@@ -697,7 +697,7 @@
         "`preflight.sh` contains the clean-tree check, required-var checks, and `.devcontainer/.env` generation logic."
       ],
       "dependencies": [],
-      "status": "pending",
+      "status": "completed",
       "implementation_notes": [
         "Build `.devcontainer/.env` from the tracked example/default contract instead of hard-coding duplicate defaults in the script.",
         "Write `COMPOSE_PROJECT_NAME=${SANDBOX_ID}` into `.devcontainer/.env` so Compose naming stays deterministic."
