@@ -725,7 +725,7 @@
       "dependencies": [
         "task-22"
       ],
-      "status": "pending",
+  "status": "completed",
       "implementation_notes": [
         "Treat this as an early host-side contract check before changing container startup.",
         "Keep validation local to the listed files; do not broaden into Compose or Docker changes."

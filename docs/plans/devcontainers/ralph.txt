@@ -417,3 +417,25 @@
 - Follow up needed:
   - None.
 ---
+## [2026-05-04 10:27Z]
+- Task id
+  - task-23
+- What was implemented:
+  - Smoke-tested the host preflight contract introduced in task-22.
+  - Verified the missing-input path fails with a clear `SANDBOX_ID` error when only `SANDBOX_REPO_URL` and `GIT_AUTH_TOKEN` are provided.
+  - Verified the success path writes `.devcontainer/.env` with `SANDBOX_REPO_URL`, `GIT_AUTH_TOKEN`, `SANDBOX_ID`, and `COMPOSE_PROJECT_NAME=devcontainer-smoke`, while preserving the Django/Postgres values from `.env.example`.
+- Files changed:
+  - `docs/plans/devcontainers/tasks.json`
+  - `docs/plans/devcontainers/ralph.txt`
+- Verification:
+  - `env SANDBOX_REPO_URL=https://github.com/laskaridis/clippy.git GIT_AUTH_TOKEN=test-token bash .devcontainer/scripts/preflight.sh` exited `1` and reported `Missing required sandbox input(s): SANDBOX_ID`.
+  - `env SANDBOX_REPO_URL=https://github.com/laskaridis/clippy.git GIT_AUTH_TOKEN=test-token SANDBOX_ID=devcontainer-smoke bash .devcontainer/scripts/preflight.sh` exited `0`.
+  - Inspected `.devcontainer/.env` and confirmed it retained `ALLOWED_HOSTS`, `DJANGO_DEV_PORT`, `POSTGRES_HOST`, `POSTGRES_PORT`, `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD`, and `DATABASE_URL` from the example contract plus the sandbox values.
+- Learnings for future iterations:
+  - Host preflight validation should be exercised both for a negative missing-input case and for the positive generated-env case before broader container changes land.
+  - The generated `.devcontainer/.env` needs to be removed after smoke testing so the worktree stays clean for the next task.
+- Scope deviations:
+  - None.
+- Follow up needed:
+  - None.
+---
