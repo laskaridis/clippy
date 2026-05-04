@@ -1,6 +1,7 @@
 ## Codebase Patterns
 - Keep the core local workflow documentation in the order: worktree, `.devcontainer/.env`, Dev Containers, `dev-sandbox`, then `make backend-run` for an explicit live backend.
 - Use `dev-sandbox` as the Dev Containers service name for the local sandbox, and publish the backend on the same `DJANGO_DEV_PORT` value inside the container and on the host.
+- Keep sandbox clone metadata under the repo's `.git/` directory and gate reopen logic on both the marker contents and `origin` remote URL so the working tree stays clean.
 - Keep `.devcontainer/.env.example` focused on the minimal localhost contract: `ALLOWED_HOSTS` should cover `localhost`, `127.0.0.1`, and `[::1]`, and per-worktree hostnames should not be documented there.
 - Use the active container Python interpreter for bootstrap installs via `python -m pip`, and keep `.devcontainer/bootstrap.sh` as a thin wrapper that delegates setup to `make backend-init` and `make extension-init`.
 - Host-side devcontainer preflight scripts should reject dirty trees, require explicit sandbox inputs, and generate `.devcontainer/.env` from `.devcontainer/.env.example` instead of hard-coding duplicated defaults.
@@ -416,6 +417,34 @@
   - `AGENTS.md` was updated to record the reusable preflight pattern for future devcontainer work.
 - Follow up needed:
   - None.
+---
+## [2026-05-04 10:31Z]
+- Task id
+  - task-24
+- What was implemented:
+  - Replaced the live `/workspace` bind mount with a named `workspace` volume in `.devcontainer/docker-compose.yml`.
+  - Baked `init-workspace.sh` into the devcontainer image and made the container command run it before `sleep infinity`.
+  - Added first-start clone logic that checks for `/workspace/.git`, clones `SANDBOX_REPO_URL` into `/workspace` when needed, creates a metadata marker under `.git`, and creates a local `master` branch tracking `origin/master`.
+  - Added reopen logic that reuses the existing clone and fails fast when the recorded sandbox metadata or `origin` remote URL does not match the current `SANDBOX_ID` and `SANDBOX_REPO_URL`.
+  - Used an ephemeral `GIT_ASKPASS` helper for token-backed Git authentication without writing credentials into `.git/config` or the remote URL.
+- Files changed:
+  - `.devcontainer/docker-compose.yml`
+  - `.devcontainer/Dockerfile`
+  - `.devcontainer/scripts/init-workspace.sh`
+  - `docs/plans/devcontainers/tasks.json`
+  - `docs/plans/devcontainers/ralph.txt`
+- Verification:
+  - `bash -n .devcontainer/scripts/init-workspace.sh` succeeded.
+  - `env DJANGO_DEV_PORT=8794 ALLOWED_HOSTS='localhost,127.0.0.1,[::1]' POSTGRES_HOST=postgres POSTGRES_PORT=5432 POSTGRES_DB=webclippings POSTGRES_USER=webclippings POSTGRES_PASSWORD=password DATABASE_URL='postgres://webclippings:password@postgres:5432/webclippings' docker compose -f .devcontainer/docker-compose.yml config` succeeded.
+  - Ran a temp-repo smoke test against a sed-copied version of `init-workspace.sh` that verified first clone, same-`SANDBOX_ID` reopen, preserved `master` tracking `origin/master`, preserved the origin URL, and a mismatched `SANDBOX_ID` failure path.
+- Learnings for future iterations:
+  - Patterns discovered: storing sandbox marker state under `.git/` keeps the visible working tree clean while still allowing precise reopen checks.
+  - Gotchas encountered: `docker compose config` needs a sample `DJANGO_DEV_PORT` in the environment, otherwise Compose treats the port mapping as blank and exits before validating the file.
+  - Useful context: the reopen guard is stronger when it checks both the stored metadata and the live `origin` URL, which catches stale volume reuse and unexpected remote drift.
+- Scope deviations:
+  - None.
+- Follow up needed:
+  - `task-25` remains pending as the real devcontainer runtime smoke check for the new volume-and-clone contract.
 ---
 ## [2026-05-04 10:27Z]
 - Task id

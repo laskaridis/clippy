@@ -731,10 +731,10 @@
         "Keep validation local to the listed files; do not broaden into Compose or Docker changes."
       ]
     },
-    {
-      "id": "task-24",
-      "task_type": "implementation",
-      "goal": "Replace the live `/workspace` bind mount with a named volume and initialize that volume with the repo clone on first container start.",
+  {
+    "id": "task-24",
+    "task_type": "implementation",
+    "goal": "Replace the live `/workspace` bind mount with a named volume and initialize that volume with the repo clone on first container start.",
       "files": [
         ".devcontainer/docker-compose.yml",
         ".devcontainer/Dockerfile",
@@ -753,15 +753,15 @@
         "`.devcontainer/Dockerfile` copies the init script into the image and makes it executable.",
         "`.devcontainer/scripts/init-workspace.sh` contains first-clone logic, reuse logic, and metadata mismatch failure logic."
       ],
-      "dependencies": [
-        "task-23"
-      ],
-      "status": "pending",
-      "implementation_notes": [
-        "Keep PostgreSQL and the existing backend port exposure behavior intact in this task.",
-        "Use local `master` tracking `origin/master` as the initial clone checkout."
-      ]
-    },
+    "dependencies": [
+      "task-23"
+    ],
+    "status": "completed",
+    "implementation_notes": [
+      "Keep PostgreSQL and the existing backend port exposure behavior intact in this task.",
+      "Use local `master` tracking `origin/master` as the initial clone checkout."
+    ]
+  },
     {
       "id": "task-25",
       "task_type": "validation",
