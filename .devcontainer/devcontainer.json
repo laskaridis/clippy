@@ -11,6 +11,7 @@
     "remoteEnv": {
     },
 
+    "initializeCommand": "bash .devcontainer/scripts/preflight.sh",
     "postCreateCommand": "bash .devcontainer/bootstrap.sh",
 
     "customizations": {
