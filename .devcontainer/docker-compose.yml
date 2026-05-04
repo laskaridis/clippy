@@ -15,6 +15,9 @@ services:
       - POSTGRES_USER
       - POSTGRES_PASSWORD
       - DATABASE_URL
+      - SANDBOX_REPO_URL
+      - GIT_AUTH_TOKEN
+      - SANDBOX_ID
     ports:
       - "${DJANGO_DEV_PORT}:${DJANGO_DEV_PORT}"
   postgres:
