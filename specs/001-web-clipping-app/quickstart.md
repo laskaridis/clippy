@@ -3,7 +3,7 @@
 **Feature**: [specs/001-web-clipping-app/spec.md](specs/001-web-clipping-app/spec.md)  
 **Plan**: [specs/001-web-clipping-app/plan.md](specs/001-web-clipping-app/plan.md)
 
-This quickstart explains how to run the Django backend, PostgreSQL, and the Chrome extension in a devcontainer-first local workflow.
+This quickstart explains how to run the Django backend, PostgreSQL, and the Chrome extension in a devcontainer-first local workflow. The host checkout is launcher/config only; the live repository lives inside the `dev-sandbox` clone at `/workspace`.
 
 ---
 
@@ -15,15 +15,18 @@ This quickstart explains how to run the Django backend, PostgreSQL, and the Chro
 
 ---
 
-## 1. Clone and Set Up Environment
+## 1. Prepare Sandbox Inputs
 
 ```bash
-git clone <repo-url>
-cd webclippings
-cp .devcontainer/.env.example .devcontainer/.env
+export SANDBOX_REPO_URL=<repo-url>
+export GIT_AUTH_TOKEN=<token>
+export SANDBOX_ID=<unique-sandbox-id>
+bash .devcontainer/scripts/preflight.sh
 ```
 
-Set a unique backend port when another worktree may be running at the same time. Keep the host settings localhost-oriented:
+The preflight step writes `.devcontainer/.env` from `.devcontainer/.env.example`, records the sandbox inputs, and sets `COMPOSE_PROJECT_NAME=${SANDBOX_ID}`.
+
+Set a unique backend port when another sandbox may be running at the same time. Keep the host settings localhost-oriented:
 
 ```bash
 DJANGO_SECRET_KEY=changeme
@@ -36,7 +39,7 @@ ALLOWED_HOSTS=localhost,127.0.0.1,[::1]
 
 ## 2. Open the Worktree in Dev Containers
 
-Use the checked-in `.devcontainer/` configuration and let the `dev-sandbox` service start idle.
+Use the checked-in `.devcontainer/` configuration and let the `dev-sandbox` service clone the repository into its own `/workspace` volume.
 
 ---
 

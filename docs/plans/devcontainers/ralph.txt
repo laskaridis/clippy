@@ -1,6 +1,7 @@
 ## Codebase Patterns
 - Treat the host checkout as launcher-side only; `/workspace` inside `dev-sandbox` is the cloned repo for the active sandbox.
 - Keep the core local workflow documentation in the order: worktree, `.devcontainer/.env`, Dev Containers, `dev-sandbox`, then `make backend-run` for an explicit live backend.
+- Feature quickstarts should describe the launcher-side host checkout, the sandbox input/preflight contract, Dev Containers attach, and `make backend-run` in that order.
 - Use `dev-sandbox` as the Dev Containers service name for the local sandbox, and publish the backend on the same `DJANGO_DEV_PORT` value inside the container and on the host.
 - Keep sandbox clone metadata under the repo's `.git/` directory and gate reopen logic on both the marker contents and `origin` remote URL so the working tree stays clean.
 - Keep `.devcontainer/.env.example` focused on the minimal localhost contract: `ALLOWED_HOSTS` should cover `localhost`, `127.0.0.1`, and `[::1]`, and per-worktree hostnames should not be documented there.
@@ -469,6 +470,30 @@
   - `AGENTS.md` was updated to record the reusable preflight pattern for future devcontainer work.
 - Follow up needed:
   - None.
+---
+## [2026-05-04 10:49Z]
+- Task id
+  - task-28
+- What was implemented:
+  - Updated both feature quickstarts so they describe the host checkout as launcher/config only, introduce the sandbox-input and `.devcontainer/.env` preflight contract, and keep the explicit `make backend-run` plus localhost verification flow.
+  - Reframed the label-filter quickstart so dependency setup happens after the Dev Containers attach step, inside the isolated `dev-sandbox` clone.
+  - Added one reusable progress-log pattern for future quickstarts about the launcher-side host checkout, sandbox preflight, Dev Containers attach, and explicit backend start order.
+- Files changed:
+  - `specs/001-web-clipping-app/quickstart.md`
+  - `specs/002-label-filter-sidebar/quickstart.md`
+  - `docs/plans/devcontainers/tasks.json`
+  - `docs/plans/devcontainers/ralph.txt`
+- Verification:
+  - `git diff --check` completed without whitespace or patch-format errors.
+  - `rg -n "SANDBOX_REPO_URL|GIT_AUTH_TOKEN|SANDBOX_ID|make backend-run|http://localhost:<DJANGO_DEV_PORT>" specs/001-web-clipping-app/quickstart.md specs/002-label-filter-sidebar/quickstart.md` confirmed both quickstarts now reference the sandbox inputs, explicit backend start, and localhost verification flow.
+  - `jq -r '.tasks[] | select(.id=="task-28") | .status' docs/plans/devcontainers/tasks.json` returned `completed`.
+- Learnings for future iterations:
+  - Patterns discovered: feature quickstarts read best when they mirror the actual launcher/runtime split instead of describing the host checkout as the live workspace.
+  - Gotchas encountered: the label-filter quickstart needed a small section reorder so dependency installation happened after Dev Containers attach, which keeps the narrative consistent with the isolated clone contract.
+  - Useful context: the sandbox-input wording now appears in both feature quickstarts, which should reduce future drift when startup steps are updated again.
+- Scope deviations:
+  - None.
+- Follow up needed: none
 ---
 ## [2026-05-04 10:45Z]
 - Task id

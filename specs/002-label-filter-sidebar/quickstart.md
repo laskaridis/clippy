@@ -3,7 +3,7 @@
 **Feature**: [specs/002-label-filter-sidebar/spec.md](specs/002-label-filter-sidebar/spec.md)  
 **Plan**: [specs/002-label-filter-sidebar/plan.md](specs/002-label-filter-sidebar/plan.md)
 
-This quickstart describes how to run and validate the label-filter sidebar/drawer behavior end to end.
+This quickstart describes how to run and validate the label-filter sidebar/drawer behavior end to end. The host checkout is launcher/config only; the active sandbox clone lives inside `dev-sandbox` at `/workspace`.
 
 ---
 
@@ -12,12 +12,28 @@ This quickstart describes how to run and validate the label-filter sidebar/drawe
 - Docker and Dev Containers support
 - Node 18+ and pnpm (for extension/tooling commands where needed)
 - Repository initialized in a compliant feature worktree
+- Sandbox inputs available for `.devcontainer/scripts/preflight.sh`: `SANDBOX_REPO_URL`, `GIT_AUTH_TOKEN`, and `SANDBOX_ID`
 
 ---
 
-## 1. Install Dependencies
+## 1. Prepare and Attach the Sandbox
 
-From repository root:
+From repository root, generate `.devcontainer/.env` and open the worktree in Dev Containers:
+
+```bash
+export SANDBOX_REPO_URL=<repo-url>
+export GIT_AUTH_TOKEN=<token>
+export SANDBOX_ID=<unique-sandbox-id>
+bash .devcontainer/scripts/preflight.sh
+```
+
+The generated `.devcontainer/.env` keeps the backend and PostgreSQL settings in sync with the sandbox inputs and `COMPOSE_PROJECT_NAME=${SANDBOX_ID}`.
+
+Then attach the worktree in Dev Containers so `dev-sandbox` clones the repository into its isolated `/workspace` volume.
+
+## 2. Install Dependencies
+
+After the sandbox clone is available, install dependencies inside `dev-sandbox`:
 
 ```bash
 make backend-init
@@ -26,19 +42,19 @@ make extension-init
 
 ---
 
-## 2. Start Backend in Current Worktree
+## 3. Start Backend in Current Worktree
 
-Open the worktree in Dev Containers, then start Django explicitly from inside `dev-sandbox`:
+Start Django explicitly from inside `dev-sandbox`:
 
 ```bash
 make backend-run
 ```
 
-If another worktree is already serving Django, set a unique `DJANGO_DEV_PORT` in `.devcontainer/.env` before starting the container.
+If another sandbox is already serving Django, set a unique `DJANGO_DEV_PORT` in the generated `.devcontainer/.env` before starting the container.
 
 ---
 
-## 3. Seed/Prepare User Data for Filtering Flows
+## 4. Seed/Prepare User Data for Filtering Flows
 
 Create or ensure:
 - At least 1 authenticated user
@@ -50,7 +66,7 @@ You can use existing admin tools or fixtures in backend tests for deterministic 
 
 ---
 
-## 4. Manual Verification Flow
+## 5. Manual Verification Flow
 
 1. Open `http://localhost:<DJANGO_DEV_PORT>/clips/` while authenticated.
 2. Select one label and verify only matching clips appear.
@@ -69,7 +85,7 @@ You can use existing admin tools or fixtures in backend tests for deterministic 
 
 ---
 
-## 5. Automated Test Execution
+## 6. Automated Test Execution
 
 Run targeted backend tests while iterating:
 
@@ -86,7 +102,7 @@ make all-verify
 
 ---
 
-## 6. Accessibility and Responsive Checks
+## 7. Accessibility and Responsive Checks
 
 Minimum checks:
 - Keyboard-only navigation for sidebar/drawer toggle, search, label selection, pill removal, and Clear all.
