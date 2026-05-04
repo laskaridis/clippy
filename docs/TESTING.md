@@ -1,6 +1,6 @@
 # Testing Guidelines
 
-Run tests inside the prepared devcontainer environment. Start `make backend-run` first if a test or browser flow needs a live Django server.
+Run tests inside the prepared devcontainer environment. The host checkout is only the launcher side; `/workspace` inside `dev-sandbox` is the cloned repo for the active sandbox. Start `make backend-run` first if a test or browser flow needs a live Django server.
 
 Minimum commands:
 
@@ -50,4 +50,6 @@ make all-verify
 - For API changes, align tests with the active OpenAPI contract under `specs/*/contracts/openapi.yaml` and update that contract when behavior changes.
 - Prefer targeted runs during iteration, then run broader suites before finishing.
 - For frontend accessibility work, run `pnpm run test:a11y` in `extension/`; the suite reports all findings and fails on serious/critical WCAG 2.1 A/AA violations.
-- Browser-driven checks should use the host `localhost:<DJANGO_DEV_PORT>` origin that the active worktree exposes.
+- Browser-driven checks should use the host `localhost:<DJANGO_DEV_PORT>` origin that the active sandbox exposes.
+- If you need to open Dev Containers from a host checkout, export `SANDBOX_REPO_URL`, `GIT_AUTH_TOKEN`, and `SANDBOX_ID` first so `initializeCommand` can generate `.devcontainer/.env`.
+- Keep browser checks pointed at `http://localhost:<DJANGO_DEV_PORT>`; do not rely on the host checkout as the live workspace.

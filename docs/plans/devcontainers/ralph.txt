@@ -1,4 +1,5 @@
 ## Codebase Patterns
+- Treat the host checkout as launcher-side only; `/workspace` inside `dev-sandbox` is the cloned repo for the active sandbox.
 - Keep the core local workflow documentation in the order: worktree, `.devcontainer/.env`, Dev Containers, `dev-sandbox`, then `make backend-run` for an explicit live backend.
 - Use `dev-sandbox` as the Dev Containers service name for the local sandbox, and publish the backend on the same `DJANGO_DEV_PORT` value inside the container and on the host.
 - Keep sandbox clone metadata under the repo's `.git/` directory and gate reopen logic on both the marker contents and `origin` remote URL so the working tree stays clean.
@@ -441,6 +442,29 @@
   - Useful context: `initializeCommand` is the right host-side hook for the sandbox-input gate because it runs before container startup and before any post-create bootstrap.
 - Scope deviations:
   - `AGENTS.md` was updated to record the reusable preflight pattern for future devcontainer work.
+- Follow up needed:
+  - None.
+---
+## [2026-05-04 10:45Z]
+- Task id
+  - task-26
+- What was implemented:
+  - Rewrote `docs/DEVELOPMENT_WORKFLOW.md`, `docs/TESTING.md`, and `backend/README.md` to describe the sandbox-input contract, generated `.devcontainer/.env`, `/workspace` as the cloned repo inside `dev-sandbox`, and `make backend-run` as the explicit backend start command.
+- Files changed:
+  - `docs/DEVELOPMENT_WORKFLOW.md`
+  - `docs/TESTING.md`
+  - `backend/README.md`
+  - `docs/plans/devcontainers/tasks.json`
+  - `docs/plans/devcontainers/ralph.txt`
+- Verification:
+  - `git diff --check`
+  - `rg -n "copy \`.devcontainer/.env.example\` and edit it manually|hand-create that file|active worktree exposes|host checkout is the live workspace|SANDBOX_REPO_URL|GIT_AUTH_TOKEN|SANDBOX_ID" docs/DEVELOPMENT_WORKFLOW.md docs/TESTING.md backend/README.md`
+  - `make help`
+- Learnings for future iterations:
+  - Treat the host checkout as launcher-side only; the active sandbox workspace lives in `/workspace` inside `dev-sandbox`.
+  - `initializeCommand` is the right place to generate `.devcontainer/.env` from sandbox inputs, so docs should not tell users to create it by hand.
+- Scope deviations:
+  - None.
 - Follow up needed:
   - None.
 ---
