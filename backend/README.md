@@ -10,10 +10,12 @@ Backend application publishing an API and a web application to manage clippings.
 
 ## Local development
 
-Create or reuse the worktree, set up the worktree's `.devcontainer/.env`, and
-open the checkout in Dev Containers. The `dev-sandbox` service is the sandbox
-for implementation work and stays idle until you run project commands inside
-it.
+Create or reuse the worktree on the host, export `SANDBOX_REPO_URL`,
+`GIT_AUTH_TOKEN`, and `SANDBOX_ID`, and open the checkout in Dev Containers.
+`initializeCommand` generates `.devcontainer/.env` from the tracked example
+file plus those sandbox inputs. The `dev-sandbox` service is the sandbox for
+implementation work, and `/workspace` inside it is the cloned repo for the
+active sandbox rather than the host checkout.
 
 ## Run server
 
