@@ -674,6 +674,232 @@
         "This is the only task in the list that requires manual Dev Containers tooling interaction.",
         "Do not mark it complete based on assumption; completion requires recorded evidence or a recorded blocker."
       ]
+    },
+    {
+      "id": "task-22",
+      "task_type": "implementation",
+      "goal": "Add the host-side preflight flow that validates sandbox inputs and generates the compose env file before Dev Containers startup.",
+      "files": [
+        ".devcontainer/devcontainer.json",
+        ".devcontainer/.env.example",
+        ".devcontainer/scripts/preflight.sh"
+      ],
+      "constraints": [
+        "Add `initializeCommand` in `devcontainer.json` that invokes the new preflight script from the repository root.",
+        "The preflight script must fail when `git status --porcelain --untracked-files=all` is non-empty.",
+        "The preflight script must require `SANDBOX_REPO_URL`, `GIT_AUTH_TOKEN`, and `SANDBOX_ID`.",
+        "The preflight script must write `.devcontainer/.env` and set `COMPOSE_PROJECT_NAME` equal to `SANDBOX_ID`.",
+        "Keep Docker and Compose edits out of this task."
+      ],
+      "acceptance_criteria": [
+        "`devcontainer.json` contains `initializeCommand` pointing at `.devcontainer/scripts/preflight.sh`.",
+        "`.env.example` documents the three required sandbox inputs alongside the existing Django/Postgres values.",
+        "`preflight.sh` contains the clean-tree check, required-var checks, and `.devcontainer/.env` generation logic."
+      ],
+      "dependencies": [],
+      "status": "pending",
+      "implementation_notes": [
+        "Build `.devcontainer/.env` from the tracked example/default contract instead of hard-coding duplicate defaults in the script.",
+        "Write `COMPOSE_PROJECT_NAME=${SANDBOX_ID}` into `.devcontainer/.env` so Compose naming stays deterministic."
+      ]
+    },
+    {
+      "id": "task-23",
+      "task_type": "validation",
+      "goal": "Smoke-test the host preflight contract immediately after it is introduced.",
+      "files": [
+        ".devcontainer/devcontainer.json",
+        ".devcontainer/.env.example",
+        ".devcontainer/scripts/preflight.sh"
+      ],
+      "constraints": [
+        "Do not edit files outside the listed set.",
+        "Verify one failure case for missing sandbox inputs and one success case that writes `.devcontainer/.env`.",
+        "If fixes are needed, keep them inside the listed files only."
+      ],
+      "acceptance_criteria": [
+        "Running the script without one required sandbox variable exits non-zero and names the missing input.",
+        "Running the script with sample sandbox values writes `.devcontainer/.env` containing `SANDBOX_REPO_URL`, `GIT_AUTH_TOKEN`, `SANDBOX_ID`, and `COMPOSE_PROJECT_NAME`.",
+        "The success path preserves the existing Django/Postgres values from `.env.example`."
+      ],
+      "dependencies": [
+        "task-22"
+      ],
+      "status": "pending",
+      "implementation_notes": [
+        "Treat this as an early host-side contract check before changing container startup.",
+        "Keep validation local to the listed files; do not broaden into Compose or Docker changes."
+      ]
+    },
+    {
+      "id": "task-24",
+      "task_type": "implementation",
+      "goal": "Replace the live `/workspace` bind mount with a named volume and initialize that volume with the repo clone on first container start.",
+      "files": [
+        ".devcontainer/docker-compose.yml",
+        ".devcontainer/Dockerfile",
+        ".devcontainer/scripts/init-workspace.sh"
+      ],
+      "constraints": [
+        "Remove `..:/workspace` from Compose and mount a named volume at `/workspace`.",
+        "Rely on `COMPOSE_PROJECT_NAME` from `.devcontainer/.env` so the actual Docker volume name resolves to `${SANDBOX_ID}_workspace`.",
+        "Make the container command run the image-baked `init-workspace.sh` before `sleep infinity`.",
+        "`init-workspace.sh` must clone only when `/workspace/.git` is absent, and must otherwise reuse the existing clone.",
+        "`init-workspace.sh` must create a small metadata marker that records `SANDBOX_ID` and `SANDBOX_REPO_URL`.",
+        "Git auth must use `GIT_AUTH_TOKEN` through ephemeral helper logic; do not write the token into `.git/config` or the remote URL."
+      ],
+      "acceptance_criteria": [
+        "`.devcontainer/docker-compose.yml` no longer contains `..:/workspace` and defines a named workspace volume.",
+        "`.devcontainer/Dockerfile` copies the init script into the image and makes it executable.",
+        "`.devcontainer/scripts/init-workspace.sh` contains first-clone logic, reuse logic, and metadata mismatch failure logic."
+      ],
+      "dependencies": [
+        "task-23"
+      ],
+      "status": "pending",
+      "implementation_notes": [
+        "Keep PostgreSQL and the existing backend port exposure behavior intact in this task.",
+        "Use local `master` tracking `origin/master` as the initial clone checkout."
+      ]
+    },
+    {
+      "id": "task-25",
+      "task_type": "validation",
+      "goal": "Smoke-test the isolated workspace startup immediately after the volume-and-clone contract lands.",
+      "files": [
+        ".devcontainer/docker-compose.yml",
+        ".devcontainer/Dockerfile",
+        ".devcontainer/scripts/init-workspace.sh"
+      ],
+      "constraints": [
+        "Validate both first-start and reopen behavior against the listed files only.",
+        "Check that `/workspace` is populated from the clone path, not from the host checkout.",
+        "If fixes are needed, keep them inside the listed files only."
+      ],
+      "acceptance_criteria": [
+        "First startup creates the workspace volume and clones the repo into `/workspace`.",
+        "Reopening the same `SANDBOX_ID` does not reclone and preserves the existing `/workspace/.git` state.",
+        "Editing a host file after startup does not change the corresponding file inside `/workspace`."
+      ],
+      "dependencies": [
+        "task-24"
+      ],
+      "status": "pending",
+      "implementation_notes": [
+        "Use the same sample `SANDBOX_ID` for the reuse check.",
+        "Keep this as a focused runtime smoke test before broader doc updates."
+      ]
+    },
+    {
+      "id": "task-26",
+      "task_type": "documentation",
+      "goal": "Rewrite the core workflow docs so they describe the generated env, isolated clone, and explicit backend-run flow.",
+      "files": [
+        "docs/DEVELOPMENT_WORKFLOW.md",
+        "docs/TESTING.md",
+        "backend/README.md"
+      ],
+      "constraints": [
+        "Replace \"copy `.devcontainer/.env.example` and edit it manually\" with \"export sandbox inputs and let `initializeCommand` generate `.devcontainer/.env`\".",
+        "State that the host checkout launches Dev Containers but `/workspace` inside `dev-sandbox` is the cloned repo.",
+        "Preserve `make backend-run` as the explicit backend start command inside the sandbox."
+      ],
+      "acceptance_criteria": [
+        "All three docs mention `SANDBOX_REPO_URL`, `GIT_AUTH_TOKEN`, and `SANDBOX_ID`.",
+        "All three docs describe `/workspace` as the isolated in-container clone rather than the live host checkout.",
+        "None of the three docs instruct the user to hand-create `.devcontainer/.env`."
+      ],
+      "dependencies": [
+        "task-25"
+      ],
+      "status": "pending",
+      "implementation_notes": [
+        "Keep examples concrete and host-vs-container responsibilities explicit.",
+        "Do not update ADRs or quickstarts in this task."
+      ]
+    },
+    {
+      "id": "task-27",
+      "task_type": "documentation",
+      "goal": "Publish the architecture record and supporting infra/extension docs for the isolated-clone sandbox model.",
+      "files": [
+        "docs/adrs/0007-isolated-devcontainer-workspace-clone.md",
+        "infra/docker/README.md",
+        "extension/README.md"
+      ],
+      "constraints": [
+        "Add a new numbered ADR; do not rewrite `0006`.",
+        "The ADR must explicitly supersede the bind-mounted local-workspace assumption from `0006` for sandbox source isolation.",
+        "`infra/docker/README.md` must describe the named volume plus `COMPOSE_PROJECT_NAME=${SANDBOX_ID}` behavior.",
+        "`extension/README.md` must describe developing against the cloned repo inside `dev-sandbox`."
+      ],
+      "acceptance_criteria": [
+        "The new ADR states that the live workspace is a per-sandbox clone in a named Docker volume.",
+        "`infra/docker/README.md` no longer describes the host checkout as the live `/workspace` content.",
+        "`extension/README.md` aligns with the isolated sandbox workflow and still points developers to the existing extension commands."
+      ],
+      "dependencies": [
+        "task-25"
+      ],
+      "status": "pending",
+      "implementation_notes": [
+        "Keep the ADR focused on the source-isolation change and the required sandbox inputs.",
+        "Do not broaden into unrelated local workflow history."
+      ]
+    },
+    {
+      "id": "task-28",
+      "task_type": "documentation",
+      "goal": "Update the checked-in feature quickstarts so their local workflow matches the isolated sandbox clone model.",
+      "files": [
+        "specs/001-web-clipping-app/quickstart.md",
+        "specs/002-label-filter-sidebar/quickstart.md"
+      ],
+      "constraints": [
+        "Replace any assumption that the host checkout is the live workspace.",
+        "Describe local startup in terms of sandbox inputs, Dev Containers attach, and `make backend-run`.",
+        "Keep the quickstarts aligned with the existing localhost verification flow."
+      ],
+      "acceptance_criteria": [
+        "Both quickstarts describe the host checkout as the launcher/config source only.",
+        "Both quickstarts mention the required sandbox inputs or generated `.devcontainer/.env` contract.",
+        "Both quickstarts still verify through `http://localhost:<DJANGO_DEV_PORT>` or equivalent localhost-plus-port wording."
+      ],
+      "dependencies": [
+        "task-26"
+      ],
+      "status": "pending",
+      "implementation_notes": [
+        "Keep the quickstarts short and operational.",
+        "Do not restate the full ADR rationale here."
+      ]
+    },
+    {
+      "id": "task-29",
+      "task_type": "validation",
+      "goal": "Record final evidence in the ExecPlan after the isolated-clone workflow has been exercised end to end.",
+      "files": [
+        "docs/plans/devcontainers/spec.md"
+      ],
+      "constraints": [
+        "Update only the living-plan sections that require evidence: `Progress`, `Surprises & Discoveries`, `Decision Log`, and `Outcomes & Retrospective`.",
+        "Record one successful first-clone startup, one successful same-`SANDBOX_ID` reopen, and one successful parallel run with distinct `SANDBOX_ID` values.",
+        "Include the concrete date of the validation run."
+      ],
+      "acceptance_criteria": [
+        "`spec.md` contains dated evidence for first-start clone, reopen reuse, and parallel sandbox isolation.",
+        "`spec.md` records whether Git fetch/push worked with the token-backed helper.",
+        "`spec.md` no longer reads as \"finished\" for the old bind-mounted model without acknowledging the isolated-clone follow-on."
+      ],
+      "dependencies": [
+        "task-27",
+        "task-28"
+      ],
+      "status": "pending",
+      "implementation_notes": [
+        "Keep the evidence concise and reproducible.",
+        "This task closes the loop on the updated ExecPlan rather than changing product behavior."
+      ]
     }
   ]
 }
