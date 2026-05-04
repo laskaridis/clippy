@@ -4,8 +4,8 @@ services:
       context: .
       dockerfile: Dockerfile
     volumes:
-      - ..:/workspace
-    command: sleep infinity
+      - workspace:/workspace
+    command: /bin/bash -lc "/usr/local/bin/init-workspace.sh && sleep infinity"
     environment:
       - DJANGO_DEV_PORT
       - ALLOWED_HOSTS
@@ -23,3 +23,6 @@ services:
       - POSTGRES_DB
       - POSTGRES_USER
       - POSTGRES_PASSWORD
+
+volumes:
+  workspace:

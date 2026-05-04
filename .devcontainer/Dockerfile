@@ -100,3 +100,8 @@ RUN npm config set cafile /etc/ssl/certs/ca-certificates.crt \
 RUN mkdir -p /home/vscode/.config/pip \
     && printf '[global]\nuser = true\n' > /home/vscode/.config/pip/pip.conf \
     && chown -R vscode:vscode /home/vscode/.config
+
+# Bake the workspace initialization helper into the image so container startup
+# can populate the named volume before the devcontainer goes idle.
+COPY scripts/init-workspace.sh /usr/local/bin/init-workspace.sh
+RUN chmod 0755 /usr/local/bin/init-workspace.sh
