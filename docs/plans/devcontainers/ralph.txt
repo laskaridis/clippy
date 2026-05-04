@@ -22,6 +22,31 @@
 - When superseding an ADR, create a new numbered ADR with an explicit supersession statement instead of rewriting the older ADR's historical narrative.
 - If `.devcontainer/bootstrap.sh` delegates extension setup to `make extension-init`, the devcontainer image itself must install the pinned `pnpm` version first; otherwise `devcontainer up` fails during post-create.
 ---
+## [2026-05-04 10:47Z]
+- Task id
+  - task-27
+- What was implemented:
+  - Added `docs/adrs/0007-isolated-devcontainer-workspace-clone.md` to record the per-sandbox clone model and explicitly supersede the bind-mounted workspace assumption from ADR 0006 for sandbox source isolation.
+  - Updated `infra/docker/README.md` to describe the host checkout as launcher-side only, document the `SANDBOX_ID`-scoped workspace volume, and explain that `/workspace` inside `dev-sandbox` is the cloned repository.
+  - Updated `extension/README.md` to point local development at the active sandbox clone's `extension/chrome` directory instead of implying the host checkout is the live workspace.
+- Files changed:
+  - `docs/adrs/0007-isolated-devcontainer-workspace-clone.md`
+  - `infra/docker/README.md`
+  - `extension/README.md`
+  - `docs/plans/devcontainers/tasks.json`
+  - `docs/plans/devcontainers/ralph.txt`
+- Verification:
+  - `git diff --check` completed without reporting whitespace or patch-format errors.
+  - `jq -r '.tasks[] | select(.id=="task-27") | .status' docs/plans/devcontainers/tasks.json` returned `completed`.
+  - `rg -n "supersedes|launcher-side only|COMPOSE_PROJECT_NAME=\\$\\{SANDBOX_ID\\}|/workspace/extension/chrome" docs/adrs/0007-isolated-devcontainer-workspace-clone.md infra/docker/README.md extension/README.md` confirmed the new ADR and README language is present.
+- Learnings for future iterations:
+  - Patterns discovered: source-isolation docs should call out the launcher-side host checkout separately from the active `/workspace` clone so the runtime boundary is unambiguous.
+  - Gotchas encountered: wording in the ADR needs to distinguish between the broader devcontainer-first runtime contract from ADR 0006 and the narrower workspace-clone contract introduced here.
+  - Useful context: the documentation now consistently ties sandbox reuse to `SANDBOX_ID`, which should keep later workflow descriptions aligned with the actual compose volume identity.
+- Scope deviations:
+  - None.
+- Follow up needed: none
+---
 ## [2026-05-04 10:42Z]
 - Task id
   - task-25

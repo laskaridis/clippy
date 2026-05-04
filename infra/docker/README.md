@@ -12,10 +12,18 @@ the `dev-sandbox` devcontainer service plus the shared `postgres` service.
 
 ### How to configure the local environment
 
-Dev Containers tooling is the supported lifecycle entrypoint for local worktree
-sandboxes. Use the `dev-sandbox` service defined under `.devcontainer/` for
-implementation work, then run project commands from inside that container.
-The only host-visible backend contract is the `DJANGO_DEV_PORT` exposed by the
+Dev Containers tooling is the supported lifecycle entrypoint for local
+development. The host checkout is launcher-side only: it supplies the
+`.devcontainer/` files and docs, but it is not the live workspace for a
+running sandbox.
+
+When a sandbox starts, `dev-sandbox` clones the repository into its own
+`/workspace` named volume and reuses that clone when the same `SANDBOX_ID` is
+reopened. `COMPOSE_PROJECT_NAME=${SANDBOX_ID}` keeps the workspace volume and
+other Compose resources isolated per sandbox.
+
+Run project commands from inside `/workspace` in `dev-sandbox`. The only
+host-visible backend contract is the `DJANGO_DEV_PORT` exposed by the
 devcontainer; PostgreSQL stays on the compose network and does not publish a
 host port.
 

@@ -62,6 +62,11 @@ cd extension
 pnpm run prepare:runtime-config
 ```
 
+During local development, use the unpacked extension from the active sandbox
+clone's `extension/chrome` directory. The host checkout only launches Dev
+Containers; the live extension code runs from `/workspace/extension/chrome`
+inside `dev-sandbox`.
+
 ## Accessibility audits (WCAG 2.1 AA)
 
 Run automated accessibility audits for both:
@@ -82,7 +87,7 @@ This command reports all findings and fails when `serious` or `critical` issues 
 3. Open Chrome and go to `chrome://extensions`.
 4. Enable **Developer mode** (top-right).
 5. Click **Load unpacked**.
-6. Select the folder: `extension/chrome`.
+6. Select the folder: `extension/chrome` from the active sandbox clone.
 
 Chrome reads the checked-in `manifest.json` and `runtime-config.js` from `extension/chrome`.
 

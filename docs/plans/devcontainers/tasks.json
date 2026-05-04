@@ -841,7 +841,7 @@
       "dependencies": [
         "task-25"
       ],
-      "status": "pending",
+      "status": "completed",
       "implementation_notes": [
         "Keep the ADR focused on the source-isolation change and the required sandbox inputs.",
         "Do not broaden into unrelated local workflow history."
