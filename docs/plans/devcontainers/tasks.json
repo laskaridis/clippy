@@ -868,7 +868,7 @@
       "dependencies": [
         "task-26"
       ],
-      "status": "pending",
+      "status": "completed",
       "implementation_notes": [
         "Keep the quickstarts short and operational.",
         "Do not restate the full ADR rationale here."
