@@ -5,6 +5,7 @@
 - Keep `.devcontainer/.env.example` focused on the minimal localhost contract: `ALLOWED_HOSTS` should cover `localhost`, `127.0.0.1`, and `[::1]`, and per-worktree hostnames should not be documented there.
 - Use the active container Python interpreter for bootstrap installs via `python -m pip`, and keep `.devcontainer/bootstrap.sh` as a thin wrapper that delegates setup to `make backend-init` and `make extension-init`.
 - Host-side devcontainer preflight scripts should reject dirty trees, require explicit sandbox inputs, and generate `.devcontainer/.env` from `.devcontainer/.env.example` instead of hard-coding duplicated defaults.
+- The `dev-sandbox` service must pass `SANDBOX_REPO_URL`, `GIT_AUTH_TOKEN`, and `SANDBOX_ID` into the container environment so the baked init script can clone and reopen `/workspace` correctly.
 - Prefer `$(MAKE)` subtarget composition for aggregate Makefile targets instead of shell wrapper scripts.
 - Keep `make backend-run` as the explicit Django launch path inside the devcontainer: `cd backend && python manage.py migrate`, bootstrap the admin user with `apps.accounts.bootstrap.ensure_admin_user_from_env`, then run `python manage.py runserver 0.0.0.0:${DJANGO_DEV_PORT}`.
 - Backend test wrappers should assume the devcontainer is already prepared and call `python manage.py test ...` directly from `backend/` without re-running runtime bootstrap helpers.
@@ -19,6 +20,31 @@
 - Include `.agents/skills/` in repo-wide reference audits for runtime cleanup, because skill wrappers can keep obsolete filenames alive even after code and README cleanup.
 - When superseding an ADR, create a new numbered ADR with an explicit supersession statement instead of rewriting the older ADR's historical narrative.
 - If `.devcontainer/bootstrap.sh` delegates extension setup to `make extension-init`, the devcontainer image itself must install the pinned `pnpm` version first; otherwise `devcontainer up` fails during post-create.
+---
+## [2026-05-04 10:42Z]
+- Task id
+  - task-25
+- What was implemented
+  - Validated the isolated workspace startup path by bringing up `dev-sandbox` against a temporary local `git://` daemon, confirming first-start clone into `/workspace`, confirming the workspace mounts from a named volume, and confirming the cloned repo opens on local `master` tracking `origin/master`.
+  - Reused the same `SANDBOX_ID` across a stop/start cycle and verified the marker written under `/workspace/.git/validation-marker` persisted, proving the named volume and `.git` state were reused instead of recreated.
+  - Fixed the startup defect exposed by validation by passing `SANDBOX_REPO_URL`, `GIT_AUTH_TOKEN`, and `SANDBOX_ID` through the `dev-sandbox` compose environment block.
+- Files changed
+  - `.devcontainer/docker-compose.yml`
+  - `AGENTS.md`
+  - `docs/plans/devcontainers/tasks.json`
+  - `docs/plans/devcontainers/ralph.txt`
+- Verification:
+  - `SANDBOX_REPO_URL=git://host.docker.internal:9418/devcontainer-smoke.git GIT_AUTH_TOKEN=test-token SANDBOX_ID=devcontainer-smoke-20260504 bash .devcontainer/scripts/preflight.sh` wrote `.devcontainer/.env` with the expected sandbox inputs and `COMPOSE_PROJECT_NAME=devcontainer-smoke-20260504`.
+  - `docker compose -p devcontainer-smoke-20260504 -f .devcontainer/docker-compose.yml up -d --build dev-sandbox` started the container successfully after the env-injection fix.
+  - Inside the container at `/workspace`, `git branch --show-current` returned `master`, `git remote get-url origin` returned the temporary `git://host.docker.internal:9418/devcontainer-smoke.git` URL, `findmnt -no SOURCE,TARGET,FSTYPE,OPTIONS /workspace` showed a named-volume-backed mount, and `.git/devcontainer-sandbox.env` recorded the requested sandbox inputs.
+  - After writing `.git/validation-marker`, `docker compose down --remove-orphans` followed by `docker compose up -d dev-sandbox` preserved the same marker and the same `master` checkout, confirming reopen reuse.
+- Learnings for future iterations:
+  - Patterns discovered: the workspace init script cannot start unless the compose service passes the required sandbox inputs into the container environment, even if `.devcontainer/.env` is already generated on the host.
+  - Gotchas encountered: a public GitHub remote with a dummy token still failed the auth-backed clone path, so a local anonymous `git://` daemon was the cleanest way to smoke-test the first-clone contract offline.
+  - Useful context: the reopened sandbox reused the same `/workspace` volume name derived from `SANDBOX_ID`, which makes it easy to prove persistence by checking a marker under `.git/`.
+- Scope deviations:
+  - Touched `AGENTS.md` to record the reusable compose-env requirement for `dev-sandbox`; that was not part of the feature file list but preserves a cross-cutting startup rule.
+- Follow up needed: none
 ---
 ## [2026-05-02 09:37Z]
 - Task id

@@ -784,7 +784,7 @@
       "dependencies": [
         "task-24"
       ],
-      "status": "pending",
+      "status": "completed",
       "implementation_notes": [
         "Use the same sample `SANDBOX_ID` for the reuse check.",
         "Keep this as a focused runtime smoke test before broader doc updates."
