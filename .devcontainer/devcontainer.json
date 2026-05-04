@@ -9,6 +9,8 @@
     "containerUser": "vscode",
 
     "remoteEnv": {
+        "GIT_ASKPASS": "/usr/local/bin/devcontainer-git-askpass.sh",
+        "GIT_TERMINAL_PROMPT": "0"
     },
 
     "initializeCommand": "bash .devcontainer/scripts/preflight.sh",

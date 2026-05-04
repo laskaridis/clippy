@@ -895,10 +895,38 @@
         "task-27",
         "task-28"
       ],
-      "status": "pending",
+      "status": "completed",
       "implementation_notes": [
         "Keep the evidence concise and reproducible.",
         "This task closes the loop on the updated ExecPlan rather than changing product behavior."
+      ]
+    },
+    {
+      "id": "task-30",
+      "task_type": "implementation",
+      "goal": "Expose the token-backed Git helper to interactive sandbox commands so fetch and push keep working after workspace initialization without persisting credentials to git config or remote URLs.",
+      "files": [
+        ".devcontainer/devcontainer.json",
+        ".devcontainer/Dockerfile",
+        ".devcontainer/scripts/init-workspace.sh"
+      ],
+      "constraints": [
+        "Keep clone-time auth working through the existing `GIT_AUTH_TOKEN` input.",
+        "Make subsequent `git fetch` and `git push` commands inside `/workspace` succeed without writing the token to `.git/config` or remote URLs.",
+        "Do not switch to SSH auth or any other credential persistence mechanism."
+      ],
+      "acceptance_criteria": [
+        "Running `git fetch` and `git push` inside an already-cloned sandbox succeeds with only the sandbox inputs provided at startup.",
+        "Inspecting `.git/config` and the remote URL still shows no persisted token after the commands complete.",
+        "The sandbox continues to start from `origin/master` and reuse the same volume on reopen."
+      ],
+      "dependencies": [
+        "task-24"
+      ],
+    "status": "completed",
+      "implementation_notes": [
+        "The fix may need a reusable helper that survives beyond the one-time clone command, but it must remain ephemeral with respect to repository metadata.",
+        "Keep the solution compatible with the current HTTPS token workflow."
       ]
     }
   ]
