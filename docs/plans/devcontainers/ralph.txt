@@ -24,6 +24,27 @@
 - When superseding an ADR, create a new numbered ADR with an explicit supersession statement instead of rewriting the older ADR's historical narrative.
 - If `.devcontainer/bootstrap.sh` delegates extension setup to `make extension-init`, the devcontainer image itself must install the pinned `pnpm` version first; otherwise `devcontainer up` fails during post-create.
 ---
+## [2026-05-05 11:14Z]
+- Task id
+  - task-32
+- What was implemented:
+  - Smoke-tested the host-side preflight contract after the `SANDBOX_REPO_URL` derivation change.
+  - Verified the missing-input path still fails with a clear `SANDBOX_ID` error, the no-`origin` path still fails with an explicit remote error, and the success path writes the derived repository URL plus sandbox metadata into `.devcontainer/.env`.
+- Files changed:
+  - `docs/plans/devcontainers/tasks.json`
+  - `docs/plans/devcontainers/ralph.txt`
+- Verification:
+  - `env GIT_AUTH_TOKEN=test-token bash .devcontainer/scripts/preflight.sh` exited `1` and reported `Missing required sandbox input(s): SANDBOX_ID`.
+  - `git remote remove origin` in a temp clone followed by `env GIT_AUTH_TOKEN=test-token SANDBOX_ID=task32-smoke bash .devcontainer/scripts/preflight.sh` exited `1` and reported `Refusing to generate .devcontainer/.env because the host checkout has no usable origin remote.`
+  - `git clone --no-hardlinks . "$tmpdir/repo"` followed by `env GIT_AUTH_TOKEN=test-token SANDBOX_ID=task32-smoke bash .devcontainer/scripts/preflight.sh` exited `0` and wrote `.devcontainer/.env` containing `SANDBOX_REPO_URL`, `GIT_AUTH_TOKEN`, `SANDBOX_ID`, and `COMPOSE_PROJECT_NAME` while preserving the existing Django/Postgres values from `.env.example`.
+- Learnings for future iterations:
+  - Patterns discovered: validation for a linked git worktree should use a real temporary clone rather than `cp -a`, because a worktree copy does not preserve a usable standalone `.git` admin area.
+  - Gotchas encountered: the success-path smoke test must run in a real clone if it needs to assert the derived origin URL written into `.devcontainer/.env`.
+  - Useful context: the preflight contract is now stable enough that the remaining verification can focus on container startup rather than host env generation.
+- Scope deviations:
+  - None.
+- Follow up needed: none
+---
 ## [2026-05-04 10:55Z]
 - Task id
   - task-29

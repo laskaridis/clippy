@@ -980,7 +980,7 @@
       "dependencies": [
         "task-31"
       ],
-      "status": "pending",
+      "status": "completed",
       "implementation_notes": [
         "Treat this as the immediate bootstrap smoke test required after the contract change.",
         "Keep the validation focused on the host-side env-generation contract; do not broaden into container startup verification here."
