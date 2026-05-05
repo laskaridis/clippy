@@ -4,10 +4,10 @@
 - Feature quickstarts should describe the launcher-side host checkout, the sandbox input/preflight contract, Dev Containers attach, and `make backend-run` in that order.
 - Use `dev-sandbox` as the Dev Containers service name for the local sandbox, and publish the backend on the same `DJANGO_DEV_PORT` value inside the container and on the host.
 - Keep sandbox clone metadata under the repo's `.git/` directory and gate reopen logic on both the marker contents and `origin` remote URL so the working tree stays clean.
+- Host-side devcontainer preflight scripts should reject dirty trees, require explicit sandbox inputs, derive `SANDBOX_REPO_URL` from the current checkout's `origin` remote, and generate `.devcontainer/.env` from `.devcontainer/.env.example` instead of hard-coding duplicated defaults.
 - For devcontainer Git auth that must survive beyond workspace startup, bake a reusable askpass helper into the image and point Git's system config at it instead of relying on a one-shot temp helper.
 - Keep `.devcontainer/.env.example` focused on the minimal localhost contract: `ALLOWED_HOSTS` should cover `localhost`, `127.0.0.1`, and `[::1]`, and per-worktree hostnames should not be documented there.
 - Use the active container Python interpreter for bootstrap installs via `python -m pip`, and keep `.devcontainer/bootstrap.sh` as a thin wrapper that delegates setup to `make backend-init` and `make extension-init`.
-- Host-side devcontainer preflight scripts should reject dirty trees, require explicit sandbox inputs, and generate `.devcontainer/.env` from `.devcontainer/.env.example` instead of hard-coding duplicated defaults.
 - The `dev-sandbox` service must pass `SANDBOX_REPO_URL`, `GIT_AUTH_TOKEN`, and `SANDBOX_ID` into the container environment so the baked init script can clone and reopen `/workspace` correctly.
 - Prefer `$(MAKE)` subtarget composition for aggregate Makefile targets instead of shell wrapper scripts.
 - Keep `make backend-run` as the explicit Django launch path inside the devcontainer: `cd backend && python manage.py migrate`, bootstrap the admin user with `apps.accounts.bootstrap.ensure_admin_user_from_env`, then run `python manage.py runserver 0.0.0.0:${DJANGO_DEV_PORT}`.
@@ -573,6 +573,31 @@
   - None.
 - Follow up needed:
   - None.
+---
+## [2026-05-05 11:11Z]
+- Task id
+  - task-31
+- What was implemented:
+  - Simplified host preflight so `SANDBOX_REPO_URL` is derived from the current checkout's `origin` remote instead of being required as a host-provided input.
+  - Updated `.devcontainer/.env.example` so the documented required sandbox inputs are only `GIT_AUTH_TOKEN` and `SANDBOX_ID`.
+  - Kept `init-workspace.sh` on the same generated-env contract by leaving its `SANDBOX_REPO_URL` consumption and metadata/reopen checks unchanged.
+- Files changed:
+  - `.devcontainer/.env.example`
+  - `.devcontainer/scripts/preflight.sh`
+  - `AGENTS.md`
+  - `docs/plans/devcontainers/tasks.json`
+  - `docs/plans/devcontainers/ralph.txt`
+- Verification:
+  - `bash -n .devcontainer/scripts/preflight.sh .devcontainer/scripts/init-workspace.sh` succeeded in a clean throwaway clone.
+  - `GIT_AUTH_TOKEN=test-token SANDBOX_ID=task31-smoke bash .devcontainer/scripts/preflight.sh` succeeded in the throwaway clone and generated `.devcontainer/.env` with `SANDBOX_REPO_URL`, `GIT_AUTH_TOKEN`, `SANDBOX_ID`, and `COMPOSE_PROJECT_NAME`.
+  - Removing `origin` from the throwaway clone and rerunning `GIT_AUTH_TOKEN=test-token SANDBOX_ID=task31-smoke bash .devcontainer/scripts/preflight.sh` failed with the expected `no usable origin remote` error.
+  - `git diff --check` succeeded in the feature worktree.
+- Learnings for future iterations:
+  - Host preflight is simplest when it treats the checked-out repository's `origin` remote as the canonical repo URL and keeps the explicit sandbox inputs limited to auth token plus sandbox identity.
+  - The reusable guidance now matches the implementation, so later doc or script changes should preserve the same derived-repo-url contract.
+- Scope deviations:
+  - `AGENTS.md` was updated to record the reusable preflight pattern, even though it was not listed in the task files.
+- Follow up needed: none
 ---
 ## [2026-05-04 10:31Z]
 - Task id
