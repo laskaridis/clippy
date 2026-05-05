@@ -51,5 +51,5 @@ make all-verify
 - Prefer targeted runs during iteration, then run broader suites before finishing.
 - For frontend accessibility work, run `pnpm run test:a11y` in `extension/`; the suite reports all findings and fails on serious/critical WCAG 2.1 A/AA violations.
 - Browser-driven checks should use the host `localhost:<DJANGO_DEV_PORT>` origin that the active sandbox exposes.
-- If you need to open Dev Containers from a host checkout, export `SANDBOX_REPO_URL`, `GIT_AUTH_TOKEN`, and `SANDBOX_ID` first so `initializeCommand` can generate `.devcontainer/.env`.
+- If you need to open Dev Containers from a host checkout, export `GIT_AUTH_TOKEN` and `SANDBOX_ID` first so `initializeCommand` can generate `.devcontainer/.env`. Export `SANDBOX_REPO_URL` too when you need to override a missing or SSH `origin` remote with an HTTPS clone URL for the sandbox.
 - Keep browser checks pointed at `http://localhost:<DJANGO_DEV_PORT>`; do not rely on the host checkout as the live workspace.
