@@ -17,7 +17,7 @@ This follow-on change replaces that live bind mount with a per-sandbox Docker na
 - [x] (2026-05-02 12:18Z) Completed the first migration from host runtime bootstrap scripts to the bind-mounted `dev-sandbox` workflow, including Makefile cleanup, backend and extension runtime simplification, and doc updates.
 - [x] (2026-05-02 09:27Z) Recorded the automated verification pass for the bind-mounted devcontainer model: `make help`, `make backend-test-unit`, `make backend-test-e2e`, `make extension-test-unit`, `make extension-test-e2e`, `make extension-test-a11y`, and `make all-verify`.
 - [x] (2026-05-02 09:37Z) Recorded the manual two-worktree smoke check for the bind-mounted devcontainer model with ports `8794` and `8795`.
-- [ ] Add the host-side preflight flow that rejects dirty host trees, requires `SANDBOX_REPO_URL`, `GIT_AUTH_TOKEN`, and `SANDBOX_ID`, and generates `.devcontainer/.env` including `COMPOSE_PROJECT_NAME=${SANDBOX_ID}`.
+- [ ] Simplify the host-side preflight flow so it derives `SANDBOX_REPO_URL` from the current checkout's `origin` remote, still rejects dirty host trees, and generates `.devcontainer/.env` including `COMPOSE_PROJECT_NAME=${SANDBOX_ID}`.
 - [ ] Replace the live `/workspace` bind mount with a per-sandbox named volume and add first-start clone logic that creates a local `master` branch tracking `origin/master`.
 - [ ] Add token-backed Git auth inside the sandbox for clone, fetch, and push without persisting the token to `.git/config` or remote URLs.
 - [ ] Update living docs, quickstarts, and the architecture record to describe the isolated-clone sandbox workflow instead of the bind-mounted workflow.
@@ -29,7 +29,7 @@ This follow-on change replaces that live bind mount with a per-sandbox Docker na
 - Observation: the current devcontainer workflow is already simplified operationally, but source isolation is still incomplete because `/workspace` is a live host bind mount.
   Evidence: `.devcontainer/docker-compose.yml` currently mounts `..:/workspace`.
 
-- Observation: the repository now has a configured `origin` remote, but the isolated sandbox design still needs an explicit repo URL input.
+- Observation: the repository now has a configured `origin` remote, and that remote can be treated as the canonical repo URL for sandbox startup.
   Evidence: as of 2026-05-03, `git remote -v` reports `origin https://github.com/laskaridis/clippy.git` for fetch and push in this worktree.
 
 - Observation: reusing a sandbox clone across restarts matters because the coding agent is expected to create or switch branches inside the sandbox after startup.
@@ -47,9 +47,9 @@ This follow-on change replaces that live bind mount with a per-sandbox Docker na
   Rationale: the first migration removed the old runtime-management layer successfully, but it did not satisfy the new source-isolation requirement.
   Date/Author: 2026-05-03 / Codex
 
-- Decision: require `SANDBOX_REPO_URL`, `GIT_AUTH_TOKEN`, and `SANDBOX_ID` as host-provided sandbox inputs.
-  Rationale: sandbox startup must not depend on host git metadata, SSH agent state, or implicit defaults when creating the isolated clone.
-  Date/Author: 2026-05-03 / Codex
+- Decision: require only `GIT_AUTH_TOKEN` and `SANDBOX_ID` as explicit host-provided sandbox inputs; derive `SANDBOX_REPO_URL` from the current checkout's `origin` remote during host preflight.
+  Rationale: the sandbox must always clone the same repository as the current project checkout, so making `origin` canonical removes redundant operator input while keeping the repo choice deterministic.
+  Date/Author: 2026-05-04 / Codex
 
 - Decision: generate `COMPOSE_PROJECT_NAME` from `SANDBOX_ID` inside the preflight-generated `.devcontainer/.env`.
   Rationale: Dev Containers and Compose need a deterministic project identity so the workspace volume and related resources stay isolated per sandbox.
@@ -104,11 +104,11 @@ The key files for this follow-on change are:
 
 ## Plan of Work
 
-Start on the host side by introducing a preflight script and wiring it into `devcontainer.json` through `initializeCommand`. That script must fail if the host tree is dirty, fail if `SANDBOX_REPO_URL`, `GIT_AUTH_TOKEN`, or `SANDBOX_ID` are missing, and generate `.devcontainer/.env` from `.devcontainer/.env.example` plus the required sandbox values. The generated file must include `COMPOSE_PROJECT_NAME=${SANDBOX_ID}` so Compose resources stay isolated per sandbox.
+Start on the host side by introducing a preflight script and wiring it into `devcontainer.json` through `initializeCommand`. That script must fail if the host tree is dirty, fail if `GIT_AUTH_TOKEN` or `SANDBOX_ID` are missing, fail if the current checkout has no usable `origin` remote, and generate `.devcontainer/.env` from `.devcontainer/.env.example` plus the derived and required sandbox values. The generated file must include `SANDBOX_REPO_URL=<host origin remote>` and `COMPOSE_PROJECT_NAME=${SANDBOX_ID}` so Compose resources stay isolated per sandbox.
 
 Next, replace the Compose workspace mount. `.devcontainer/docker-compose.yml` must stop mounting `..:/workspace` and instead attach a named volume at `/workspace`. The actual Docker volume identity should come from the Compose project name generated by preflight, so reopening the same sandbox reattaches the same workspace volume while a different `SANDBOX_ID` gets a distinct volume.
 
-Then, add the in-container workspace initialization flow. The image should contain a script that runs before `sleep infinity`. When `/workspace/.git` is absent, the script must clone `SANDBOX_REPO_URL`, materialize local `master` from `origin/master`, and write a small metadata marker recording `SANDBOX_ID` and `SANDBOX_REPO_URL`. When `/workspace/.git` is present, the script must reuse the existing clone and fail fast if the metadata does not match the current sandbox request.
+Then, add the in-container workspace initialization flow. The image should contain a script that runs before `sleep infinity`. When `/workspace/.git` is absent, the script must clone the `SANDBOX_REPO_URL` derived during host preflight, materialize local `master` from `origin/master`, and write a small metadata marker recording `SANDBOX_ID` and `SANDBOX_REPO_URL`. When `/workspace/.git` is present, the script must reuse the existing clone and fail fast if the metadata does not match the current sandbox request.
 
 After the clone exists, the existing bootstrap model should continue to work: `postCreateCommand` runs inside `/workspace`, `make backend-init` and `make extension-init` prepare dependencies, and later `make backend-run` starts Django only when requested. The Git token must be available for clone, fetch, and push, but only through ignored env and ephemeral helper behavior.
 
@@ -126,12 +126,11 @@ Perform the work from the repository root unless a step explicitly says otherwis
 
 2. Add the host preflight flow and verify it before touching Compose:
 
-       SANDBOX_REPO_URL=https://github.com/laskaridis/clippy.git \
        GIT_AUTH_TOKEN=test-token \
        SANDBOX_ID=devcontainer-smoke \
        bash .devcontainer/scripts/preflight.sh
 
-   Expected result: `.devcontainer/.env` is written, includes `COMPOSE_PROJECT_NAME=devcontainer-smoke`, and preserves the existing Django/Postgres values from `.env.example`.
+   Expected result: `.devcontainer/.env` is written, includes `SANDBOX_REPO_URL=<current origin remote>` plus `COMPOSE_PROJECT_NAME=devcontainer-smoke`, and preserves the existing Django/Postgres values from `.env.example`.
 
 3. Remove the bind mount, add the named volume plus in-container workspace initialization, and start the devcontainer through Dev Containers tooling.
 
@@ -153,7 +152,7 @@ Perform the work from the repository root unless a step explicitly says otherwis
 
 The change is accepted only when the repository has both runtime isolation and source isolation under the devcontainer-first model.
 
-For preflight acceptance, `.devcontainer/scripts/preflight.sh` must reject a dirty host tree and reject missing `SANDBOX_REPO_URL`, `GIT_AUTH_TOKEN`, or `SANDBOX_ID`. A successful run must write `.devcontainer/.env` with `SANDBOX_REPO_URL`, `GIT_AUTH_TOKEN`, `SANDBOX_ID`, and `COMPOSE_PROJECT_NAME=${SANDBOX_ID}` plus the existing Django/Postgres contract values.
+For preflight acceptance, `.devcontainer/scripts/preflight.sh` must reject a dirty host tree, reject missing `GIT_AUTH_TOKEN` or `SANDBOX_ID`, and reject a missing or unusable host `origin` remote. A successful run must write `.devcontainer/.env` with the derived `SANDBOX_REPO_URL`, `GIT_AUTH_TOKEN`, `SANDBOX_ID`, and `COMPOSE_PROJECT_NAME=${SANDBOX_ID}` plus the existing Django/Postgres contract values.
 
 For workspace initialization acceptance, the first startup for a new `SANDBOX_ID` must create a named Docker volume, clone the repository into `/workspace`, and materialize local `master` from `origin/master`. Reopening the same `SANDBOX_ID` must reuse that clone rather than recloning it, and a metadata mismatch between the existing volume and the requested sandbox inputs must fail fast.
 
@@ -181,7 +180,7 @@ The current repo fact that shaped this plan is worth recording directly.
     origin  https://github.com/laskaridis/clippy.git (fetch)
     origin  https://github.com/laskaridis/clippy.git (push)
 
-That host remote must remain informational only. The sandbox still requires explicit `SANDBOX_REPO_URL` so startup does not silently depend on host git metadata.
+That host remote is now the canonical source for `SANDBOX_REPO_URL` during preflight. Sandbox startup should fail if the host checkout does not expose a usable `origin` remote instead of asking the operator to provide a separate repo URL manually.
 
 The earlier bind-mounted migration remains valid historical context, but it is no longer the finish line for sandbox isolation.
 
@@ -189,7 +188,7 @@ The final validation pass on 2026-05-04 confirmed the runtime isolation pieces a
 
 ## Interfaces and Dependencies
 
-The stable host-side inputs for this change are `SANDBOX_REPO_URL`, `GIT_AUTH_TOKEN`, and `SANDBOX_ID`. They must be present before Dev Containers startup, and they must feed the generated `.devcontainer/.env`.
+The stable explicit host-side inputs for this change are `GIT_AUTH_TOKEN` and `SANDBOX_ID`. `SANDBOX_REPO_URL` is derived from the current checkout's `origin` remote during preflight and written into the generated `.devcontainer/.env`.
 
 The generated `.devcontainer/.env` remains ignored and becomes the concrete Compose input file. It must contain `COMPOSE_PROJECT_NAME=${SANDBOX_ID}` as well as the existing backend and PostgreSQL environment values needed by the sandbox.
 
