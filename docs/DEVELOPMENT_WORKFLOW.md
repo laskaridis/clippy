@@ -8,10 +8,11 @@ This repository uses a devcontainer-first local workflow. Separate git worktrees
 2. Export the sandbox inputs for that checkout and let Dev Containers generate the local env file:
 
    ```bash
-   export SANDBOX_REPO_URL=git@github.com:your-org/your-repo.git
    export GIT_AUTH_TOKEN=...
    export SANDBOX_ID=your-sandbox-id
    ```
+
+   If the host checkout has no usable `origin` remote, or if you need to override an SSH remote with an HTTPS clone URL for the sandbox, also export `SANDBOX_REPO_URL=https://github.com/your-org/your-repo.git`.
 
 3. Open the checkout in Dev Containers. `initializeCommand` writes `.devcontainer/.env` from `.devcontainer/.env.example` plus the sandbox inputs, and `COMPOSE_PROJECT_NAME` comes from `SANDBOX_ID`.
 4. Set a unique `DJANGO_DEV_PORT` in the generated `.devcontainer/.env` if another sandbox may be running at the same time. Keep `ALLOWED_HOSTS` localhost-oriented.
@@ -46,7 +47,8 @@ make all-verify
 
 - Dev Containers tooling is the supported lifecycle entrypoint for local sandbox startup.
 - `initializeCommand` generates `.devcontainer/.env`; do not hand-create that file from `.env.example`.
-- `SANDBOX_REPO_URL`, `GIT_AUTH_TOKEN`, and `SANDBOX_ID` are required host-side inputs before opening Dev Containers.
+- `GIT_AUTH_TOKEN` and `SANDBOX_ID` are required host-side inputs before opening Dev Containers.
+- `SANDBOX_REPO_URL` is optional as an explicit override; otherwise `initializeCommand` derives it from the current checkout's `origin` remote and normalizes common SSH Git URLs to HTTPS for token-backed sandbox clone auth.
 - `make backend-run` starts Django only when you call it explicitly.
 - When two sandboxes run in parallel, each one needs its own `DJANGO_DEV_PORT`.
 - The backend is verified from the host browser on `localhost`, not through worktree-specific hostnames.
