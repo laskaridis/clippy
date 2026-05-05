@@ -928,6 +928,63 @@
         "The fix may need a reusable helper that survives beyond the one-time clone command, but it must remain ephemeral with respect to repository metadata.",
         "Keep the solution compatible with the current HTTPS token workflow."
       ]
+    },
+    {
+      "id": "task-31",
+      "task_type": "implementation",
+      "goal": "Simplify host preflight so it derives `SANDBOX_REPO_URL` from the current checkout's `origin` remote instead of requiring the operator to export it manually.",
+      "files": [
+        ".devcontainer/.env.example",
+        ".devcontainer/scripts/preflight.sh",
+        ".devcontainer/scripts/init-workspace.sh"
+      ],
+      "constraints": [
+        "Remove `SANDBOX_REPO_URL` from the required host input contract, but keep writing `SANDBOX_REPO_URL` into `.devcontainer/.env` for container startup.",
+        "Make `preflight.sh` fail with a clear error if the host checkout does not expose a usable `origin` remote URL.",
+        "Preserve the existing clean-tree check, `GIT_AUTH_TOKEN` and `SANDBOX_ID` requirements, and `COMPOSE_PROJECT_NAME=${SANDBOX_ID}` generation behavior.",
+        "Keep `init-workspace.sh` aligned with the generated env contract without broadening the scope into Docker, Compose, or docs."
+      ],
+      "acceptance_criteria": [
+        "`.env.example` documents only `GIT_AUTH_TOKEN` and `SANDBOX_ID` as required host-provided sandbox inputs.",
+        "`preflight.sh` derives `SANDBOX_REPO_URL` from the current checkout's `origin` remote and reports an explicit failure when that remote is unavailable.",
+        "`init-workspace.sh` still consumes `SANDBOX_REPO_URL` from the generated environment and preserves the metadata/reuse checks."
+      ],
+      "dependencies": [
+        "task-30"
+      ],
+      "status": "pending",
+      "implementation_notes": [
+        "Use `git remote get-url origin` or equivalent explicit host-side git inspection rather than introducing a new manual input.",
+        "Keep the generated `.devcontainer/.env` shape stable so downstream container startup does not need unrelated changes."
+      ]
+    },
+    {
+      "id": "task-32",
+      "task_type": "validation",
+      "goal": "Smoke-test the simplified preflight contract immediately after deriving the sandbox repo URL from the host checkout.",
+      "files": [
+        ".devcontainer/.env.example",
+        ".devcontainer/scripts/preflight.sh",
+        ".devcontainer/scripts/init-workspace.sh"
+      ],
+      "constraints": [
+        "Do not edit files outside the listed set.",
+        "Verify one failure case where the checkout has no usable `origin` remote and one success case where the current `origin` remote is written into `.devcontainer/.env`.",
+        "If validation exposes defects, keep any fixes inside the listed files only."
+      ],
+      "acceptance_criteria": [
+        "Running `preflight.sh` without `GIT_AUTH_TOKEN` or `SANDBOX_ID` still exits non-zero and names the missing input.",
+        "Running `preflight.sh` in a checkout without a usable `origin` remote exits non-zero with an explicit remote-related error.",
+        "Running `preflight.sh` in a valid checkout writes `.devcontainer/.env` containing the derived `SANDBOX_REPO_URL`, `GIT_AUTH_TOKEN`, `SANDBOX_ID`, and `COMPOSE_PROJECT_NAME` while preserving the existing Django/Postgres values."
+      ],
+      "dependencies": [
+        "task-31"
+      ],
+      "status": "pending",
+      "implementation_notes": [
+        "Treat this as the immediate bootstrap smoke test required after the contract change.",
+        "Keep the validation focused on the host-side env-generation contract; do not broaden into container startup verification here."
+      ]
     }
   ]
 }
