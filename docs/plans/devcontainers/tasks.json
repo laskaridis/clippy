@@ -952,7 +952,7 @@
       "dependencies": [
         "task-30"
       ],
-      "status": "pending",
+      "status": "completed",
       "implementation_notes": [
         "Use `git remote get-url origin` or equivalent explicit host-side git inspection rather than introducing a new manual input.",
         "Keep the generated `.devcontainer/.env` shape stable so downstream container startup does not need unrelated changes."

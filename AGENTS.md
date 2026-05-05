@@ -19,7 +19,7 @@ If you need to do something **ALWAYS** check first if there is a Makefile target
 
 For local-development docs, keep the narrative in the devcontainer-first order: worktree, `.devcontainer/.env`, Dev Containers, `dev-sandbox`, then `make backend-run` when a live backend is needed. Avoid reintroducing host-side bootstrap stories in living docs.
 When `.devcontainer/bootstrap.sh` delegates to `make extension-init`, keep the devcontainer image responsible for providing the pinned `pnpm` toolchain up front; do not rely on post-create steps to install the package manager itself.
-Host-side devcontainer preflight scripts should reject dirty trees, require explicit sandbox inputs, and generate `.devcontainer/.env` from `.devcontainer/.env.example` instead of hard-coding duplicated defaults.
+Host-side devcontainer preflight scripts should reject dirty trees, require explicit sandbox inputs, derive `SANDBOX_REPO_URL` from the current checkout's `origin` remote, and generate `.devcontainer/.env` from `.devcontainer/.env.example` instead of hard-coding duplicated defaults.
 The `dev-sandbox` compose service must pass `SANDBOX_REPO_URL`, `GIT_AUTH_TOKEN`, and `SANDBOX_ID` into the container environment as well as `.devcontainer/.env`; the image-baked workspace init script reads those values at startup.
 When Git credentials must keep working after workspace initialization, bake a reusable askpass helper into the image and point Git's system config at it; do not depend on a one-shot shell wrapper that disappears after the clone step.
 
