@@ -7,7 +7,7 @@ BACKEND_DIR="${ROOT_DIR}/backend"
 
 help() {
   cat <<'EOF'
-Run backend Playwright E2E tests in the prepared devcontainer environment.
+Run backend Playwright E2E tests.
 
 Flow:
   1) Change to backend/

@@ -1,30 +1,58 @@
 # Development Workflow
 
-This repository uses a devcontainer-first local workflow. Separate git worktrees still provide branch isolation on the host, but the `dev-sandbox` container is the place where implementation and verification commands run. The host checkout launches Dev Containers; `/workspace` inside `dev-sandbox` is the cloned repo for the active sandbox.
+This repository uses a Docker sandbox workflow. Separate git worktrees still provide branch isolation on the host, but the `dev-sandbox` container is the place where implementation and verification commands run. `/workspace` inside `dev-sandbox` is the cloned repo for the active sandbox.
 
 ## Standard Sequence
 
 1. Create or reuse a worktree under `.worktrees/`.
-2. Export the sandbox inputs for that checkout and let Dev Containers generate the local env file:
+2. Create a sandbox env file for that checkout before starting the sandbox:
 
    ```bash
-   export GIT_AUTH_TOKEN=...
-   export SANDBOX_ID=your-sandbox-id
+   cp .sandbox/.env.example .sandbox/.env
    ```
 
-   If the host checkout has no usable `origin` remote, or if you need to override an SSH remote with an HTTPS clone URL for the sandbox, also export `SANDBOX_REPO_URL=https://github.com/your-org/your-repo.git`.
+   Then edit `.sandbox/.env` for that sandbox and set at least:
 
-3. Open the checkout in Dev Containers. `initializeCommand` writes `.devcontainer/.env` from `.devcontainer/.env.example` plus the sandbox inputs, and `COMPOSE_PROJECT_NAME` comes from `SANDBOX_ID`.
-4. Set a unique `DJANGO_DEV_PORT` in the generated `.devcontainer/.env` if another sandbox may be running at the same time. Keep `ALLOWED_HOSTS` localhost-oriented.
-5. Work inside `dev-sandbox`. The container should start idle and stay available for manual commands.
-6. Start a live backend only when you need it:
+   ```dotenv
+   GIT_AUTH_TOKEN=...
+   SANDBOX_ID=your-sandbox-id
+   SANDBOX_REPO_URL=https://github.com/your-org/your-repo.git
+   ```
+
+   Use an HTTPS repository URL so the sandbox can clone and authenticate with the token-backed Git helper. Keep any per-sandbox overrides such as `DJANGO_DEV_PORT` in that same `.sandbox/.env` file.
+
+3. Start the sandbox from the repository root:
+
+   ```bash
+   .sandbox/bin/start
+   ```
+
+4. Open a shell in `dev-sandbox`:
+
+   ```bash
+   .sandbox/bin/bash
+   ```
+
+5. On a fresh sandbox, install project dependencies from inside `/workspace`:
+
+   ```bash
+   make all-init
+   ```
+
+6. Work inside `dev-sandbox`. The container starts idle and stays available for manual commands.
+7. Start a live backend only when you need it:
 
    ```bash
    make backend-run
    ```
 
-7. Verify from the host browser against `http://localhost:<DJANGO_DEV_PORT>/accounts/login/` when you need to confirm backend reachability.
-8. Run the relevant test targets, then finish with the full verification gate before shipping.
+8. Verify from the host browser against `http://localhost:<DJANGO_DEV_PORT>/accounts/login/` when you need to confirm backend reachability.
+9. Run the relevant test targets, then finish with the full verification gate before shipping.
+10. Tear the sandbox down when you no longer need it:
+
+   ```bash
+   .sandbox/bin/teardown
+   ```
 
 ## Commands
 
@@ -33,6 +61,7 @@ Use `make help` to see the canonical project command surface.
 Common commands from inside `dev-sandbox`:
 
 ```bash
+make all-init
 make backend-run
 make backend-test-unit
 make backend-test-e2e
@@ -45,10 +74,9 @@ make all-verify
 
 ## Practical Rules
 
-- Dev Containers tooling is the supported lifecycle entrypoint for local sandbox startup.
-- `initializeCommand` generates `.devcontainer/.env`; do not hand-create that file from `.env.example`.
-- `GIT_AUTH_TOKEN` and `SANDBOX_ID` are required host-side inputs before opening Dev Containers.
-- `SANDBOX_REPO_URL` is optional as an explicit override; otherwise `initializeCommand` derives it from the current checkout's `origin` remote and normalizes common SSH Git URLs to HTTPS for token-backed sandbox clone auth.
+- `.sandbox/bin/start`, `.sandbox/bin/bash`, and `.sandbox/bin/teardown` are the supported lifecycle entrypoints for local sandbox work.
+- `GIT_AUTH_TOKEN`, `SANDBOX_ID`, and `SANDBOX_REPO_URL` must be set in the per-sandbox `.sandbox/.env` before startup.
+- `.sandbox/.env.example` is the checked-in template. Copy it to local `.sandbox/.env` and keep secrets only in that untracked file.
 - `make backend-run` starts Django only when you call it explicitly.
 - When two sandboxes run in parallel, each one needs its own `DJANGO_DEV_PORT`.
 - The backend is verified from the host browser on `localhost`, not through worktree-specific hostnames.

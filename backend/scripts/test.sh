@@ -7,7 +7,7 @@ BACKEND_DIR="${ROOT_DIR}/backend"
 
 help() {
   cat <<'EOF'
-Run backend non-E2E tests inside the prepared devcontainer environment.
+Run backend non-E2E tests.
 
 Flow:
   1) Change to backend/

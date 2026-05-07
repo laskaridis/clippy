@@ -9,15 +9,18 @@ texts and save them using the API published by the backend.
 
 ## Prerequisites
 
-- Node.js 18+
-- pnpm
+- Docker
 - Google Chrome
+
+For local work, start the sandbox from the repository root with
+`.sandbox/bin/start`, open a shell with `.sandbox/bin/bash`, and run
+`make extension-init` or `make all-init` inside `/workspace` before using the
+extension commands below.
 
 ## Install dependencies
 
 ```bash
-cd extension
-pnpm install
+make extension-init
 ```
 
 ## Build
@@ -25,8 +28,7 @@ pnpm install
 Compile TypeScript source from `chrome/src` to runtime JavaScript in `chrome/dist`:
 
 ```bash
-cd extension
-pnpm run build
+make extension-build
 ```
 
 ## Unit tests
@@ -34,8 +36,7 @@ pnpm run build
 Run the extension test suite (build + Node test runner):
 
 ```bash
-cd extension
-pnpm test
+make extension-test-unit
 ```
 
 ## E2E tests (Playwright)
@@ -43,10 +44,7 @@ pnpm test
 Run popup integration tests against a real Chromium extension runtime and backend:
 
 ```bash
-cd extension
-pnpm install
-pnpm exec playwright install chromium
-pnpm run test:e2e
+make extension-test-e2e
 ```
 
 If the backend is not already reachable, the Playwright helper starts it with `make backend-run` from the repository root.
@@ -62,10 +60,9 @@ cd extension
 pnpm run prepare:runtime-config
 ```
 
-During local development, use the unpacked extension from the active sandbox
-clone's `extension/chrome` directory. The host checkout only launches Dev
-Containers; the live extension code runs from `/workspace/extension/chrome`
-inside `dev-sandbox`.
+During local development, the canonical automated path is to build and test the
+extension from inside `dev-sandbox`, where the live repository clone exists at
+`/workspace/extension/chrome`.
 
 ## Accessibility audits (WCAG 2.1 AA)
 
@@ -87,7 +84,8 @@ This command reports all findings and fails when `serious` or `critical` issues 
 3. Open Chrome and go to `chrome://extensions`.
 4. Enable **Developer mode** (top-right).
 5. Click **Load unpacked**.
-6. Select the folder: `extension/chrome` from the active sandbox clone.
+6. Select the `extension/chrome` directory from the filesystem copy you built
+   and prepared for manual browser testing.
 
 Chrome reads the checked-in `manifest.json` and `runtime-config.js` from `extension/chrome`.
 

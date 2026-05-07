@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+
+# Store the current script directory:
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# Calculate the location of docker-compose.yml relative to SCRIPT_DIR:
+DOCKER_COMPOSE_FILE="$(realpath "$SCRIPT_DIR/../docker-compose.yml")"
+
+docker compose -f "$DOCKER_COMPOSE_FILE" exec -u vscode dev-sandbox bash

@@ -17,10 +17,10 @@ When working with the codebase prefer `Makefile` as the primary surface of stabl
 
 If you need to do something **ALWAYS** check first if there is a Makefile target that you could use to complete your task. If you can't find one, consider creating one.
 
-For local-development docs, keep the narrative in the devcontainer-first order: worktree, `.devcontainer/.env`, Dev Containers, `dev-sandbox`, then `make backend-run` when a live backend is needed. Avoid reintroducing host-side bootstrap stories in living docs.
+For local-development docs, keep the narrative in the devcontainer-first order: worktree, sandbox env inputs/defaults, Dev Containers, `dev-sandbox`, then `make backend-run` when a live backend is needed. Avoid reintroducing host-side bootstrap stories in living docs.
 When `.devcontainer/bootstrap.sh` delegates to `make extension-init`, keep the devcontainer image responsible for providing the pinned `pnpm` toolchain up front; do not rely on post-create steps to install the package manager itself.
-Host-side devcontainer preflight scripts should reject dirty trees, require explicit sandbox inputs, derive `SANDBOX_REPO_URL` from the current checkout's `origin` remote, and generate `.devcontainer/.env` from `.devcontainer/.env.example` instead of hard-coding duplicated defaults.
-The `dev-sandbox` compose service must pass `SANDBOX_REPO_URL`, `GIT_AUTH_TOKEN`, and `SANDBOX_ID` into the container environment as well as `.devcontainer/.env`; the image-baked workspace init script reads those values at startup.
+Host-side devcontainer preflight scripts should reject dirty trees, require explicit sandbox inputs, and validate that `SANDBOX_REPO_URL` is either provided or derivable from the current checkout's `origin` remote. Do not make Compose startup depend on a preflight-generated `.env` file.
+The `dev-sandbox` compose service must pass `SANDBOX_REPO_URL`, `GIT_AUTH_TOKEN`, and `SANDBOX_ID` into the container environment, and should carry checked-in defaults inline for non-secret Django/Postgres settings. The image-baked workspace init script reads those values at startup and may derive `SANDBOX_REPO_URL` from the launcher checkout when needed.
 When Git credentials must keep working after workspace initialization, bake a reusable askpass helper into the image and point Git's system config at it; do not depend on a one-shot shell wrapper that disappears after the clone step.
 
 ## Project Directory Outline

@@ -4,6 +4,11 @@ This ExecPlan is a living document. The sections `Progress`, `Surprises & Discov
 
 This document must be maintained in accordance with [docs/PLANS.md](docs/PLANS.md).
 
+Historical note: this ExecPlan records the now-superseded Dev Containers design
+for isolated cloned workspaces. The active local-development workflow now lives
+under `.sandbox/`; see `docs/adrs/0008-direct-docker-sandbox-workflow.md` for
+the current launcher contract.
+
 ## Purpose / Big Picture
 
 The repository already completed the first devcontainer-first simplification: local development now happens inside the `dev-sandbox` container, the backend is started explicitly with `make backend-run`, and the old host-side runtime bootstrap layer is gone. That work still leaves one important coupling in place: the running container sees the host checkout directly through a bind-mounted `/workspace`.
@@ -23,6 +28,7 @@ This follow-on change replaces that live bind mount with a per-sandbox Docker na
 - [ ] Update living docs, quickstarts, and the architecture record to describe the isolated-clone sandbox workflow instead of the bind-mounted workflow.
 - [ ] Run the isolated-clone validation flow and record evidence for first clone, same-`SANDBOX_ID` reopen, parallel sandboxes, host-change isolation, and in-sandbox Git operations.
 - [x] (2026-05-04 10:55Z) Ran the final isolated-clone validation sweep on `devcontainer-final-a2` and `devcontainer-final-b2`: first-start clone, same-`SANDBOX_ID` reopen, and parallel `SANDBOX_ID` isolation passed, but `git fetch` and `git push` from inside `/workspace` still fail because the transient askpass helper does not survive past the clone step. Follow-up: `task-30`.
+- [x] (2026-05-07 08:40Z) Marked this plan as historical context after the repository removed `.devcontainer/` and adopted the direct `.sandbox` launcher workflow.
 
 ## Surprises & Discoveries
 
@@ -75,11 +81,23 @@ This follow-on change replaces that live bind mount with a per-sandbox Docker na
   Rationale: the source-isolation change does not alter the runtime-process contract established by the first migration.
   Date/Author: 2026-05-03 / Codex
 
+- Decision: keep this ExecPlan checked in as implementation history, but stop
+  treating it as the active local-workflow guide after the repository migrated
+  from `.devcontainer/` to `.sandbox/`.
+  Rationale: the plan still explains why the sandbox uses a per-sandbox cloned
+  `/workspace`, but its launcher details no longer match the checked-in code.
+  Date/Author: 2026-05-07 / Codex
+
 ## Outcomes & Retrospective
 
 The previous phase of work achieved its intended outcome for the bind-mounted devcontainer model: the repository has one clear local runtime story, the legacy bootstrap layer is gone, and the existing validation evidence is recorded in this file. That work should remain visible here because the isolated-clone plan builds on it rather than replacing it with an unrelated workflow.
 
 The isolated-clone work is now largely in place. The follow-on change moved `/workspace` onto a per-sandbox named volume, proved first clone and reopen reuse, and confirmed that two `SANDBOX_ID` values create separate workspace volumes. The remaining open issue is narrower: token-backed Git auth still needs to survive past workspace initialization so `git fetch` and `git push` work from an already-cloned sandbox without writing credentials into `.git/config`.
+
+As of 2026-05-07, this document is no longer the active source of truth for
+local startup. The repository removed `.devcontainer/` in favor of the simpler
+`.sandbox` launcher, but the plan remains useful historical context for the
+isolated-clone `/workspace` model that the current sandbox still follows.
 
 ## Context and Orientation
 
