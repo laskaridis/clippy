@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+
+mkdir -p /workspace
+chown -R vscode:vscode /workspace
+
+if [ ! -d /workspace/.git ]; then
+  export GIT_ASKPASS=/usr/local/bin/git-askpass
+  export GIT_TERMINAL_PROMPT=0
+  su -s /bin/bash vscode -c "git clone \"$SANDBOX_REPO_URL\" /workspace"
+fi
+
+# setup the project
+# make backend-init
+# make extension-init
+
+# This script will be run as an entrypoint as follows:
+#   /usr/local/bin/entrypoint.sh <command>
+# So, we need to execute the command passed as arguments.
+exec "$@"

@@ -23,7 +23,7 @@ help:
 	@echo "  make backend-format            - Format backend source (black)"
 	@echo "  make backend-format-check      - Check backend formatting compliance (black --check)"
 	@echo "  make backend-typecheck         - Run backend type checks (mypy)"
-	@echo "  make backend-run               - Start backend server inside the devcontainer"
+	@echo "  make backend-run               - Start backend server"
 	@echo "  make backend-clean             - Remove backend cache artifacts"
 	@echo "  make backend-verify            - Run all backend releasability checks"
 	@echo ""
@@ -128,7 +128,7 @@ backend-format-check:
 backend-typecheck:
 	@cd backend && python -m mypy .
 
-# Start backend server inside the devcontainer
+# Start backend server 
 backend-run:
 	@cd backend && python manage.py migrate
 	@cd backend && python manage.py shell -c "from apps.accounts.bootstrap import ensure_admin_user_from_env; print(ensure_admin_user_from_env())"

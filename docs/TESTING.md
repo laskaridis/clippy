@@ -1,6 +1,6 @@
 # Testing Guidelines
 
-Run tests inside the prepared devcontainer environment. The host checkout is only the launcher side; `/workspace` inside `dev-sandbox` is the cloned repo for the active sandbox. Start `make backend-run` first if a test or browser flow needs a live Django server.
+Run tests inside the prepared Docker sandbox. Start the stack with `.sandbox/bin/start`, open a shell with `.sandbox/bin/bash`, and run `make all-init` once per fresh sandbox before running project commands. `/workspace` inside `dev-sandbox` is the cloned repo for the active sandbox. Start `make backend-run` first if a test or browser flow needs a live Django server.
 
 Minimum commands:
 
@@ -51,5 +51,5 @@ make all-verify
 - Prefer targeted runs during iteration, then run broader suites before finishing.
 - For frontend accessibility work, run `pnpm run test:a11y` in `extension/`; the suite reports all findings and fails on serious/critical WCAG 2.1 A/AA violations.
 - Browser-driven checks should use the host `localhost:<DJANGO_DEV_PORT>` origin that the active sandbox exposes.
-- If you need to open Dev Containers from a host checkout, export `GIT_AUTH_TOKEN` and `SANDBOX_ID` first so `initializeCommand` can generate `.devcontainer/.env`. Export `SANDBOX_REPO_URL` too when you need to override a missing or SSH `origin` remote with an HTTPS clone URL for the sandbox.
+- Export `GIT_AUTH_TOKEN`, `SANDBOX_ID`, and `SANDBOX_REPO_URL` before starting `.sandbox/bin/start`. Use an HTTPS repository URL so the sandbox can clone and authenticate without rewriting the remote in `/workspace`.
 - Keep browser checks pointed at `http://localhost:<DJANGO_DEV_PORT>`; do not rely on the host checkout as the live workspace.

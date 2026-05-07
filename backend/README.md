@@ -10,18 +10,20 @@ Backend application publishing an API and a web application to manage clippings.
 
 ## Local development
 
-Create or reuse the worktree on the host, export `GIT_AUTH_TOKEN` and
-`SANDBOX_ID`, and open the checkout in Dev Containers. If the host checkout
-does not have a usable `origin` remote, or if `origin` is SSH-only, also export
-`SANDBOX_REPO_URL` with an HTTPS clone URL. `initializeCommand` generates
-`.devcontainer/.env` from the tracked example file plus those sandbox inputs.
-The `dev-sandbox` service is the sandbox for implementation work, and
-`/workspace` inside it is the cloned repo for the active sandbox rather than
-the host checkout.
+### Create a sandbox environment
+Create or reuse the worktree on the host, export `GIT_AUTH_TOKEN`,
+`SANDBOX_ID`, and `SANDBOX_REPO_URL` using a `.sandbox/.evn` file, 
+then start the local sandbox with `.sandbox/bin/start`. 
+
+### Conect to the sandbox
+Open a shell with `.sandbox/bin/bash`, then run `make all-init` from `/workspace` the first time
+you use a fresh sandbox. The `dev-sandbox` service is the implementation
+sandbox, and `/workspace` inside it is the cloned repo for the active sandbox
+rather than the host checkout.
 
 ## Run server
 
-Inside the devcontainer, start Django directly with:
+Start Django directly with:
 
 ```bash
 make backend-run

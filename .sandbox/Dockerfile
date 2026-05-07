@@ -125,5 +125,8 @@ RUN mkdir -p /home/vscode/.config/pip \
 
 # Bake the workspace initialization helper into the image so container startup
 # can populate the named volume before the devcontainer goes idle.
-COPY scripts/init-workspace.sh /usr/local/bin/init-workspace.sh
-RUN chmod 0755 /usr/local/bin/init-workspace.sh
+COPY scripts/init /usr/local/bin/init
+RUN chmod +x /usr/local/bin/init
+
+COPY scripts/git-askpass /usr/local/bin/git-askpass
+RUN chmod +x /usr/local/bin/git-askpass
