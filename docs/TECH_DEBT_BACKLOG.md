@@ -22,6 +22,30 @@ Keep entries actionable and current.
 
 ## Backlog
 
+### TD-005: Add a reusable sandbox validation harness for launcher, clone, and auth flows
+- Scope: infra
+- Impact: The isolated sandbox work repeatedly had to rediscover operational facts during manual smoke tests, especially around sandbox inputs, container reachability, clone persistence, and Git auth behavior after startup. That makes future launcher changes slower and easier to regress.
+- Status: Open
+- Created: 2026-05-08
+- Related: `docs/plans/devcontainers/spec.md`, `docs/plans/devcontainers/ralph.txt`
+- Next actions: Add one canonical automated smoke harness that verifies preflight input validation, first clone, same-`SANDBOX_ID` reopen, parallel sandbox isolation, and post-start `git fetch`/`git push` against a local authenticated test remote.
+
+### TD-006: Make extension bootstrap fully non-interactive when stale `node_modules` exists
+- Scope: extension
+- Impact: Sandbox startup can appear hung when `pnpm install` prompts to replace an incompatible `extension/node_modules` tree. That is operationally brittle and easy to misdiagnose.
+- Status: Open
+- Created: 2026-05-08
+- Related: `docs/plans/devcontainers/ralph.txt` task-21 learnings
+- Next actions: Update the extension install path so bootstrap stays non-interactive in the presence of stale dependency trees, then add a regression check for that startup case.
+
+### TD-007: Provide a canonical host-side test env path for backend verification
+- Scope: testing
+- Impact: Several verification steps depended on ad hoc host-shell setup for `DATABASE_URL` and related sandbox env, which makes reproduction noisy and increases the chance of false failures outside the active sandbox.
+- Status: Open
+- Created: 2026-05-08
+- Related: `docs/plans/devcontainers/ralph.txt` task-20 and task-08b learnings
+- Next actions: Add one supported host-side test invocation path for backend validation, either via a Make target or a checked-in helper, that injects the required database/runtime env consistently without reviving the old runtime bootstrap model.
+
 ### TD-002: Remove unused Clip `(user, domain)` index
 - Scope: backend
 - Impact: The `(user, domain)` index appears unused by current product query paths; keeping it adds unnecessary write/storage overhead and schema complexity.
