@@ -19,6 +19,7 @@
 - Keep the public CLI as a shared `argparse` subcommand surface that resolves `RunConfig` before resolving the agent and converts `RalphError` subclasses into a single stderr line plus a non-zero exit.
 - Keep `ralph/ralph.sh` as a compatibility shim that sets `PYTHONPATH` to the repo-local `ralph/` package root and `exec`s `python -m ralph.cli` after translating legacy flags, so the shell entrypoint stays authoritative only for argument mapping.
 - Keep deterministic Ralph test doubles in `ralph/tests/fakes.py`; script `AgentResult` values and controlled exceptions rather than patching subprocesses in each test.
+- When testing multi-iteration lifecycle flows, mutate feature-local bookkeeping files between fake-agent invocations instead of monkeypatching orchestrator internals.
 
 ## [2026-05-11 12:35Z]
 - Task id
@@ -529,5 +530,24 @@
   - Legacy shell compatibility is easiest to preserve when Bash only translates arguments and immediately `exec`s the Python entrypoint.
 - Scope deviations:
   - Updated `AGENTS.md` with the reusable shell-shim convention for future Ralph work.
+- Follow up needed: none.
+---
+## [2026-05-11 13:41Z]
+- Task id
+  - TASK-022
+- What was implemented:
+  - Added deterministic lifecycle integration tests for `run` and `resume` that cover multi-iteration completion, blocked runs, interrupted-run resume, stale-lock recovery, existing-incomplete-session rejection, terminal-session rejection, and degraded completion after retrospective failure.
+  - Used fake agents plus temporary feature directories to exercise the real orchestrator and persisted session artifacts without requiring a live Codex binary.
+- Files changed:
+  - `ralph/tests/test_orchestrator_run.py`
+  - `ralph/tests/test_orchestrator_resume.py`
+  - `docs/plans/ralph-cli/tasks.json`
+  - `docs/plans/ralph-cli/ralph.txt`
+- Verification:
+  - Ran `python -m unittest discover -s ralph/tests -v` successfully; 19 tests passed.
+- Learnings for future iterations:
+  - Multi-iteration lifecycle tests are easiest to keep deterministic when a test-only fake agent mutates the feature-local bookkeeping files between invocations.
+- Scope deviations:
+  - None beyond the required bookkeeping files.
 - Follow up needed: none.
 ---
