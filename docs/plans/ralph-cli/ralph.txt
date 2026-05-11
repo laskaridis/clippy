@@ -16,6 +16,7 @@
 - Keep phase execution wrappers single-shot: render the prompt, invoke the agent once, parse status, validate bookkeeping, and return a `PhaseResult` with metadata instead of prompt or response bodies.
 - For fresh run entrypoints, check the current-session pointer and lock state before creating a new session, then keep lock ownership, session creation, and the phase loop inside one `finally`-protected block so a failure cannot strand active ownership.
 - Release `.ralph/lock` through an ownership-aware best-effort cleanup helper so `finally` blocks do not mask the original run or resume failure when the lock is absent or already owned by a different session.
+- Keep the public CLI as a shared `argparse` subcommand surface that resolves `RunConfig` before resolving the agent and converts `RalphError` subclasses into a single stderr line plus a non-zero exit.
 
 ## [2026-05-11 12:35Z]
 - Task id
@@ -433,5 +434,30 @@
   - Cleanup should be best-effort and ownership-aware so a stale or replaced lock does not turn into a misleading secondary failure.
 - Scope deviations:
   - Updated `AGENTS.md` with the reusable lock-cleanup convention so future Ralph work keeps cleanup best-effort and ownership-aware.
+- Follow up needed: none.
+---
+## [2026-05-11 13:29Z]
+- Task id
+  - TASK-018
+- What was implemented:
+  - Added `ralph/ralph/cli.py` with the public `run`, `resume`, and `retro` subcommands wired through a single `argparse` surface.
+  - Resolved runtime configuration through `resolve_run_config()`, resolved the configured agent through `ralph.agents.factory.resolve_agent()`, and delegated to the existing orchestration and retrospective entrypoints.
+  - Converted typed Ralph failures into deterministic non-zero exits with a single operator-facing stderr message while keeping normal terminal outcomes visible on stdout.
+- Files changed:
+  - `ralph/ralph/cli.py`
+  - `docs/plans/ralph-cli/tasks.json`
+  - `docs/plans/ralph-cli/ralph.txt`
+- Verification:
+  - Ran `python -m py_compile ralph/ralph/cli.py` successfully.
+  - Ran `python -m pip install -e ralph` successfully.
+  - Ran `python -m unittest discover -s ralph/tests` successfully.
+  - Ran the installed console script directly from the Python scripts directory:
+    - `ralph --help` showed the `run`, `resume`, and `retro` subcommands.
+    - `ralph run --help` showed the shared feature/runtime options.
+- Learnings for future iterations:
+  - A shared `argparse` parent parser keeps the public CLI surface consistent across subcommands without duplicating option wiring.
+  - The editable install in this environment places the `ralph` script under the Python install's scripts directory, not necessarily on the shell `PATH`.
+- Scope deviations:
+  - None.
 - Follow up needed: none.
 ---
