@@ -43,6 +43,7 @@ Resolve concrete agent backends through `ralph.agents.factory.resolve_agent()` i
 Codex-backed adapters should treat the `-o` tempfile as the authoritative result payload and preserve subprocess stderr in `AgentResult.metadata` for diagnostics.
 Ralph session persistence should live behind `ralph.session.RunSessionStore`; write each run to `.ralph/sessions/<session-id>.json` and keep `.ralph/sessions/current.json` pointed at the current incomplete session or the latest terminal session.
 Keep stale-lock inspection conservative: only the local host can prove the recorded PID is dead, and remote-host locks should remain active until higher-level recovery decides whether to reclaim them.
+Phase-local status parsers should normalize CRLF before exact first-line comparisons and preserve the remaining response body for diagnostics.
 
 ## Front-end development
 
