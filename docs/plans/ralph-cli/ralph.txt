@@ -8,6 +8,7 @@
 - Resolve concrete agent backends through `ralph.agents.factory.resolve_agent()` so lifecycle code stays backend-agnostic and unknown identifiers fail through a typed Ralph error.
 - Keep run-session persistence behind `ralph.session.RunSessionStore`; store one JSON session per run under `.ralph/sessions/` and treat `current.json` as the authoritative pointer for resume.
 - Keep lock staleness checks conservative: only the local host can prove a recorded PID is dead, and remote-host locks stay active until higher-level recovery decides what to do.
+- Acquire `.ralph/lock` with an exclusive create or equivalent atomic filesystem primitive so concurrent runs cannot both believe they own the same feature lock.
 - Keep lifecycle phase contracts in `ralph/ralph/lifecycle/phases/base.py` as single-shot typed results with a local outcome enum and metadata mapping; do not let phases decide the next phase.
 - Keep prompt assets inside the phase package that owns them, and render them through a small phase-local helper instead of a centralized prompt module.
 - Keep phase-specific readiness checks inside the owning phase package alongside the prompt helper so phase-local prerequisites stay explicit and do not leak into shared lifecycle validation.
@@ -66,6 +67,30 @@
 - Scope deviations:
   - None.
 - Follow up needed: none.
+---
+## [2026-05-11 15:10Z]
+- Task id
+  - TASK-026
+- What was implemented:
+  - Replaced the session-store lock acquisition check-then-write path with an exclusive create so concurrent acquisition attempts cannot overwrite an existing `.ralph/lock`.
+  - Added a regression test that simulates a stale in-memory view of the lock while the file already exists, proving the acquisition path still refuses to clobber the on-disk lock.
+- Files changed:
+  - `ralph/ralph/session.py`
+  - `ralph/tests/test_session.py`
+  - `AGENTS.md`
+  - `docs/plans/ralph-cli/tasks.json`
+  - `docs/plans/ralph-cli/ralph.txt`
+- Verification:
+  - Ran `python -m unittest discover -s ralph/tests -p 'test_session.py'` successfully.
+  - Ran `python -m py_compile ralph/ralph/session.py ralph/tests/test_session.py` successfully.
+  - Ran `make ralph-verify` and confirmed the remaining failure is the pre-existing `ModuleNotFoundError: No module named 'ralph.tests'` in `test_orchestrator_resume` and `test_retro_phase`.
+- Learnings for future iterations:
+  - `RunSessionStore` is slotted, so `unittest.mock.patch.object` needs to target the class when overriding a method for a regression test.
+  - The repo-wide Ralph verification gate still depends on the pending test-entrypoint repair task because `ralph.tests` is not yet importable in that discovery path.
+- Scope deviations:
+  - Updated `AGENTS.md` with the reusable exclusive-create lock-acquisition rule.
+- Follow up needed:
+  - `TASK-027` to repair the repo-root Ralph test entrypoint and make `make ralph-verify` pass end-to-end.
 ---
 ## [2026-05-11 13:45Z]
 - Task id

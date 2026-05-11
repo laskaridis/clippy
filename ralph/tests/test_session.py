@@ -7,6 +7,7 @@ import unittest
 from unittest.mock import patch
 
 from ralph.config import resolve_run_config
+from ralph.errors import BookkeepingValidationError
 from ralph.session import LockState, RunSessionStore
 
 
@@ -85,6 +86,20 @@ class SessionStoreTests(unittest.TestCase):
                 self.assertTrue(stale.host_matches)
                 self.assertFalse(stale.process_running)
                 self.assertGreater(stale.heartbeat_age, timedelta(minutes=10))
+
+    def test_acquire_lock_does_not_overwrite_an_existing_file(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            store = self._make_store(root)
+            existing_payload = '{"schema_version": 1, "session_id": "existing"}\n'
+            store.lock_path.parent.mkdir(parents=True, exist_ok=True)
+            store.lock_path.write_text(existing_payload, encoding="utf-8")
+
+            with patch.object(RunSessionStore, "load_lock", return_value=None):
+                with self.assertRaises(BookkeepingValidationError):
+                    store.acquire_lock("session-2")
+
+            self.assertEqual(store.lock_path.read_text(encoding="utf-8"), existing_payload)
 
 
 if __name__ == "__main__":

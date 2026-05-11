@@ -496,8 +496,6 @@ class RunSessionStore:
         last_heartbeat_at: datetime | None = None,
     ) -> RunLock:
         session_id = _validate_session_id(session_id, source="session_id")
-        if self.load_lock() is not None:
-            raise BookkeepingValidationError(f"Cannot acquire lock while a lock already exists: {self.lock_path}")
 
         created_at = started_at or _utc_now()
         lock = RunLock(
@@ -509,7 +507,7 @@ class RunSessionStore:
         )
         self._validate_lock_for_store(lock)
         self.ensure_state_tree()
-        self._write_lock_record(lock)
+        self._write_lock_record_exclusive(lock)
         return lock
 
     def refresh_lock_heartbeat(
@@ -651,6 +649,26 @@ class RunSessionStore:
 
     def _write_lock_record(self, lock: RunLock) -> None:
         _atomic_write_json(self.lock_path, lock.to_dict())
+
+    def _write_lock_record_exclusive(self, lock: RunLock) -> None:
+        payload = json.dumps(lock.to_dict(), indent=2, sort_keys=True) + "\n"
+        self.lock_path.parent.mkdir(parents=True, exist_ok=True)
+        try:
+            fd = os.open(self.lock_path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+        except FileExistsError as exc:
+            raise BookkeepingValidationError(f"Cannot acquire lock while a lock already exists: {self.lock_path}") from exc
+
+        try:
+            with os.fdopen(fd, "w", encoding="utf-8") as handle:
+                handle.write(payload)
+                handle.flush()
+                os.fsync(handle.fileno())
+        except Exception:
+            try:
+                self.lock_path.unlink()
+            except FileNotFoundError:
+                pass
+            raise
 
     def _write_current_pointer(self, pointer: RunSessionPointer) -> None:
         _atomic_write_json(self.current_session_path, pointer.to_dict())
