@@ -840,6 +840,75 @@
         "TASK-024"
       ],
       "status": "completed"
+    },
+    {
+      "id": "TASK-026",
+      "title": "Make Ralph lock acquisition atomic",
+      "objective": "Eliminate the check-then-write race in Ralph's run lock flow so concurrent `ralph run` processes cannot both believe they own the same feature lock. This task should preserve the existing lock semantics while enforcing one-active-run ownership at acquisition time.",
+      "type": "implementation",
+      "files": [
+        "ralph/ralph/session.py",
+        "ralph/tests/test_session.py",
+        "ralph/tests/test_orchestrator_run.py"
+      ],
+      "constraints": [
+        "Replace the current check-then-write lock acquisition path with an exclusive create or equivalent atomic filesystem operation.",
+        "Preserve the existing structured `.ralph/lock` payload shape and ownership-aware cleanup behavior.",
+        "Do not weaken the conservative stale-lock policy or introduce auto-reclaim behavior in the session layer."
+      ],
+      "implementation_notes": [
+        "Keep the atomicity guarantee inside the session-store lock API rather than pushing it into callers.",
+        "Raise the existing typed lock-conflict failure when another process already owns the lock.",
+        "Add deterministic coverage that proves a pre-existing lock cannot be overwritten through the acquisition path."
+      ],
+      "acceptance_criteria": [
+        "Concurrent acquisition attempts for the same feature cannot both create or replace `.ralph/lock` successfully.",
+        "Ralph still persists the same lock metadata and can refresh or release the lock after successful acquisition.",
+        "The test suite covers the no-overwrite behavior of the atomic acquisition path."
+      ],
+      "assumptions": [
+        "A filesystem-level exclusive create primitive is available in the supported Python runtime."
+      ],
+      "dependencies": [
+        "TASK-008",
+        "TASK-021",
+        "TASK-022"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "TASK-027",
+      "title": "Repair the repo-root Ralph test entrypoint",
+      "objective": "Fix the documented `make ralph-test` target so a fresh checkout can import the repo-local Ralph package when the command is run from the repository root. This task should make the canonical Ralph verification entrypoint work without relying on accidental import-path state.",
+      "type": "implementation",
+      "files": [
+        "Makefile",
+        "ralph/README.md"
+      ],
+      "constraints": [
+        "Ensure `make ralph-test` can load `ralph.config` and the rest of the Ralph package from a repository-root invocation.",
+        "Keep the repo-root Makefile as the canonical Ralph test surface rather than requiring users to `cd ralph` first.",
+        "Do not depend on undeclared global environment state or a previously edited shell `PYTHONPATH`."
+      ],
+      "implementation_notes": [
+        "Either install Ralph in editable mode as part of the documented setup or set the import path explicitly within the Make target.",
+        "Keep the direct unittest command aligned with the repo guidance that Ralph targets run from the repository root.",
+        "Update local Ralph docs only if the final command contract changes."
+      ],
+      "acceptance_criteria": [
+        "`make ralph-test` succeeds from the repository root in a prepared checkout without `ModuleNotFoundError` for `ralph.config`.",
+        "The canonical Ralph test entrypoint remains discoverable through `make help` and consistent with the documented workflow.",
+        "Any required documentation for the fixed invocation is updated alongside the Makefile change."
+      ],
+      "assumptions": [
+        "The prepared development environment already contains the base Python tooling needed for the chosen import-path setup."
+      ],
+      "dependencies": [
+        "TASK-023",
+        "TASK-024",
+        "TASK-025"
+      ],
+      "status": "pending"
     }
   ]
 }
