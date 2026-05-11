@@ -17,6 +17,7 @@
 - For fresh run entrypoints, check the current-session pointer and lock state before creating a new session, then keep lock ownership, session creation, and the phase loop inside one `finally`-protected block so a failure cannot strand active ownership.
 - Release `.ralph/lock` through an ownership-aware best-effort cleanup helper so `finally` blocks do not mask the original run or resume failure when the lock is absent or already owned by a different session.
 - Keep the public CLI as a shared `argparse` subcommand surface that resolves `RunConfig` before resolving the agent and converts `RalphError` subclasses into a single stderr line plus a non-zero exit.
+- Keep `ralph/ralph.sh` as a compatibility shim that sets `PYTHONPATH` to the repo-local `ralph/` package root and `exec`s `python -m ralph.cli` after translating legacy flags, so the shell entrypoint stays authoritative only for argument mapping.
 
 ## [2026-05-11 12:35Z]
 - Task id
@@ -459,5 +460,29 @@
   - The editable install in this environment places the `ralph` script under the Python install's scripts directory, not necessarily on the shell `PATH`.
 - Scope deviations:
   - None.
+- Follow up needed: none.
+---
+## [2026-05-11 13:32Z]
+- Task id
+  - TASK-019
+- What was implemented:
+  - Replaced the legacy Bash coding loop in `ralph/ralph.sh` with a thin compatibility shim that parses the legacy flags, maps them to `ralph.cli` subcommands, and delegates execution with `exec`.
+  - Preserved the legacy help text and the operator-facing `--retro-only` path while keeping validation and orchestration in Python.
+- Files changed:
+  - `ralph/ralph.sh`
+  - `AGENTS.md`
+  - `docs/plans/ralph-cli/tasks.json`
+  - `docs/plans/ralph-cli/ralph.txt`
+- Verification:
+  - Ran `bash -n ralph/ralph.sh` successfully.
+  - Ran `./ralph/ralph.sh --help` successfully and confirmed the legacy flag surface still prints.
+  - Ran a fake-`python3` smoke test that captured the delegated argv and confirmed legacy `run` flags map to `python -m ralph.cli run ...`.
+  - Ran a fake-`python3` smoke test for `--retro-only` and confirmed it maps to `python -m ralph.cli retro ...`.
+  - Ran `python -m unittest discover -s ralph/tests` successfully.
+- Learnings for future iterations:
+  - The shell wrapper needs `PYTHONPATH` pointed at the repo-local `ralph/` package root so it can delegate to `ralph.cli` without changing the caller's working directory.
+  - Legacy shell compatibility is easiest to preserve when Bash only translates arguments and immediately `exec`s the Python entrypoint.
+- Scope deviations:
+  - Updated `AGENTS.md` with the reusable shell-shim convention for future Ralph work.
 - Follow up needed: none.
 ---
