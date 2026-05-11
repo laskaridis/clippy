@@ -382,13 +382,14 @@
         "`RALPH_STATUS=CONTINUE` is rejected when every task entry is already `completed`."
       ],
       "assumptions": [
-        "Task entries in `tasks.json` remain JSON objects with a `status` field as implied by the existing prompt contract."
+        "Task entries in `tasks.json` may omit `status` until they are completed; the bookkeeping validator treats missing or non-`completed` values as pending."
       ],
       "dependencies": [
         "TASK-003",
         "TASK-011",
         "TASK-002"
-      ]
+      ],
+      "status": "completed"
     },
     {
       "id": "TASK-013",
