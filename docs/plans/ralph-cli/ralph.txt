@@ -8,6 +8,7 @@
 - Resolve concrete agent backends through `ralph.agents.factory.resolve_agent()` so lifecycle code stays backend-agnostic and unknown identifiers fail through a typed Ralph error.
 - Keep run-session persistence behind `ralph.session.RunSessionStore`; store one JSON session per run under `.ralph/sessions/` and treat `current.json` as the authoritative pointer for resume.
 - Keep lock staleness checks conservative: only the local host can prove a recorded PID is dead, and remote-host locks stay active until higher-level recovery decides what to do.
+- Keep lifecycle phase contracts in `ralph/ralph/lifecycle/phases/base.py` as single-shot typed results with a local outcome enum and metadata mapping; do not let phases decide the next phase.
 
 ## [2026-05-11 12:35Z]
 - Task id
@@ -226,5 +227,24 @@
   - Remote-host locks need to stay conservative because the local process table cannot prove remote liveness.
 - Scope deviations:
   - Updated `AGENTS.md` with the reusable conservative-lock-inspection note for future Ralph work.
+- Follow up needed: none.
+---
+
+## [2026-05-11 12:57Z]
+- Task id
+  - TASK-009
+- What was implemented:
+  - Added `ralph/ralph/lifecycle/phases/base.py` with the shared `PhaseOutcome` enum, a frozen `PhaseResult` container, and the `Phase` protocol for single-shot lifecycle phases.
+- Files changed:
+  - `ralph/ralph/lifecycle/phases/base.py`
+  - `docs/plans/ralph-cli/tasks.json`
+  - `docs/plans/ralph-cli/ralph.txt`
+- Verification:
+  - Ran `python -m py_compile ralph/ralph/lifecycle/phases/base.py` successfully.
+  - Ran `python -m unittest discover -s ralph/tests` successfully; the existing smoke suite passed.
+- Learnings for future iterations:
+  - Phase boundaries should stay deliberately narrow: a local outcome plus metadata is enough for the orchestrator, and it should not need to know which phase comes next.
+- Scope deviations:
+  - None beyond the bookkeeping updates required by the task workflow.
 - Follow up needed: none.
 ---
