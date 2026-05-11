@@ -47,6 +47,7 @@ For fresh run entrypoints, validate the current-session pointer and lock state b
 Keep stale-lock inspection conservative: only the local host can prove the recorded PID is dead, and remote-host locks should remain active until higher-level recovery decides whether to reclaim them.
 Keep lock cleanup best-effort and ownership-aware so `finally` blocks never mask the original run or resume failure when the current lock is absent, unreadable, or already belongs to another session.
 Phase-local status parsers should normalize CRLF before exact first-line comparisons and preserve the remaining response body for diagnostics.
+Keep deterministic Ralph test doubles in `ralph/tests/fakes.py`; script `AgentResult` values and controlled exceptions instead of patching subprocesses in each test.
 
 ## Front-end development
 
