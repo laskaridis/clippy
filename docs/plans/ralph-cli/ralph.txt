@@ -4,6 +4,7 @@
 - Keep shared Ralph failure classes in `ralph/errors.py` and import them from there instead of defining module-local exception names.
 - Resolve feature folders through `ralph.config.resolve_run_config()` so relative paths are normalized once and required feature files are validated before lifecycle code runs.
 - Keep agent backends behind `ralph.agents.base.Agent` and return `AgentResult` with stdout, exit code, and diagnostics metadata instead of raw subprocess objects.
+- For Codex-backed adapters, treat the `-o` file as the authoritative payload and keep subprocess stderr in `AgentResult.metadata` for diagnostics.
 
 ## [2026-05-11 12:35Z]
 - Task id
@@ -26,6 +27,26 @@
   - Ralph is intentionally being packaged as a separate installable unit under `ralph/`, not folded into backend packaging.
 - Scope deviations:
   - Created the feature progress log file because none existed yet.
+- Follow up needed: none.
+---
+## [2026-05-11 12:45Z]
+- Task id
+  - TASK-005
+- What was implemented:
+  - Added `ralph/ralph/agents/codex.py` with a concrete `CodexAgent` that shells out to the documented Codex command, reads the temp-file payload as the agent result, preserves subprocess diagnostics in metadata, and removes the temp file in all paths.
+- Files changed:
+  - `ralph/ralph/agents/codex.py`
+  - `docs/plans/ralph-cli/tasks.json`
+  - `docs/plans/ralph-cli/ralph.txt`
+  - `AGENTS.md`
+- Verification:
+  - Ran `python -m py_compile ralph/ralph/agents/codex.py` successfully.
+  - Ran `python -m unittest discover -s ralph/tests` successfully.
+  - Ran a targeted `python` script with a monkeypatched `subprocess.run` to confirm payload capture, metadata population, and temp-file cleanup on both success and `FileNotFoundError` paths.
+- Learnings for future iterations:
+  - Codex-style adapters should keep the temp-file payload separate from subprocess stdout so lifecycle code can rely on the same result channel the shell prototype used.
+- Scope deviations:
+  - Updated `AGENTS.md` with a reusable agent-adapter pattern because the behavior is broadly useful for future Ralph backends.
 - Follow up needed: none.
 ---
 

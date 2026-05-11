@@ -39,6 +39,7 @@ When Git credentials must keep working after workspace initialization, bake a re
 ```
 
 Ralph agent backends should implement `ralph.agents.base.Agent` and return `AgentResult`; keep lifecycle code backend-agnostic and avoid raw subprocess coupling.
+Codex-backed adapters should treat the `-o` tempfile as the authoritative result payload and preserve subprocess stderr in `AgentResult.metadata` for diagnostics.
 
 ## Front-end development
 
