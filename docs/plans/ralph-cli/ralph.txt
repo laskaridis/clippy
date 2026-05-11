@@ -10,6 +10,7 @@
 - Keep lock staleness checks conservative: only the local host can prove a recorded PID is dead, and remote-host locks stay active until higher-level recovery decides what to do.
 - Keep lifecycle phase contracts in `ralph/ralph/lifecycle/phases/base.py` as single-shot typed results with a local outcome enum and metadata mapping; do not let phases decide the next phase.
 - Keep prompt assets inside the phase package that owns them, and render them through a small phase-local helper instead of a centralized prompt module.
+- Keep phase-specific readiness checks inside the owning phase package alongside the prompt helper so phase-local prerequisites stay explicit and do not leak into shared lifecycle validation.
 - Normalize CRLF before exact first-line status comparisons in phase-local parsers, and preserve the trailing response body for diagnostics.
 - Keep code-phase bookkeeping validation narrow: treat missing task `status` values as pending, count only explicit `completed` entries as finished, and create `ralph.txt` only when the file is missing.
 - Keep phase execution wrappers single-shot: render the prompt, invoke the agent once, parse status, validate bookkeeping, and return a `PhaseResult` with metadata instead of prompt or response bodies.
@@ -249,6 +250,30 @@
   - Phase boundaries should stay deliberately narrow: a local outcome plus metadata is enough for the orchestrator, and it should not need to know which phase comes next.
 - Scope deviations:
   - None beyond the bookkeeping updates required by the task workflow.
+- Follow up needed: none.
+---
+## [2026-05-11 13:11Z]
+- Task id
+  - TASK-014
+- What was implemented:
+  - Added the retrospective phase package at `ralph/ralph/lifecycle/phases/retro/`.
+  - Moved the retrospective prompt contract into `ralph/ralph/lifecycle/phases/retro/prompt.md` and added local load/render helpers.
+  - Added `ralph/ralph/lifecycle/phases/retro/validation.py` to enforce the retrospective prerequisite that `ralph.txt` must already exist.
+- Files changed:
+  - `ralph/ralph/lifecycle/phases/retro/__init__.py`
+  - `ralph/ralph/lifecycle/phases/retro/prompt.md`
+  - `ralph/ralph/lifecycle/phases/retro/prompt.py`
+  - `ralph/ralph/lifecycle/phases/retro/validation.py`
+  - `docs/plans/ralph-cli/tasks.json`
+  - `docs/plans/ralph-cli/ralph.txt`
+- Verification:
+  - Ran `python -m py_compile ralph/ralph/lifecycle/phases/retro/__init__.py ralph/ralph/lifecycle/phases/retro/prompt.py ralph/ralph/lifecycle/phases/retro/validation.py` successfully.
+  - Ran `python -m unittest discover -s ralph/tests` successfully.
+  - Ran a targeted Python smoke script that confirmed the retro prompt loads, `$ARGUMENTS` is rendered, `validate_retro_prerequisites()` accepts an existing `ralph.txt`, and it raises `RetrospectiveFailureError` when `ralph.txt` is absent.
+- Learnings for future iterations:
+  - Phase-owned prerequisite checks fit best beside the phase prompt asset, not in a shared lifecycle validation module.
+- Scope deviations:
+  - Added one reusable codebase-pattern note to capture the phase-owned prerequisite-check convention.
 - Follow up needed: none.
 ---
 ## [2026-05-11 15:59Z]
