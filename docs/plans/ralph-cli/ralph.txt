@@ -12,6 +12,7 @@
 - Keep prompt assets inside the phase package that owns them, and render them through a small phase-local helper instead of a centralized prompt module.
 - Normalize CRLF before exact first-line status comparisons in phase-local parsers, and preserve the trailing response body for diagnostics.
 - Keep code-phase bookkeeping validation narrow: treat missing task `status` values as pending, count only explicit `completed` entries as finished, and create `ralph.txt` only when the file is missing.
+- Keep phase execution wrappers single-shot: render the prompt, invoke the agent once, parse status, validate bookkeeping, and return a `PhaseResult` with metadata instead of prompt or response bodies.
 
 ## [2026-05-11 12:35Z]
 - Task id
@@ -318,5 +319,28 @@
 - Scope deviations:
   - Updated `docs/plans/ralph-cli/tasks.json` to mark the task complete and to align the task assumption with the ledger’s actual missing-status shape.
   - Updated `docs/plans/ralph-cli/ralph.txt` with the required progress note and the new codebase pattern.
+- Follow up needed: none.
+---
+## [2026-05-11 13:09Z]
+- Task id
+  - TASK-013
+- What was implemented:
+  - Added `ralph/ralph/lifecycle/phases/code/phase.py` with a `CodePhase` runner and `run_code_phase()` helper that execute exactly one coding pass.
+  - Wired the phase to render the code prompt, invoke the abstract `Agent` once, parse the first-line Ralph status, validate code bookkeeping, and return a typed `PhaseResult`.
+  - Captured minimal phase metadata for the orchestrator, including the parsed status, agent diagnostics, and bookkeeping counts, without duplicating prompt or response bodies.
+- Files changed:
+  - `ralph/ralph/lifecycle/phases/code/phase.py`
+  - `docs/plans/ralph-cli/tasks.json`
+  - `docs/plans/ralph-cli/ralph.txt`
+- Verification:
+  - Ran `python -m py_compile ralph/ralph/lifecycle/phases/code/phase.py` successfully.
+  - Ran `python -m unittest discover -s ralph/tests` successfully.
+  - Installed `ralph` in editable mode with `python -m pip install -e ralph`.
+  - Ran a targeted smoke script against `docs/plans/ralph-cli` with a fake agent and confirmed `CodePhase.run()` and `run_code_phase()` both returned `PhaseOutcome.NEXT_ITERATION`.
+- Learnings for future iterations:
+  - Phase modules can stay thin by composing the prompt, status, and bookkeeping helpers instead of re-implementing any phase-local policy.
+  - Minimal `PhaseResult.metadata` is enough for orchestration if it carries the agent exit code, agent diagnostics, parsed status, and bookkeeping summary.
+- Scope deviations:
+  - None.
 - Follow up needed: none.
 ---
