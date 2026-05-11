@@ -45,6 +45,28 @@
   - Created the feature progress log file because none existed yet.
 - Follow up needed: none.
 ---
+## [2026-05-11 14:05Z]
+- Task id
+  - TASK-025
+- What was implemented:
+  - Executed the final Ralph verification matrix and confirmed the prepared development environment passes the deterministic command set.
+  - Marked `TASK-025` complete in the feature task ledger after the checks succeeded.
+- Files changed:
+  - `docs/plans/ralph-cli/tasks.json`
+  - `docs/plans/ralph-cli/ralph.txt`
+- Verification:
+  - Ran `python -m pip install -e ralph` successfully.
+  - Ran `python -m unittest discover -s ralph/tests` successfully; 19 tests passed.
+  - Ran `make ralph-test` successfully; 19 tests passed.
+  - Ran `make ralph-verify` successfully; 19 tests passed and Ruff reported no issues in 22 source files.
+  - Ran `./ralph/ralph.sh --help` successfully and confirmed the legacy flag set still includes `--feature-dir`, `--max-iterations`, `--coding-model`, `--retro-model`, and `--retro-only`.
+- Learnings for future iterations:
+  - The final verification matrix is stable when run from the worktree root, where the top-level `ralph.tests` namespace remains discoverable.
+  - `make ralph-verify` is a good single command for the repo-local Ralph gate because it already bundles deterministic tests and static checks.
+- Scope deviations:
+  - None.
+- Follow up needed: none.
+---
 ## [2026-05-11 13:45Z]
 - Task id
   - TASK-023
