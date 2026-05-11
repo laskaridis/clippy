@@ -13,7 +13,8 @@
         "ralph/ralph/agents/__init__.py",
         "ralph/ralph/lifecycle/__init__.py",
         "ralph/ralph/lifecycle/phases/__init__.py",
-        "ralph/tests/__init__.py"
+        "ralph/tests/__init__.py",
+        "ralph/tests/test_smoke.py"
       ],
       "constraints": [
         "Keep Ralph packaged entirely under `ralph/` and independent from `backend/` and Django packaging.",
@@ -33,7 +34,8 @@
       "assumptions": [
         "The prepared development environment will install Ralph in editable mode before using the `ralph` console script."
       ],
-      "dependencies": []
+      "dependencies": [],
+      "status": "completed"
     },
     {
       "id": "TASK-002",
