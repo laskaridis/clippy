@@ -1,0 +1,224 @@
+{
+  "summary": {
+    "overall_quality": 78,
+    "major_findings": [
+      "The plan covers most of the spec's behavioral work, especially lifecycle, session, and test requirements.",
+      "Several exact interface requirements from the spec are translated only implicitly, which increases implementation guesswork for low-reasoning agents.",
+      "TASK-010 invents a public `--agent` CLI flag even though the spec says agent selection remains internal in v1.",
+      "The plan does not explicitly carry forward the standard-library-only constraint or the retro rerun idempotence requirement."
+    ]
+  },
+  "scores": {
+    "coverage": 8,
+    "correctness": 7,
+    "granularity": 8,
+    "acceptance_criteria_quality": 7,
+    "implementation_guidance": 8,
+    "dependency_quality": 7,
+    "scope_control": 7,
+    "testability": 9,
+    "low_reasoning_agent_safety": 7
+  },
+  "requirement_coverage": [
+    {
+      "requirement": "Create Ralph as a standalone Python package under `ralph/` with `ralph/pyproject.toml` and the installed console script `ralph = \"ralph.cli:main\"`.",
+      "covered": true,
+      "task_ids": [
+        "TASK-001"
+      ],
+      "notes": "TASK-001 explicitly scaffolds the package and console script entrypoint."
+    },
+    {
+      "requirement": "Define typed runtime configuration in `ralph/ralph/config.py` including feature directory, max iterations, coding model, retro model, retro-only mode, selected agent identifier, derived artifact paths, and validation for missing files and absolute feature paths.",
+      "covered": false,
+      "task_ids": [
+        "TASK-002"
+      ],
+      "notes": "TASK-002 covers most config responsibilities, but it does not explicitly include retro-only mode or lock the exact `RunConfig` interface name."
+    },
+    {
+      "requirement": "Define an abstract agent contract plus a v1 Codex implementation that preserves the existing codex command, captures structured results, preserves diagnostics, and always cleans up the temp output file.",
+      "covered": true,
+      "task_ids": [
+        "TASK-003"
+      ],
+      "notes": "TASK-003 closely mirrors the command, result, and cleanup requirements."
+    },
+    {
+      "requirement": "Define a shared single-shot phase contract in `ralph/ralph/lifecycle/phases/base.py` that returns only local outcomes and does not encode which phase comes next.",
+      "covered": true,
+      "task_ids": [
+        "TASK-004"
+      ],
+      "notes": "TASK-004 captures the single-shot local-outcome contract clearly."
+    },
+    {
+      "requirement": "Implement the coding phase as a self-contained package that owns its prompt asset, replaces `$ARGUMENTS` with the resolved feature path, performs one agent invocation, and returns a local phase result.",
+      "covered": true,
+      "task_ids": [
+        "TASK-005"
+      ],
+      "notes": "TASK-005 maps directly to the coding-phase packaging and prompt-rendering requirements."
+    },
+    {
+      "requirement": "Formalize the coding control contract by parsing the first response line, enforcing the three allowed `RALPH_STATUS` values, requiring a blocker line for blocked runs, and validating only the narrow v1 bookkeeping rules.",
+      "covered": true,
+      "task_ids": [
+        "TASK-006"
+      ],
+      "notes": "TASK-006 captures the status parser and narrow bookkeeping rules accurately."
+    },
+    {
+      "requirement": "Implement the retrospective phase as a self-contained package that owns its prompt asset, validates `ralph.txt` for retrospective execution, and depends only on the abstract agent contract.",
+      "covered": true,
+      "task_ids": [
+        "TASK-007"
+      ],
+      "notes": "TASK-007 covers the retro prompt ownership and `ralph.txt` prerequisite explicitly."
+    },
+    {
+      "requirement": "Keep prompt ownership phase-local and avoid introducing centralized `ralph.lifecycle.prompts` or phase-specific centralized validation modules.",
+      "covered": true,
+      "task_ids": [
+        "TASK-001",
+        "TASK-005",
+        "TASK-006",
+        "TASK-007"
+      ],
+      "notes": "The relevant tasks consistently prohibit centralized prompt and phase-validation modules."
+    },
+    {
+      "requirement": "Persist feature-local run sessions under `.ralph/`, maintain `.ralph/sessions/<session-id>.json`, `.ralph/sessions/current.json`, and `.ralph/lock`, apply the 10-minute stale-lock rule, record the specified lock metadata, and store only control-plane data.",
+      "covered": true,
+      "task_ids": [
+        "TASK-008"
+      ],
+      "notes": "TASK-008 is a strong translation of the session and locking requirements."
+    },
+    {
+      "requirement": "Implement `run`, `resume`, and retrospective orchestration rules including fail-fast behavior for incomplete sessions, automatic retrospective after completion, explicit iteration control, and degraded success when retrospective fails.",
+      "covered": true,
+      "task_ids": [
+        "TASK-009"
+      ],
+      "notes": "TASK-009 captures the main orchestration behavior well."
+    },
+    {
+      "requirement": "Replace `ralph/ralph.sh` with a thin compatibility shim that preserves the legacy flags, maps full execution to `run`, maps `--retro-only` to `retro`, and leaves authoritative validation and mutation in Python.",
+      "covered": true,
+      "task_ids": [
+        "TASK-011"
+      ],
+      "notes": "TASK-011 matches the shell-wrapper requirements closely."
+    },
+    {
+      "requirement": "Add root `Makefile` targets `ralph-test` and `ralph-verify`, and update `ralph/README.md` for the new Python CLI, compatibility behavior, session artifacts, and recovery path.",
+      "covered": true,
+      "task_ids": [
+        "TASK-016",
+        "TASK-017"
+      ],
+      "notes": "The repository task-surface and documentation requirements are both explicitly covered."
+    },
+    {
+      "requirement": "Add deterministic tests covering successful multi-iteration completion, blocked run, malformed first-line status, missing `ralph.txt` in retrospective mode, resume after interruption, incomplete-session rejection, stale-lock recovery, bookkeeping validation failure, and degraded retrospective failure.",
+      "covered": true,
+      "task_ids": [
+        "TASK-013",
+        "TASK-014",
+        "TASK-015"
+      ],
+      "notes": "The test plan is comprehensive and tracks the acceptance scenarios from the spec closely."
+    },
+    {
+      "requirement": "Support the exact modern and legacy CLI surfaces while keeping agent selection internal in v1 and resolved to `codex`.",
+      "covered": false,
+      "task_ids": [
+        "TASK-010",
+        "TASK-011"
+      ],
+      "notes": "TASK-010 introduces a public `--agent` option assumption, which conflicts with the spec's internal-only v1 agent selection."
+    },
+    {
+      "requirement": "Define the exact named Python interfaces listed in the spec, including `RunConfig`, `Agent`, `AgentResult`, `resolve_agent`, `CodexAgent`, `RunSessionStore`, `RunLock`, `Phase`, `PhaseOutcome`, `PhaseResult`, and `run_retro`.",
+      "covered": false,
+      "task_ids": [
+        "TASK-002",
+        "TASK-003",
+        "TASK-004",
+        "TASK-008",
+        "TASK-009"
+      ],
+      "notes": "The plan maps responsibilities to the right modules but does not consistently require the exact symbol names, leaving interface compliance implicit."
+    },
+    {
+      "requirement": "Use only the Python standard library in v1 unless a non-stdlib dependency is clearly necessary, and do not introduce an external CLI framework.",
+      "covered": false,
+      "task_ids": [],
+      "notes": "No task carries the standard-library-only constraint forward into implementation guidance or acceptance criteria."
+    },
+    {
+      "requirement": "Keep reruns safe: `run` must fail fast with an active lock or incomplete session, `resume` is the recovery path, and rerunning `retro` should overwrite or regenerate only retrospective-owned state and output.",
+      "covered": false,
+      "task_ids": [
+        "TASK-009",
+        "TASK-015",
+        "TASK-017"
+      ],
+      "notes": "Run/resume safety is covered, but retro rerun idempotence is not made explicit in implementation or validation tasks."
+    }
+  ],
+  "issues": {
+    "missing_requirements": [
+      "Include retro-only mode explicitly in the resolved configuration surface instead of leaving it out of TASK-002.",
+      "Keep agent selection internal in v1; do not add a public `--agent` CLI flag.",
+      "Lock the exact interface names from the spec (`RunConfig`, `CodexAgent`, `RunSessionStore`, `RunLock`, `Phase`, `PhaseOutcome`, `PhaseResult`, `run_retro`, etc.) rather than relying on analogous module responsibilities.",
+      "Carry forward the standard-library-only constraint and the prohibition on external CLI frameworks.",
+      "Specify retro rerun idempotence so rerunning `retro` only overwrites or regenerates retrospective-owned state and output."
+    ],
+    "invented_requirements": [
+      "Expose a public `--agent` option in the v1 CLI surface (TASK-010 assumption).",
+      "Delete `ralph/prompts/code.md` and `ralph/prompts/retro.md` as a mandatory scope item even though the spec only requires prompt ownership to move into phase packages."
+    ],
+    "oversized_tasks": [
+      {
+        "task_id": "TASK-009",
+        "reason": "It bundles `run`, `resume`, retrospective execution, session-state policy, phase sequencing, iteration control, and degraded-success handling into one implementation task, which is a lot of control-plane behavior for a single handoff."
+      }
+    ],
+    "vague_tasks": [],
+    "weak_acceptance_criteria": [
+      {
+        "task_id": "TASK-002",
+        "reason": "The acceptance criteria do not require retro-only mode or the exact `RunConfig` interface named by the spec."
+      },
+      {
+        "task_id": "TASK-003",
+        "reason": "The acceptance criteria describe the agent abstraction behavior but do not lock the exact `Agent`, `AgentResult`, and `CodexAgent` symbols required by the spec."
+      },
+      {
+        "task_id": "TASK-008",
+        "reason": "The acceptance criteria capture session behavior but do not require the exact `RunSessionStore` and `RunLock` interfaces called out in the spec."
+      },
+      {
+        "task_id": "TASK-009",
+        "reason": "The acceptance criteria refer to retrospective execution generically instead of requiring the exact `run_retro` interface and do not anchor all terminal outcomes explicitly."
+      }
+    ],
+    "dependency_problems": [
+      {
+        "task_id": "TASK-013",
+        "reason": "The fake-agent test scaffolding is made dependent on later orchestrator and CLI tasks even though it could be introduced earlier; that weakens sequencing and delays validation work unnecessarily."
+      }
+    ]
+  },
+  "metrics": {
+    "total_tasks": 17,
+    "tasks_with_missing_dependencies": 0,
+    "tasks_with_broad_scope": 1,
+    "tasks_with_weak_acceptance_criteria": 4,
+    "requirements_uncovered": 5,
+    "invented_requirement_count": 2
+  },
+  "verdict": "good"
+}

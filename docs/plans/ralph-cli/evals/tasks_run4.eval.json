@@ -1,0 +1,257 @@
+{
+  "summary": {
+    "overall_quality": 92,
+    "major_findings": [
+      "The plan covers all explicit specification requirements and stays highly faithful to the requested Ralph v1 behavior.",
+      "Task decomposition is substantially improved, especially around config, agent boundaries, session state, phase-local validation, and test coverage.",
+      "The main remaining weaknesses are a still-broad new-session orchestrator task and a slightly underspecified CLI error-exit contract."
+    ]
+  },
+  "scores": {
+    "coverage": 10,
+    "correctness": 10,
+    "granularity": 9,
+    "acceptance_criteria_quality": 8,
+    "implementation_guidance": 10,
+    "dependency_quality": 10,
+    "scope_control": 9,
+    "testability": 10,
+    "low_reasoning_agent_safety": 9
+  },
+  "requirement_coverage": [
+    {
+      "requirement": "Ralph must become a standalone repo-local Python package under `ralph/` with its own `pyproject.toml` and deterministic test layout.",
+      "covered": true,
+      "task_ids": [
+        "TASK-001"
+      ],
+      "notes": "TASK-001 explicitly scaffolds the package, console-script metadata, and unittest discovery surface."
+    },
+    {
+      "requirement": "The harness must expose typed Ralph failure categories for feature validation, prompt loading, agent execution, malformed status contract, bookkeeping validation, and retrospective failure.",
+      "covered": true,
+      "task_ids": [
+        "TASK-002"
+      ],
+      "notes": "TASK-002 creates a shared typed error surface for each explicit failure category."
+    },
+    {
+      "requirement": "Configuration must resolve runtime options through `RunConfig`, reject absolute feature paths, validate required feature files, and derive Ralph runtime artifact paths.",
+      "covered": true,
+      "task_ids": [
+        "TASK-003"
+      ],
+      "notes": "TASK-003 directly covers resolved config fields, path derivation, and typed feature-folder validation."
+    },
+    {
+      "requirement": "Agent integration must be abstracted behind `Agent`, `AgentResult`, and `resolve_agent`, with `codex` as the v1 backend.",
+      "covered": true,
+      "task_ids": [
+        "TASK-004",
+        "TASK-005",
+        "TASK-006"
+      ],
+      "notes": "The plan cleanly separates the protocol, concrete adapter, and factory resolution boundary."
+    },
+    {
+      "requirement": "The v1 `CodexAgent` must preserve the exact current `codex exec` command contract, capture diagnostics, and clean up its temp output file.",
+      "covered": true,
+      "task_ids": [
+        "TASK-005"
+      ],
+      "notes": "TASK-005 is precise about the command line, subprocess behavior, and cleanup requirements."
+    },
+    {
+      "requirement": "The implementation must stay stdlib-only in v1 unless a non-stdlib dependency is clearly necessary.",
+      "covered": true,
+      "task_ids": [
+        "TASK-001",
+        "TASK-005",
+        "TASK-020",
+        "TASK-021",
+        "TASK-022"
+      ],
+      "notes": "The stdlib-only constraint is stated in the packaging, adapter, and test-support tasks."
+    },
+    {
+      "requirement": "Feature-local session state must live under `.ralph/` with per-session JSON records, a `current.json` pointer, control-plane-only metadata, and terminal outcomes limited to `completed`, `blocked`, `failed`, `max_iterations`, and `degraded`.",
+      "covered": true,
+      "task_ids": [
+        "TASK-007"
+      ],
+      "notes": "TASK-007 maps closely to the session persistence contract and outcome vocabulary."
+    },
+    {
+      "requirement": "Active-run locking must use `.ralph/lock` with session id, pid, hostname, start time, and heartbeat, and stale-lock inspection must use the recorded host/process plus the 10-minute heartbeat rule.",
+      "covered": true,
+      "task_ids": [
+        "TASK-008"
+      ],
+      "notes": "TASK-008 covers the lock record shape, heartbeat refresh, and stale-lock inspection policy."
+    },
+    {
+      "requirement": "Lifecycle phases must use shared `Phase`, `PhaseOutcome`, and `PhaseResult` types, and each phase invocation must stay single-shot rather than loop-aware.",
+      "covered": true,
+      "task_ids": [
+        "TASK-009"
+      ],
+      "notes": "TASK-009 creates the shared phase contract with the exact required outcome vocabulary."
+    },
+    {
+      "requirement": "The coding phase must own its prompt asset and replace `$ARGUMENTS` with the resolved feature-directory path.",
+      "covered": true,
+      "task_ids": [
+        "TASK-010"
+      ],
+      "notes": "TASK-010 keeps prompt ownership phase-local and specifies the placeholder substitution contract."
+    },
+    {
+      "requirement": "The first-line control contract must remain exactly `RALPH_STATUS=CONTINUE`, `RALPH_STATUS=COMPLETE`, or `RALPH_STATUS=BLOCKED`, and malformed or blocker-less output must fail deterministically.",
+      "covered": true,
+      "task_ids": [
+        "TASK-011"
+      ],
+      "notes": "TASK-011 formalizes the strict parser and explicitly rejects missing or malformed control lines."
+    },
+    {
+      "requirement": "Coding bookkeeping validation must stay narrow and objective: validate `tasks.json`, `ralph.txt`, and status coherence only, without rewriting artifacts or inferring implementation correctness.",
+      "covered": true,
+      "task_ids": [
+        "TASK-012"
+      ],
+      "notes": "TASK-012 tracks the spec's bookkeeping rules very closely and explicitly forbids extra inference."
+    },
+    {
+      "requirement": "The coding phase must render its prompt, invoke the abstract agent once, parse the control status, validate bookkeeping, and return a local phase result without owning loop control.",
+      "covered": true,
+      "task_ids": [
+        "TASK-013"
+      ],
+      "notes": "TASK-013 composes the code-phase pieces into one single-shot execution boundary."
+    },
+    {
+      "requirement": "The retrospective phase must own its prompt and validation, require `ralph.txt`, and keep rerun mutations limited to retrospective-owned outputs such as `ralph.retro.md`.",
+      "covered": true,
+      "task_ids": [
+        "TASK-014",
+        "TASK-015"
+      ],
+      "notes": "TASK-014 sets prompt ownership and prerequisites, and TASK-015 executes the single-shot retro phase."
+    },
+    {
+      "requirement": "`run` must validate config, create a new session, acquire the lock, refresh heartbeat at phase boundaries, iterate the coding phase, stop on the defined terminal outcomes, and run retrospective automatically after code completion while treating retrospective failure as `degraded`.",
+      "covered": true,
+      "task_ids": [
+        "TASK-016"
+      ],
+      "notes": "TASK-016 directly owns the new-session lifecycle and the degraded-success rule."
+    },
+    {
+      "requirement": "`run` must fail fast when an incomplete session or active lock exists, and only `resume` may continue or reclaim that session.",
+      "covered": true,
+      "task_ids": [
+        "TASK-016",
+        "TASK-017"
+      ],
+      "notes": "The plan splits new-session refusal into TASK-016 and stale-lock/incomplete-session continuation policy into TASK-017."
+    },
+    {
+      "requirement": "`resume` must continue exactly one incomplete persisted session, may reclaim a stale lock only when the documented rule is satisfied, and must reject terminal sessions rather than reopening them.",
+      "covered": true,
+      "task_ids": [
+        "TASK-017"
+      ],
+      "notes": "TASK-017 explicitly covers stale-lock recovery, terminal-session rejection, and no-new-session resume behavior."
+    },
+    {
+      "requirement": "The public Python CLI must expose `run`, `resume`, and `retro`, must not add a public `inspect` command in v1, and must map typed Ralph failures to deterministic non-zero exits.",
+      "covered": true,
+      "task_ids": [
+        "TASK-018"
+      ],
+      "notes": "TASK-018 wires the required subcommands, excludes `inspect`, and covers typed command dispatch and failure handling."
+    },
+    {
+      "requirement": "`./ralph/ralph.sh` must remain a thin compatibility shim that preserves the legacy flags and maps `--retro-only` to the Python retrospective workflow.",
+      "covered": true,
+      "task_ids": [
+        "TASK-019"
+      ],
+      "notes": "TASK-019 is tightly aligned with the shell-wrapper preservation requirement."
+    },
+    {
+      "requirement": "Deterministic tests must cover malformed status, bookkeeping validation failure, missing `ralph.txt` in retro mode, successful multi-iteration completion, blocked runs, resume after interruption, stale-lock recovery, rejection of incomplete or terminal sessions as appropriate, and degraded success after retro failure.",
+      "covered": true,
+      "task_ids": [
+        "TASK-020",
+        "TASK-021",
+        "TASK-022"
+      ],
+      "notes": "The plan separates fake-agent support, helper-level tests, and orchestrator-level integration tests while keeping them deterministic."
+    },
+    {
+      "requirement": "The repository must add `make ralph-test` and `make ralph-verify` as stable repo-root entrypoints.",
+      "covered": true,
+      "task_ids": [
+        "TASK-023"
+      ],
+      "notes": "TASK-023 adds the required Makefile surface and constrains it to real verification commands introduced by the plan."
+    },
+    {
+      "requirement": "Ralph documentation must cover install, `run`/`resume`/`retro`, the compatibility shim, `.ralph/` artifacts, stale-lock recovery, degraded outcomes, retrospective rerun behavior, and the corrupted-state fallback of deleting `.ralph/` intentionally before starting fresh.",
+      "covered": true,
+      "task_ids": [
+        "TASK-024"
+      ],
+      "notes": "TASK-024 captures the required operator-facing documentation topics with good specificity."
+    },
+    {
+      "requirement": "Final verification must run editable install, direct unittest discovery, `make ralph-test`, `make ralph-verify`, and `./ralph/ralph.sh --help`, while treating a real Codex smoke run as optional.",
+      "covered": true,
+      "task_ids": [
+        "TASK-025"
+      ],
+      "notes": "TASK-025 mirrors the required deterministic command matrix and keeps the live-agent smoke path optional."
+    }
+  ],
+  "issues": {
+    "missing_requirements": [],
+    "invented_requirements": [],
+    "oversized_tasks": [
+      {
+        "task_id": "TASK-016",
+        "reason": "It still combines session creation, lock ownership, heartbeat refresh, coding-loop control, retro transition, and degraded-outcome handling in one implementation task."
+      },
+      {
+        "task_id": "TASK-021",
+        "reason": "It spans five test modules and several distinct helper contracts, which is somewhat broad for a single low-reasoning validation task."
+      }
+    ],
+    "vague_tasks": [
+      {
+        "task_id": "TASK-018",
+        "reason": "It requires deterministic non-zero CLI exits, but it does not specify the concrete exit-code mapping or how distinct typed failures should be grouped."
+      }
+    ],
+    "weak_acceptance_criteria": [
+      {
+        "task_id": "TASK-016",
+        "reason": "The acceptance criteria confirm major lifecycle behavior but do not explicitly name final lock release and `current.json` update expectations, even though the task owns that control path."
+      },
+      {
+        "task_id": "TASK-018",
+        "reason": "The criteria require operator-facing error handling but leave the exact exit-code contract too implicit for deterministic implementation by a weaker agent."
+      }
+    ],
+    "dependency_problems": []
+  },
+  "metrics": {
+    "total_tasks": 25,
+    "tasks_with_missing_dependencies": 0,
+    "tasks_with_broad_scope": 2,
+    "tasks_with_weak_acceptance_criteria": 2,
+    "requirements_uncovered": 0,
+    "invented_requirement_count": 0
+  },
+  "verdict": "excellent"
+}

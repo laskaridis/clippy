@@ -1,0 +1,819 @@
+{
+  "spec_path": "docs/plans/ralph-cli/spec.md",
+  "repo_root": "/Users/e.laskaridis/Projects/sandbox/webclippings",
+  "tasks": [
+    {
+      "id": "TASK-001",
+      "title": "Scaffold Ralph as a standalone Python package",
+      "objective": "Create Ralph's repo-local Python package skeleton under `ralph/` so later tasks can add behavior without mixing packaging work into runtime modules. Establish the console-script metadata and test-package discovery surface up front.",
+      "type": "implementation",
+      "files": [
+        "ralph/pyproject.toml",
+        "ralph/ralph/__init__.py",
+        "ralph/ralph/agents/__init__.py",
+        "ralph/ralph/lifecycle/__init__.py",
+        "ralph/ralph/lifecycle/phases/__init__.py",
+        "ralph/tests/__init__.py"
+      ],
+      "constraints": [
+        "Keep Ralph packaged entirely under `ralph/` and independent from `backend/` and Django packaging.",
+        "Declare the installed console script as `ralph = \"ralph.cli:main\"` in `ralph/pyproject.toml`.",
+        "Do not add third-party runtime dependencies unless a later task proves one is strictly necessary."
+      ],
+      "implementation_notes": [
+        "Create only package metadata and minimal package markers in this task.",
+        "Keep `__init__.py` files empty or side-effect free.",
+        "Make `ralph/tests` discoverable by `python -m unittest discover -s ralph/tests`."
+      ],
+      "acceptance_criteria": [
+        "`ralph/pyproject.toml` exists and declares build metadata plus the `ralph` console-script entrypoint.",
+        "The listed package directories and `__init__.py` files exist under `ralph/ralph/` and `ralph/tests/`.",
+        "Ralph's package metadata does not declare non-build third-party runtime dependencies."
+      ],
+      "assumptions": [
+        "The prepared development environment will install Ralph in editable mode before using the `ralph` console script."
+      ],
+      "dependencies": []
+    },
+    {
+      "id": "TASK-002",
+      "title": "Declare typed Ralph failure categories",
+      "objective": "Introduce the shared exception surface Ralph uses for deterministic failure reporting. This task should make the spec's named failure categories explicit before configuration, phases, and orchestration start raising errors.",
+      "type": "implementation",
+      "files": [
+        "ralph/ralph/errors.py"
+      ],
+      "constraints": [
+        "Define typed failures for feature-folder validation, prompt loading, agent execution, malformed status contract, bookkeeping validation, and retrospective failure.",
+        "Keep the error surface repo-local and stdlib-only.",
+        "Do not encode CLI exit handling or lifecycle recovery policy in the exception definitions."
+      ],
+      "implementation_notes": [
+        "Prefer a small inheritance tree rooted in one Ralph-specific base exception.",
+        "Add only failure classes needed to make the spec's explicit categories addressable in later modules.",
+        "Keep exception classes free of side effects and file-system logic."
+      ],
+      "acceptance_criteria": [
+        "`ralph/ralph/errors.py` defines Ralph-specific exception types for each explicit failure category named in the spec.",
+        "Later modules can import typed Ralph failures from one shared location instead of inventing ad hoc exception names.",
+        "The error module contains only exception definitions and related typing helpers."
+      ],
+      "assumptions": [
+        "Additional narrow exception subclasses may be added later if they remain children of the shared Ralph error surface."
+      ],
+      "dependencies": [
+        "TASK-001"
+      ]
+    },
+    {
+      "id": "TASK-003",
+      "title": "Implement resolved run config and feature validation",
+      "objective": "Implement the typed configuration layer that resolves CLI inputs into validated runtime settings and feature-local paths. This task should make feature-folder validation deterministic before any agent or lifecycle code runs.",
+      "type": "implementation",
+      "files": [
+        "ralph/ralph/config.py"
+      ],
+      "constraints": [
+        "Expose `RunConfig` with the resolved feature directory, max iterations, coding model, retro model, retro-only mode, and selected agent identifier.",
+        "Reject absolute feature-directory paths and missing required feature files through typed failures.",
+        "Resolve derived paths for `spec.md`, `tasks.json`, `ralph.txt`, `ralph.retro.md`, `.ralph/`, `.ralph/sessions/`, and `.ralph/lock`.",
+        "Keep feature-folder validation in `ralph.config` rather than duplicating it in lifecycle modules."
+      ],
+      "implementation_notes": [
+        "Default the v1 agent identifier to `codex` without hard-coding Codex logic into lifecycle modules.",
+        "Use typed configuration objects instead of raw dictionaries.",
+        "Represent retro-only state explicitly even though the public Python CLI will expose `retro` as a subcommand."
+      ],
+      "acceptance_criteria": [
+        "`ralph/ralph/config.py` exposes `RunConfig` plus helpers that derive all Ralph runtime paths from a relative feature directory.",
+        "Invalid feature-directory inputs and missing required files fail through typed Ralph errors instead of generic shell exits.",
+        "Later modules can read the resolved agent identifier and all derived artifact paths from `RunConfig` without recomputing them."
+      ],
+      "assumptions": [
+        "Relative feature paths are resolved from the caller's current working directory at runtime."
+      ],
+      "dependencies": [
+        "TASK-002"
+      ]
+    },
+    {
+      "id": "TASK-004",
+      "title": "Define the shared agent protocol",
+      "objective": "Add the shared agent abstraction Ralph lifecycle code will consume in v1. This task creates the typed execution contract without binding any caller to the concrete Codex backend.",
+      "type": "implementation",
+      "files": [
+        "ralph/ralph/agents/base.py"
+      ],
+      "constraints": [
+        "Define `Agent` as the execution protocol for agent backends.",
+        "Define `AgentResult` as the structured result of one agent invocation.",
+        "Keep the protocol focused on prompt text, model selection, stdout content, exit status, and diagnostics metadata."
+      ],
+      "implementation_notes": [
+        "Do not parse Ralph status lines in the agent layer.",
+        "Do not encode retry policy or lifecycle state in the agent protocol.",
+        "Keep the protocol usable by both coding and retrospective phases."
+      ],
+      "acceptance_criteria": [
+        "`ralph/ralph/agents/base.py` defines `Agent` and `AgentResult` as reusable typed interfaces.",
+        "The shared protocol is concrete enough for both fake test agents and the real Codex adapter to implement.",
+        "Lifecycle modules can depend on this module without importing any concrete backend."
+      ],
+      "assumptions": [
+        "A single synchronous agent invocation contract is sufficient for v1."
+      ],
+      "dependencies": [
+        "TASK-001"
+      ]
+    },
+    {
+      "id": "TASK-005",
+      "title": "Implement the v1 Codex agent adapter",
+      "objective": "Implement the concrete `codex` backend Ralph uses in v1 while preserving the shell prototype's external command contract. This task isolates subprocess execution and temp-file handling from lifecycle control flow.",
+      "type": "implementation",
+      "files": [
+        "ralph/ralph/agents/codex.py"
+      ],
+      "constraints": [
+        "Implement a concrete agent backend that executes `codex --model <model> --ask-for-approval never -c shell_environment_policy.inherit=all exec --ephemeral --sandbox danger-full-access -o <tempfile> -`.",
+        "Capture the temp-file payload, exit status, and subprocess diagnostics, then remove the temp file reliably in success and failure paths.",
+        "Use only Python standard-library facilities for subprocess and temp-file handling."
+      ],
+      "implementation_notes": [
+        "Keep all Codex-specific flags and subprocess wiring inside this module.",
+        "Preserve stderr or subprocess-failure details so later layers can raise typed agent-execution failures.",
+        "Do not embed any Ralph status parsing or bookkeeping validation here."
+      ],
+      "acceptance_criteria": [
+        "`ralph/ralph/agents/codex.py` defines the v1 Codex-backed implementation of the shared `Agent` contract.",
+        "The adapter executes the documented Codex command flags and returns structured `AgentResult` data from the temp-file payload.",
+        "The temp output file is removed after both successful and failing invocations."
+      ],
+      "assumptions": [
+        "Future peer adapters may be added later without changing lifecycle-module imports."
+      ],
+      "dependencies": [
+        "TASK-004",
+        "TASK-002"
+      ]
+    },
+    {
+      "id": "TASK-006",
+      "title": "Resolve configured agent identifiers",
+      "objective": "Add the factory boundary that maps a configured agent identifier to a concrete backend implementation. This task keeps agent selection out of CLI and lifecycle code.",
+      "type": "implementation",
+      "files": [
+        "ralph/ralph/agents/factory.py"
+      ],
+      "constraints": [
+        "Expose `resolve_agent(agent_name: str) -> Agent` as the only public agent-resolution entrypoint.",
+        "Support the `codex` identifier in v1.",
+        "Raise a typed Ralph failure for unknown agent identifiers instead of silently falling back."
+      ],
+      "implementation_notes": [
+        "Keep the factory logic small and declarative.",
+        "Do not import lifecycle modules here.",
+        "Do not add configuration parsing to the factory; it should receive an already resolved agent identifier."
+      ],
+      "acceptance_criteria": [
+        "`ralph/ralph/agents/factory.py` exposes `resolve_agent(agent_name: str) -> Agent`.",
+        "Resolving `codex` returns the concrete Codex adapter without callers importing `ralph.agents.codex` directly.",
+        "Unknown agent identifiers fail deterministically through a typed Ralph error."
+      ],
+      "assumptions": [
+        "The factory may remain a simple name-to-class mapping in v1."
+      ],
+      "dependencies": [
+        "TASK-004",
+        "TASK-005",
+        "TASK-002"
+      ]
+    },
+    {
+      "id": "TASK-007",
+      "title": "Persist run sessions and current-session pointers",
+      "objective": "Implement the machine-readable session store Ralph needs for auditability and resume support. This task owns feature-local `.ralph/` creation, per-session records, and `current.json` pointer semantics.",
+      "type": "implementation",
+      "files": [
+        "ralph/ralph/session.py"
+      ],
+      "constraints": [
+        "Create `.ralph/` on first use and persist per-run records in `.ralph/sessions/<session-id>.json`.",
+        "Maintain `.ralph/sessions/current.json` as the pointer to the current incomplete session when one exists, or otherwise the latest terminal session.",
+        "Store only control-plane data such as resolved config, current phase, iteration count, last phase outcome, timestamps, agent result metadata, and overall run outcome.",
+        "Limit terminal outcomes in v1 to `completed`, `blocked`, `failed`, `max_iterations`, and `degraded`."
+      ],
+      "implementation_notes": [
+        "Keep session identifiers filesystem-safe and unique within a feature folder.",
+        "Do not duplicate `ralph.txt` narrative text or persist full prompt and response bodies.",
+        "Expose explicit read and write operations for session creation, update, and finalization."
+      ],
+      "acceptance_criteria": [
+        "`ralph/ralph/session.py` can create `.ralph/`, persist per-session JSON records, and update `.ralph/sessions/current.json` with the documented pointer behavior.",
+        "Session records contain only control-plane metadata and the documented v1 terminal-outcome vocabulary.",
+        "Later lifecycle code can load the current incomplete session or latest terminal session without recomputing file paths."
+      ],
+      "assumptions": [
+        "Session identifiers may be implementation-defined as long as they are unique and stable for file lookup."
+      ],
+      "dependencies": [
+        "TASK-003",
+        "TASK-002"
+      ]
+    },
+    {
+      "id": "TASK-008",
+      "title": "Implement lock ownership and stale-lock inspection",
+      "objective": "Add the active-run locking behavior Ralph needs for one-active-run-per-feature enforcement. This task implements `.ralph/lock` persistence, heartbeat support, and stale-lock inspection without deciding when to reclaim locks.",
+      "type": "implementation",
+      "files": [
+        "ralph/ralph/session.py"
+      ],
+      "constraints": [
+        "Persist `.ralph/lock` with at least session id, pid, hostname, started-at timestamp, and last-heartbeat timestamp.",
+        "Expose heartbeat refresh operations so the orchestrator can update lock state at phase boundaries.",
+        "Treat a lock as stale only when the recorded process is not running on the recorded host and the last heartbeat is older than 10 minutes.",
+        "Do not auto-reclaim locks in the session layer."
+      ],
+      "implementation_notes": [
+        "Provide explicit APIs for lock acquire, release, heartbeat refresh, and stale-state inspection.",
+        "Keep hostname and process-liveness checks conservative and deterministic.",
+        "Separate lock-state reporting from run-versus-resume policy."
+      ],
+      "acceptance_criteria": [
+        "`ralph/ralph/session.py` can persist and load a structured lock record with the documented fields.",
+        "The session module can distinguish active, stale, and absent lock states using the host and heartbeat rules from the spec.",
+        "Lock acquisition, release, and heartbeat refresh are available as explicit operations for lifecycle code."
+      ],
+      "assumptions": [
+        "A conservative local-process liveness check is sufficient as long as cross-host locks are never reclaimed without the recorded-host rule passing."
+      ],
+      "dependencies": [
+        "TASK-007"
+      ]
+    },
+    {
+      "id": "TASK-009",
+      "title": "Define shared lifecycle phase contracts",
+      "objective": "Create the shared phase boundary the orchestrator and phase packages will use. Each phase must remain a single-shot unit that returns a local outcome without embedding global workflow policy.",
+      "type": "implementation",
+      "files": [
+        "ralph/ralph/lifecycle/phases/base.py"
+      ],
+      "constraints": [
+        "Define `Phase` as the shared phase contract.",
+        "Define `PhaseOutcome` with the exact values `next_iteration`, `completed`, `blocked`, and `failed`.",
+        "Define `PhaseResult` as the structured result of a single phase invocation.",
+        "The phase contract must not encode which phase comes next."
+      ],
+      "implementation_notes": [
+        "Keep the base types free of prompt loading, session persistence, and subprocess execution logic.",
+        "Use explicit typed values for phase outcomes so malformed states cannot be expressed casually.",
+        "Design the result shape so the orchestrator can record metadata without depending on raw backend internals."
+      ],
+      "acceptance_criteria": [
+        "`ralph/ralph/lifecycle/phases/base.py` exposes `Phase`, `PhaseOutcome`, and `PhaseResult` with the documented v1 names and outcome values.",
+        "The shared phase contract is single-shot and phase-local rather than loop-aware.",
+        "Both the code and retro phase packages can depend on this module without importing each other."
+      ],
+      "assumptions": [
+        "A small enum or equivalent typed vocabulary is sufficient for v1 phase outcomes."
+      ],
+      "dependencies": [
+        "TASK-001"
+      ]
+    },
+    {
+      "id": "TASK-010",
+      "title": "Move the coding prompt into the code phase package",
+      "objective": "Create the code phase's own prompt asset and prompt-rendering helper. This task should make the coding prompt phase-local before any status parsing or bookkeeping validation is added.",
+      "type": "implementation",
+      "files": [
+        "ralph/ralph/lifecycle/phases/code/__init__.py",
+        "ralph/ralph/lifecycle/phases/code/prompt.md",
+        "ralph/ralph/lifecycle/phases/code/prompt.py"
+      ],
+      "constraints": [
+        "Keep prompt ownership inside `ralph/ralph/lifecycle/phases/code/` and do not introduce a centralized prompt module.",
+        "Preserve the prompt as a Markdown file on disk.",
+        "Replace the `$ARGUMENTS` placeholder with the resolved feature-directory path before agent execution."
+      ],
+      "implementation_notes": [
+        "Carry forward the existing coding prompt contract from `ralph/prompts/code.md` without broadening Ralph's user-facing behavior.",
+        "Limit this task to prompt asset placement and rendering support.",
+        "Do not parse agent output or validate bookkeeping in this task."
+      ],
+      "acceptance_criteria": [
+        "The code phase package contains its own `prompt.md` asset and a helper that renders it for one feature directory.",
+        "Rendering the prompt substitutes the resolved feature-directory path for the `$ARGUMENTS` placeholder.",
+        "No shared `ralph.lifecycle.prompts` module is introduced."
+      ],
+      "assumptions": [
+        "The old `ralph/prompts/code.md` file may remain temporarily until the compatibility shim stops relying on it."
+      ],
+      "dependencies": [
+        "TASK-003"
+      ]
+    },
+    {
+      "id": "TASK-011",
+      "title": "Parse coding status lines into typed outcomes",
+      "objective": "Implement the strict first-line response parser the coding phase uses to turn model output into typed control signals. This task should formalize the shell script's implicit status contract.",
+      "type": "implementation",
+      "files": [
+        "ralph/ralph/lifecycle/phases/code/status.py"
+      ],
+      "constraints": [
+        "Accept only the exact first-line values `RALPH_STATUS=CONTINUE`, `RALPH_STATUS=COMPLETE`, and `RALPH_STATUS=BLOCKED`.",
+        "Treat a missing first line, malformed status value, or `RALPH_STATUS=BLOCKED` response without the required human-readable blocker line as a typed contract violation.",
+        "Keep status parsing phase-local instead of moving it into the agent layer or orchestrator."
+      ],
+      "implementation_notes": [
+        "Return typed results that the code phase can map directly into `PhaseOutcome` values.",
+        "Strip carriage returns consistently before comparing the first line.",
+        "Do not inspect `tasks.json` in this parser; bookkeeping validation belongs in a separate task."
+      ],
+      "acceptance_criteria": [
+        "`ralph/ralph/lifecycle/phases/code/status.py` maps the exact Ralph status lines into typed phase-local results.",
+        "Malformed status output fails deterministically through a typed Ralph error instead of warning and continuing.",
+        "`RALPH_STATUS=BLOCKED` parsing requires a natural-language blocker line in line 2."
+      ],
+      "assumptions": [
+        "The parser may preserve the remaining response body for later diagnostics without changing its phase-local responsibility."
+      ],
+      "dependencies": [
+        "TASK-009",
+        "TASK-002"
+      ]
+    },
+    {
+      "id": "TASK-012",
+      "title": "Validate coding-phase bookkeeping artifacts",
+      "objective": "Implement the narrow, objective bookkeeping validation Ralph performs after each successful coding iteration. This task should enforce only the explicit v1 artifact contract and nothing broader.",
+      "type": "implementation",
+      "files": [
+        "ralph/ralph/lifecycle/phases/code/validation.py"
+      ],
+      "constraints": [
+        "Validate only these rules: `tasks.json` exists and is parseable, `ralph.txt` exists or was created, `RALPH_STATUS=BLOCKED` includes the required blocker line, `RALPH_STATUS=COMPLETE` is accepted only when every task entry has `status: \"completed\"`, and `RALPH_STATUS=CONTINUE` is accepted only when at least one task entry remains not `completed`.",
+        "Do not rewrite `tasks.json` or `ralph.txt` in the harness.",
+        "Do not infer implementation correctness from `spec.md`, git state, or ad hoc dependency reasoning."
+      ],
+      "implementation_notes": [
+        "Keep bookkeeping validation phase-local because it depends on the coding-phase contract.",
+        "Treat parse failures and contract mismatches as typed bookkeeping-validation failures.",
+        "If `ralph.txt` is created implicitly, limit the mutation to creating the required bookkeeping artifact."
+      ],
+      "acceptance_criteria": [
+        "`ralph/ralph/lifecycle/phases/code/validation.py` enforces only the documented v1 bookkeeping rules.",
+        "`RALPH_STATUS=COMPLETE` is rejected when any task entry in `tasks.json` is not `completed`.",
+        "`RALPH_STATUS=CONTINUE` is rejected when every task entry is already `completed`."
+      ],
+      "assumptions": [
+        "Task entries in `tasks.json` remain JSON objects with a `status` field as implied by the existing prompt contract."
+      ],
+      "dependencies": [
+        "TASK-003",
+        "TASK-011",
+        "TASK-002"
+      ]
+    },
+    {
+      "id": "TASK-013",
+      "title": "Implement one-shot coding phase execution",
+      "objective": "Build the coding phase as a self-contained package that renders its prompt, invokes the abstract agent once, parses the first-line control signal, and validates bookkeeping for that single pass. This task should return a local phase result without deciding whether Ralph repeats the phase or advances to retro.",
+      "type": "implementation",
+      "files": [
+        "ralph/ralph/lifecycle/phases/code/phase.py"
+      ],
+      "constraints": [
+        "Use only the abstract `Agent` interface and shared phase types inside the coding phase.",
+        "Perform exactly one prompt render, one agent invocation, one status parse, and one bookkeeping validation per call.",
+        "Do not encode iteration loops, next-phase selection, or stale-lock policy in this module."
+      ],
+      "implementation_notes": [
+        "Compose the prompt, status parser, and bookkeeping validator from earlier tasks instead of duplicating their logic.",
+        "Capture agent-result metadata needed by the orchestrator to persist session state.",
+        "Map phase-local status results onto the shared `PhaseOutcome` values."
+      ],
+      "acceptance_criteria": [
+        "`ralph/ralph/lifecycle/phases/code/phase.py` can execute one coding pass and return a `PhaseResult` with typed outcome data.",
+        "The coding phase talks only to the shared `Agent` contract and not directly to `CodexAgent`.",
+        "The module does not contain loop control or retrospective-transition logic."
+      ],
+      "assumptions": [
+        "The code phase may record minimal diagnostics metadata in its `PhaseResult` as long as it does not duplicate full prompt or response bodies."
+      ],
+      "dependencies": [
+        "TASK-004",
+        "TASK-009",
+        "TASK-010",
+        "TASK-011",
+        "TASK-012"
+      ]
+    },
+    {
+      "id": "TASK-014",
+      "title": "Move the retro prompt and prerequisites into the retro package",
+      "objective": "Create the retrospective phase's own prompt asset and validation helpers. This task should establish phase-local prompt ownership and the retro-only prerequisite rules before the retro phase itself is wired.",
+      "type": "implementation",
+      "files": [
+        "ralph/ralph/lifecycle/phases/retro/__init__.py",
+        "ralph/ralph/lifecycle/phases/retro/prompt.md",
+        "ralph/ralph/lifecycle/phases/retro/prompt.py",
+        "ralph/ralph/lifecycle/phases/retro/validation.py"
+      ],
+      "constraints": [
+        "Keep prompt ownership and prompt-related helpers inside `ralph/ralph/lifecycle/phases/retro/`.",
+        "Validate that retrospective execution still requires `ralph.txt`.",
+        "Keep retrospective rerun mutations limited to retrospective-owned outputs such as `ralph.retro.md`."
+      ],
+      "implementation_notes": [
+        "Carry forward the existing retro prompt contract from `ralph/prompts/retro.md` without broadening the feature-folder interface.",
+        "Use phase-local helpers for prompt loading and prerequisite checks.",
+        "Do not add cross-phase validation helpers here."
+      ],
+      "acceptance_criteria": [
+        "The retro phase package contains its own `prompt.md` asset plus helpers for prompt rendering and retro prerequisites.",
+        "Retrospective execution fails deterministically when `ralph.txt` is missing.",
+        "No centralized lifecycle-validation module is introduced for retro-specific checks."
+      ],
+      "assumptions": [
+        "The old `ralph/prompts/retro.md` file may remain temporarily until the compatibility shim no longer relies on it."
+      ],
+      "dependencies": [
+        "TASK-003",
+        "TASK-002"
+      ]
+    },
+    {
+      "id": "TASK-015",
+      "title": "Implement one-shot retrospective phase execution",
+      "objective": "Build the retrospective phase as a self-contained package that renders its prompt, validates prerequisites, invokes the abstract agent once, and returns a local phase result. This task should keep retrospective behavior phase-local and single-shot.",
+      "type": "implementation",
+      "files": [
+        "ralph/ralph/lifecycle/phases/retro/phase.py"
+      ],
+      "constraints": [
+        "Use only the abstract `Agent` interface and shared phase types inside the retro phase.",
+        "Perform exactly one prompt render, one agent invocation, and one retro-phase validation per call.",
+        "Do not encode coding-loop control, stale-lock policy, or next-phase selection in this module."
+      ],
+      "implementation_notes": [
+        "Compose the retro prompt and validation helpers from earlier tasks instead of duplicating them.",
+        "Return enough metadata for the orchestrator to distinguish a successful retro pass from a retrospective failure.",
+        "Keep retro-phase mutations limited to its owned retrospective output path."
+      ],
+      "acceptance_criteria": [
+        "`ralph/ralph/lifecycle/phases/retro/phase.py` can execute one retrospective pass and return a `PhaseResult` with typed outcome data.",
+        "The retro phase depends only on the shared `Agent` contract and not directly on `CodexAgent`.",
+        "The module does not write or validate non-retrospective product artifacts."
+      ],
+      "assumptions": [
+        "A retrospective pass may return failure diagnostics without persisting full agent response bodies."
+      ],
+      "dependencies": [
+        "TASK-004",
+        "TASK-009",
+        "TASK-014"
+      ]
+    },
+    {
+      "id": "TASK-016",
+      "title": "Implement the new-session run lifecycle",
+      "objective": "Implement the orchestrator logic for starting a fresh Ralph run, enforcing one-active-run-per-feature on the `run` path, iterating the coding phase, and invoking retrospective automatically after code completion. This task should own static phase sequencing and overall outcomes for newly created sessions.",
+      "type": "implementation",
+      "files": [
+        "ralph/ralph/lifecycle/orchestrator.py"
+      ],
+      "constraints": [
+        "`run` must validate configuration, create a new session, acquire the lock, refresh heartbeat at phase boundaries, and stop only on `completed`, `blocked`, `failed`, `max_iterations`, or `degraded`.",
+        "`run` must fail fast when `.ralph/sessions/current.json` points to an incomplete session or `.ralph/lock` is active, and it must tell the operator to use `resume`.",
+        "When the code phase reports completion, the orchestrator must run the retrospective phase automatically.",
+        "If implementation succeeds and retrospective fails, record the overall run outcome as `degraded` rather than `failed`."
+      ],
+      "implementation_notes": [
+        "Keep the v1 phase pipeline static and explicit inside the orchestrator.",
+        "Record session progress after each phase boundary using the session store instead of recomputing state from artifacts.",
+        "Do not implement stale-lock reclamation or resume behavior in this task."
+      ],
+      "acceptance_criteria": [
+        "`ralph/ralph/lifecycle/orchestrator.py` exposes a `run` path that creates a new session and drives the code phase one iteration at a time.",
+        "`run` refuses to continue an existing incomplete session and directs the operator to `resume` instead.",
+        "A successful code-phase completion triggers retrospective automatically, and retrospective failure after successful implementation produces a `degraded` run outcome."
+      ],
+      "assumptions": [
+        "The orchestrator may expose separate callable entrypoints for `run`, `resume`, and `retro` as long as `run` owns the new-session policy."
+      ],
+      "dependencies": [
+        "TASK-006",
+        "TASK-007",
+        "TASK-008",
+        "TASK-013",
+        "TASK-015"
+      ]
+    },
+    {
+      "id": "TASK-017",
+      "title": "Implement resume semantics and stale-lock recovery",
+      "objective": "Extend the orchestrator with the exact `resume` behavior the spec requires. This task should make session continuation deterministic, restrict stale-lock reclamation to `resume`, and explicitly reject terminal sessions.",
+      "type": "implementation",
+      "files": [
+        "ralph/ralph/lifecycle/orchestrator.py"
+      ],
+      "constraints": [
+        "`resume` must load exactly one existing incomplete session and continue it without creating a new session.",
+        "Only `resume` may reclaim a stale lock automatically under the documented host, process, and 10-minute heartbeat rules.",
+        "Terminal sessions with outcomes `completed`, `blocked`, `failed`, `max_iterations`, and `degraded` are closed and may not be resumed.",
+        "If no incomplete session exists, `resume` must fail through a typed Ralph error instead of starting over."
+      ],
+      "implementation_notes": [
+        "Reuse the session store and lock inspection APIs from earlier tasks instead of reimplementing stale-state checks.",
+        "Continue iteration counting and session timestamps from the persisted session record.",
+        "Keep terminal-session rejection explicit in code and acceptance criteria rather than implying it through assumptions."
+      ],
+      "acceptance_criteria": [
+        "`ralph/ralph/lifecycle/orchestrator.py` exposes a `resume` path that continues exactly one incomplete persisted session.",
+        "`resume` may reclaim a stale lock only when the session layer reports the stale-lock rule is satisfied.",
+        "`resume` rejects terminal sessions with outcomes `completed`, `blocked`, `failed`, `max_iterations`, and `degraded` instead of reopening them."
+      ],
+      "assumptions": [
+        "The current-session pointer identifies the session `resume` should attempt first when one incomplete session exists."
+      ],
+      "dependencies": [
+        "TASK-016",
+        "TASK-008"
+      ]
+    },
+    {
+      "id": "TASK-018",
+      "title": "Implement CLI subcommands and typed command dispatch",
+      "objective": "Build the public Python CLI surface Ralph exposes in v1. This task should wire `run`, `resume`, and `retro` to the resolved agent and lifecycle entrypoints without adding an `inspect` command.",
+      "type": "implementation",
+      "files": [
+        "ralph/ralph/cli.py"
+      ],
+      "constraints": [
+        "Expose public subcommands `run`, `resume`, and `retro` through the installed `ralph` console script.",
+        "Do not add a public `inspect` command in v1.",
+        "Resolve the configured agent through `ralph.agents.factory` before calling lifecycle entrypoints.",
+        "Map typed Ralph failures to deterministic non-zero CLI exits and operator-facing error messages."
+      ],
+      "implementation_notes": [
+        "Use one argument-parsing surface for all public Python CLI commands.",
+        "Keep shell-compatibility flag translation out of this module; that belongs in `ralph/ralph.sh`.",
+        "Make the `retro` command use the same config and agent-resolution flow as the other public commands."
+      ],
+      "acceptance_criteria": [
+        "`ralph/ralph/cli.py` defines the public Python CLI with `run`, `resume`, and `retro` subcommands and no `inspect` subcommand.",
+        "The CLI resolves the configured agent through the factory before delegating to lifecycle entrypoints.",
+        "Typed Ralph failures produce deterministic non-zero exits with one operator-facing error message rather than raw tracebacks by default."
+      ],
+      "assumptions": [
+        "The CLI may use `argparse` and return integer exit codes from `main()`."
+      ],
+      "dependencies": [
+        "TASK-003",
+        "TASK-006",
+        "TASK-016",
+        "TASK-017"
+      ]
+    },
+    {
+      "id": "TASK-019",
+      "title": "Delegate legacy shell flags to the Python CLI",
+      "objective": "Rewrite `ralph/ralph.sh` as a compatibility shim that preserves the old operator interface while delegating all authoritative behavior into Python. This task should keep Bash limited to argument translation and process delegation.",
+      "type": "implementation",
+      "files": [
+        "ralph/ralph.sh"
+      ],
+      "constraints": [
+        "Preserve the legacy flags `--feature-dir`, `--max-iterations`, `--coding-model`, `--retro-model`, and `--retro-only`.",
+        "Map the legacy full-lifecycle flag set to the Python `run` command and map `--retro-only` to the Python `retro` command.",
+        "Do not reimplement feature validation, prompt loading, status parsing, or orchestration logic in Bash."
+      ],
+      "implementation_notes": [
+        "Keep the shim's responsibility to minimal flag parsing and argument pass-through.",
+        "Retain `./ralph/ralph.sh --help` as the legacy operator-facing entrypoint.",
+        "Prefer `exec`-style delegation so the Python CLI remains the authoritative process."
+      ],
+      "acceptance_criteria": [
+        "`ralph/ralph.sh` still accepts the legacy flag set and delegates execution into the Python CLI.",
+        "`--retro-only` routes to the Python retrospective workflow instead of a Bash-owned implementation path.",
+        "The shell wrapper no longer contains the old coding loop, status switch, or direct Codex invocation."
+      ],
+      "assumptions": [
+        "The compatibility shim may keep a legacy-style usage message as long as the delegated behavior remains authoritative in Python."
+      ],
+      "dependencies": [
+        "TASK-018"
+      ]
+    },
+    {
+      "id": "TASK-020",
+      "title": "Add fake-agent support for deterministic Ralph tests",
+      "objective": "Create reusable fake-agent test support so Ralph's deterministic test suite can exercise lifecycle behavior without requiring a real `codex` binary or network access. This task should provide the test doubles other validation tasks depend on.",
+      "type": "validation",
+      "files": [
+        "ralph/tests/fakes.py"
+      ],
+      "constraints": [
+        "Implement fake-agent helpers against the shared `Agent` contract from `ralph.agents.base`.",
+        "Keep test helpers deterministic and stdlib-only.",
+        "Do not make fake-agent behavior depend on the real `codex` binary."
+      ],
+      "implementation_notes": [
+        "Provide small helpers for scripted agent outputs and controlled failures.",
+        "Keep test-only utilities inside `ralph/tests/` rather than production modules.",
+        "Model only behavior needed by the deterministic Ralph tests."
+      ],
+      "acceptance_criteria": [
+        "`ralph/tests/fakes.py` provides reusable fake-agent support for deterministic unit and integration tests.",
+        "The fake-agent helpers implement the shared `Agent` contract closely enough to exercise orchestration logic.",
+        "The test helpers do not invoke external binaries or networked services."
+      ],
+      "assumptions": [
+        "A scripted sequence of `AgentResult` values and failures is sufficient to drive the required tests."
+      ],
+      "dependencies": [
+        "TASK-004"
+      ]
+    },
+    {
+      "id": "TASK-021",
+      "title": "Add deterministic unit tests for config and phase helpers",
+      "objective": "Add focused deterministic tests for the local module contracts Ralph depends on before end-to-end orchestration. This task should cover the spec's helper-level failure cases without using the real Codex adapter.",
+      "type": "validation",
+      "files": [
+        "ralph/tests/test_config.py",
+        "ralph/tests/test_session.py",
+        "ralph/tests/test_code_status.py",
+        "ralph/tests/test_code_validation.py",
+        "ralph/tests/test_retro_phase.py"
+      ],
+      "constraints": [
+        "Cover deterministic failures for malformed first-line status, bookkeeping validation failure, and missing `ralph.txt` in retrospective mode.",
+        "Keep these tests independent from the real `codex` binary.",
+        "Use the standard `unittest` runner so `python -m unittest discover -s ralph/tests` remains the canonical direct test command."
+      ],
+      "implementation_notes": [
+        "Test configuration resolution and feature-path validation directly through `RunConfig` helpers.",
+        "Exercise session-store and lock-state helpers through temporary feature directories.",
+        "Keep helper-level tests focused on one contract per test case instead of reproducing full lifecycle runs."
+      ],
+      "acceptance_criteria": [
+        "The added unit tests cover malformed coding status parsing, bookkeeping validation failure, and missing `ralph.txt` in retrospective mode.",
+        "Session and config tests exercise the persisted-path and lock-state helpers without calling the real agent adapter.",
+        "`python -m unittest discover -s ralph/tests` can discover the added test modules."
+      ],
+      "assumptions": [
+        "Temporary directories created within the test process are sufficient to simulate feature folders for helper-level tests."
+      ],
+      "dependencies": [
+        "TASK-003",
+        "TASK-007",
+        "TASK-008",
+        "TASK-011",
+        "TASK-012",
+        "TASK-014",
+        "TASK-015",
+        "TASK-020"
+      ]
+    },
+    {
+      "id": "TASK-022",
+      "title": "Add lifecycle integration tests for run and resume",
+      "objective": "Add deterministic integration tests that exercise Ralph's session lifecycle, loop control, and degraded-success behavior through the orchestrator. This task should cover the spec's end-to-end lifecycle scenarios with fake agents.",
+      "type": "validation",
+      "files": [
+        "ralph/tests/test_orchestrator_run.py",
+        "ralph/tests/test_orchestrator_resume.py"
+      ],
+      "constraints": [
+        "Cover successful multi-iteration completion, blocked run, resume after an interrupted run, run failure when an incomplete session already exists, stale-lock recovery through `resume`, and degraded success when retrospective fails after implementation completes.",
+        "Use fake agents and temporary feature directories rather than the real Codex adapter.",
+        "Keep the tests deterministic and compatible with `python -m unittest discover -s ralph/tests`."
+      ],
+      "implementation_notes": [
+        "Model interrupted runs by persisting session state and lock artifacts, then invoking the orchestrator resume path.",
+        "Verify persisted session outcomes and lock behavior directly from the feature-local `.ralph/` artifacts.",
+        "Keep run-path and resume-path coverage in separate test modules so the scenarios stay bounded."
+      ],
+      "acceptance_criteria": [
+        "The added integration tests cover the exact lifecycle scenarios named in the spec for `run`, `resume`, stale locks, and degraded retrospective failure.",
+        "The tests verify that `run` refuses an existing incomplete session and that `resume` rejects terminal sessions.",
+        "The integration suite runs without a real `codex` binary or network access."
+      ],
+      "assumptions": [
+        "CLI-level behavior may be verified indirectly through orchestrator entrypoints as long as the lifecycle scenarios remain fully covered."
+      ],
+      "dependencies": [
+        "TASK-013",
+        "TASK-016",
+        "TASK-017",
+        "TASK-020"
+      ]
+    },
+    {
+      "id": "TASK-023",
+      "title": "Add repo-root Make targets for Ralph verification",
+      "objective": "Expose Ralph's stable repository task surface through the root `Makefile`. This task should make Ralph test and verification entrypoints discoverable alongside the rest of the repo workflow.",
+      "type": "implementation",
+      "files": [
+        "Makefile"
+      ],
+      "constraints": [
+        "Add at least `ralph-test` and `ralph-verify` to the root `Makefile` and `make help` output.",
+        "`ralph-test` must run Ralph's deterministic test suite.",
+        "`ralph-verify` must run Ralph's tests plus any Ralph-specific lint or typecheck commands actually introduced by this plan.",
+        "Do not invent a new non-stdlib lint or typecheck toolchain solely to satisfy this target."
+      ],
+      "implementation_notes": [
+        "Keep Ralph targets repo-root entrypoints rather than backend-specific wrappers.",
+        "Use direct commands that operate from the repository root and target the `ralph/` package explicitly.",
+        "If no Ralph-specific lint or typecheck command exists by the end of implementation, keep `ralph-verify` limited to the commands that do exist."
+      ],
+      "acceptance_criteria": [
+        "`make help` lists `ralph-test` and `ralph-verify`.",
+        "`ralph-test` invokes the deterministic Ralph test suite under `ralph/tests/`.",
+        "`ralph-verify` runs `ralph-test` plus any Ralph-specific verification commands that were actually introduced."
+      ],
+      "assumptions": [
+        "The Ralph package remains small enough that repo-root Make targets can invoke its verification commands directly."
+      ],
+      "dependencies": [
+        "TASK-021",
+        "TASK-022"
+      ]
+    },
+    {
+      "id": "TASK-024",
+      "title": "Document the Python CLI and recovery model",
+      "objective": "Update Ralph's operator documentation to describe the Python CLI, the compatibility shim, and the feature-local recovery artifacts. This task should document the new behavior without changing the implementation plan's scope.",
+      "type": "documentation",
+      "files": [
+        "ralph/README.md"
+      ],
+      "constraints": [
+        "Document the installed `ralph` console script with `run`, `resume`, and `retro`.",
+        "Document `./ralph/ralph.sh` as a compatibility shim that preserves the legacy interface.",
+        "Document `.ralph/` session artifacts, stale-lock recovery through `resume`, degraded outcomes, retrospective rerun behavior, and the explicit corrupted-state fallback of deleting `.ralph/` intentionally before starting fresh."
+      ],
+      "implementation_notes": [
+        "Keep Ralph documented as a repo-local harness rather than a backend subsystem or hosted service.",
+        "Describe the one-time editable-install assumption for the public Python CLI.",
+        "Do not rewrite repository-wide workflow docs; keep the changes local to `ralph/README.md`."
+      ],
+      "acceptance_criteria": [
+        "`ralph/README.md` documents install plus the public `run`, `resume`, and `retro` subcommands.",
+        "The README explains how the compatibility shim maps legacy usage to the Python CLI.",
+        "The README explicitly describes `.ralph/` artifacts, stale-lock recovery, degraded runs, retro rerun behavior, and the manual corrupted-state fallback."
+      ],
+      "assumptions": [
+        "Ralph-specific operator documentation belongs in `ralph/README.md` rather than the repo root."
+      ],
+      "dependencies": [
+        "TASK-018",
+        "TASK-019",
+        "TASK-023"
+      ]
+    },
+    {
+      "id": "TASK-025",
+      "title": "Execute the Ralph verification command matrix",
+      "objective": "Run the final repo-local verification commands that prove the new harness surface works in the prepared development environment. This task should confirm the deterministic path and keep the live Codex smoke path optional.",
+      "type": "validation",
+      "files": [
+        "ralph/pyproject.toml",
+        "Makefile",
+        "ralph/ralph.sh",
+        "ralph/README.md"
+      ],
+      "constraints": [
+        "Run `python -m pip install -e ralph`, `python -m unittest discover -s ralph/tests`, `make ralph-test`, `make ralph-verify`, and `./ralph/ralph.sh --help`.",
+        "Treat a real `ralph run --feature-dir ...` smoke execution as optional and do not require a live `codex` binary for this task to pass.",
+        "Do not modify product code while performing this validation task."
+      ],
+      "implementation_notes": [
+        "Run the verification commands from the repository root.",
+        "Record failures as verification evidence and fix them through the implementation tasks they point to rather than weakening acceptance criteria.",
+        "If the optional real-Codex smoke path is skipped, leave the deterministic command matrix as the required evidence."
+      ],
+      "acceptance_criteria": [
+        "The deterministic verification commands complete successfully in the prepared development environment.",
+        "`./ralph/ralph.sh --help` still exposes the legacy flag set after the Python delegation rewrite.",
+        "The task can complete without invoking a real `codex` binary or network access."
+      ],
+      "assumptions": [
+        "The development environment already contains the base Python tooling needed for editable installs and unittest execution."
+      ],
+      "dependencies": [
+        "TASK-019",
+        "TASK-021",
+        "TASK-022",
+        "TASK-023",
+        "TASK-024"
+      ]
+    }
+  ]
+}

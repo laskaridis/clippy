@@ -1,0 +1,250 @@
+{
+  "summary": {
+    "overall_quality": 82,
+    "major_findings": [
+      "The plan is highly faithful to the spec and does not introduce obvious invented product scope.",
+      "The main weaknesses are a few oversized orchestration and phase tasks that still bundle multiple behaviors into one unit.",
+      "Several acceptance criteria describe architectural intent rather than directly verifiable outcomes.",
+      "The rule that terminal sessions may not be resumed is only implicit and should be promoted to explicit implementation and validation work."
+    ]
+  },
+  "scores": {
+    "coverage": 9,
+    "correctness": 9,
+    "granularity": 7,
+    "acceptance_criteria_quality": 7,
+    "implementation_guidance": 9,
+    "dependency_quality": 8,
+    "scope_control": 8,
+    "testability": 9,
+    "low_reasoning_agent_safety": 8
+  },
+  "requirement_coverage": [
+    {
+      "requirement": "Ralph must become a standalone repo-local Python package under `ralph/` with its own `pyproject.toml` and deterministic test layout.",
+      "covered": true,
+      "task_ids": [
+        "TASK-001"
+      ],
+      "notes": "TASK-001 explicitly scaffolds the package, console entrypoint metadata, and test discovery surface."
+    },
+    {
+      "requirement": "The public Python CLI must expose `run`, `resume`, and `retro` through the installed `ralph` console script, and v1 must not add a public `inspect` command.",
+      "covered": true,
+      "task_ids": [
+        "TASK-001",
+        "TASK-013"
+      ],
+      "notes": "The console script is introduced in TASK-001 and the subcommand surface plus `inspect` exclusion are defined in TASK-013."
+    },
+    {
+      "requirement": "Configuration must validate the feature folder, reject absolute feature paths, derive runtime artifact paths, and expose resolved runtime options through `RunConfig`.",
+      "covered": true,
+      "task_ids": [
+        "TASK-002"
+      ],
+      "notes": "TASK-002 directly captures relative-path validation, derived paths, and typed configuration output."
+    },
+    {
+      "requirement": "Agent integration must be abstracted behind `Agent`, `AgentResult`, and `resolve_agent`, with `codex` remaining the internal v1 default.",
+      "covered": true,
+      "task_ids": [
+        "TASK-002",
+        "TASK-003",
+        "TASK-004",
+        "TASK-013"
+      ],
+      "notes": "The abstraction boundary is well represented across config, agent base types, factory resolution, and CLI dispatch."
+    },
+    {
+      "requirement": "The v1 `CodexAgent` must preserve the exact current `codex exec` command contract and handle temp-file cleanup and diagnostics using stdlib facilities.",
+      "covered": true,
+      "task_ids": [
+        "TASK-004"
+      ],
+      "notes": "TASK-004 is precise about the command line, cleanup behavior, and subprocess handling."
+    },
+    {
+      "requirement": "Lifecycle phases must be single-shot and use shared `Phase`, `PhaseOutcome`, and `PhaseResult` types without encoding next-phase knowledge.",
+      "covered": true,
+      "task_ids": [
+        "TASK-007"
+      ],
+      "notes": "TASK-007 directly mirrors the shared phase-contract requirement."
+    },
+    {
+      "requirement": "The coding phase must own its prompt asset, replace `$ARGUMENTS`, parse only `RALPH_STATUS=CONTINUE|COMPLETE|BLOCKED`, and reject malformed or blocker-less output.",
+      "covered": true,
+      "task_ids": [
+        "TASK-008"
+      ],
+      "notes": "TASK-008 covers prompt ownership, placeholder replacement, and strict first-line contract parsing."
+    },
+    {
+      "requirement": "Coding bookkeeping validation must stay narrow and objective: validate `tasks.json`, `ralph.txt`, and status coherence only, without rewriting artifacts or inferring implementation correctness.",
+      "covered": true,
+      "task_ids": [
+        "TASK-009"
+      ],
+      "notes": "TASK-009 tracks the bookkeeping contract closely and explicitly forbids extra harness behavior."
+    },
+    {
+      "requirement": "The retrospective phase must own its prompt and validation, require `ralph.txt`, and limit rerun mutations to retrospective-owned outputs.",
+      "covered": true,
+      "task_ids": [
+        "TASK-010",
+        "TASK-012"
+      ],
+      "notes": "TASK-010 covers prerequisites and ownership; TASK-012 covers retro rerun semantics."
+    },
+    {
+      "requirement": "Feature-local session state must live under `.ralph/` with per-session JSON files and `current.json`, storing only control-plane data and the specified terminal outcomes.",
+      "covered": true,
+      "task_ids": [
+        "TASK-005"
+      ],
+      "notes": "TASK-005 is specific about file locations, stored data, and terminal outcome vocabulary."
+    },
+    {
+      "requirement": "Active-run locking must use `.ralph/lock` with session id, pid, hostname, start time, and heartbeat, and stale-lock detection must use the recorded host/process plus the 10-minute threshold.",
+      "covered": true,
+      "task_ids": [
+        "TASK-006"
+      ],
+      "notes": "TASK-006 captures the lock record fields, heartbeat behavior, and stale-lock inspection rule."
+    },
+    {
+      "requirement": "Only `resume` may reclaim stale locks automatically, and `run` must fail fast when an incomplete session or active lock already exists.",
+      "covered": true,
+      "task_ids": [
+        "TASK-006",
+        "TASK-011"
+      ],
+      "notes": "The state-inspection side is in TASK-006 and the run/resume policy is in TASK-011."
+    },
+    {
+      "requirement": "The orchestrator must own session lifecycle, iteration counting, phase transitions, automatic retrospective execution after code completion, and degraded outcomes after retrospective failure.",
+      "covered": true,
+      "task_ids": [
+        "TASK-011",
+        "TASK-012"
+      ],
+      "notes": "The orchestrator is decomposed into run/resume control and retro/degraded extensions."
+    },
+    {
+      "requirement": "The shell wrapper must remain a thin compatibility shim preserving the legacy flags and mapping `--retro-only` to the Python retrospective flow.",
+      "covered": true,
+      "task_ids": [
+        "TASK-014"
+      ],
+      "notes": "TASK-014 stays close to the wrapper-specific contract and explicitly strips old loop logic out of Bash."
+    },
+    {
+      "requirement": "The repository must gain `make ralph-test` and `make ralph-verify` as stable repo-root entrypoints.",
+      "covered": true,
+      "task_ids": [
+        "TASK-017",
+        "TASK-019"
+      ],
+      "notes": "TASK-017 adds the Makefile surface and TASK-019 verifies it."
+    },
+    {
+      "requirement": "The README must document install, `run`/`resume`/`retro`, compatibility wrapper behavior, `.ralph/` artifacts, stale-lock recovery, degraded outcomes, retro rerun behavior, and the corrupted-state fallback.",
+      "covered": true,
+      "task_ids": [
+        "TASK-018"
+      ],
+      "notes": "TASK-018 is strong and specific on the required operator documentation topics."
+    },
+    {
+      "requirement": "Deterministic tests must cover the specified failure, resume, locking, bookkeeping, and degraded-success scenarios without using the real Codex CLI.",
+      "covered": true,
+      "task_ids": [
+        "TASK-015",
+        "TASK-016"
+      ],
+      "notes": "The test split is sensible: module-level validation in TASK-015 and end-to-end lifecycle coverage in TASK-016."
+    },
+    {
+      "requirement": "Local verification must run editable install, direct unittest discovery, the Make targets, and `./ralph/ralph.sh --help`, while treating the real Codex smoke path as optional.",
+      "covered": true,
+      "task_ids": [
+        "TASK-019"
+      ],
+      "notes": "TASK-019 captures the final command matrix accurately and keeps the live Codex path optional."
+    },
+    {
+      "requirement": "Use only the Python standard library in v1 unless a non-stdlib dependency is clearly necessary.",
+      "covered": true,
+      "task_ids": [
+        "TASK-001",
+        "TASK-004"
+      ],
+      "notes": "The stdlib-only constraint is present, though it is reinforced mainly in early packaging and agent-adapter tasks rather than throughout the plan."
+    },
+    {
+      "requirement": "Terminal sessions (`completed`, `blocked`, `failed`, `max_iterations`, and `degraded`) are closed and may not be resumed.",
+      "covered": false,
+      "task_ids": [],
+      "notes": "TASK-011 implies resume operates on incomplete sessions only, but the terminal-session rejection rule is left as an assumption rather than an explicit deliverable or acceptance criterion."
+    }
+  ],
+  "issues": {
+    "missing_requirements": [
+      "Terminal sessions (`completed`, `blocked`, `failed`, `max_iterations`, and `degraded`) are closed and may not be resumed."
+    ],
+    "invented_requirements": [],
+    "oversized_tasks": [
+      {
+        "task_id": "TASK-008",
+        "reason": "It combines prompt relocation, prompt rendering, agent invocation, status parsing, and contract enforcement in one step across multiple files."
+      },
+      {
+        "task_id": "TASK-011",
+        "reason": "It bundles new-session policy, resume policy, lock behavior, iteration control, and persistent-session coordination into one orchestrator task."
+      },
+      {
+        "task_id": "TASK-015",
+        "reason": "It spans helpers plus four separate test modules and several independent validation concerns, which is large for a low-reasoning implementation task."
+      }
+    ],
+    "vague_tasks": [
+      {
+        "task_id": "TASK-011",
+        "reason": "The objective and acceptance focus on broad orchestrator behavior, but they do not break the work into narrower observable sub-behaviors within the file."
+      },
+      {
+        "task_id": "TASK-012",
+        "reason": "It mixes retro-only execution, automatic retro transition, degraded outcomes, and rerun semantics without a smaller execution boundary."
+      },
+      {
+        "task_id": "TASK-013",
+        "reason": "User-facing error handling is required, but the task does not specify concrete exit-code or message expectations."
+      }
+    ],
+    "weak_acceptance_criteria": [
+      {
+        "task_id": "TASK-011",
+        "reason": "Criteria such as \"can execute `run` and `resume`\" are broad and rely on later tests rather than locally checkable behavior."
+      },
+      {
+        "task_id": "TASK-012",
+        "reason": "The criteria describe desired lifecycle outcomes but do not make the expected persisted state or exact returned outcomes explicit."
+      },
+      {
+        "task_id": "TASK-013",
+        "reason": "\"Clear non-zero CLI outcomes\" is not precise enough for deterministic implementation by a weaker coding agent."
+      }
+    ],
+    "dependency_problems": []
+  },
+  "metrics": {
+    "total_tasks": 19,
+    "tasks_with_missing_dependencies": 0,
+    "tasks_with_broad_scope": 3,
+    "tasks_with_weak_acceptance_criteria": 3,
+    "requirements_uncovered": 1,
+    "invented_requirement_count": 0
+  },
+  "verdict": "good"
+}
