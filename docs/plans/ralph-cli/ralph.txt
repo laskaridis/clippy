@@ -170,6 +170,26 @@
   - None.
 - Follow up needed: none.
 ---
+## [2026-05-11 13:13Z]
+- Task id
+  - TASK-015
+- What was implemented:
+  - Added `ralph/ralph/lifecycle/phases/retro/phase.py` with a one-shot retrospective phase runner that validates `ralph.txt`, renders the retro prompt, invokes the abstract agent once, checks for the retrospective report artifact, and returns a typed `PhaseResult`.
+- Files changed:
+  - `ralph/ralph/lifecycle/phases/retro/phase.py`
+  - `docs/plans/ralph-cli/tasks.json`
+  - `docs/plans/ralph-cli/ralph.txt`
+- Verification:
+  - Ran `python -m py_compile ralph/ralph/lifecycle/phases/retro/phase.py` successfully.
+  - Ran `python -m unittest discover -s ralph/tests` successfully.
+  - Ran a temporary-feature-folder smoke script that exercised `run_retro_phase` with a fake agent, confirmed it returned `completed`, and verified that `ralph.retro.md` was created.
+- Learnings for future iterations:
+  - Retrospective execution should stay phase-local: the phase can validate its own prerequisites, but the report artifact itself still belongs to the agent prompt contract.
+  - Returning only metadata about the retrospective report keeps the control plane separate from the generated review body.
+- Scope deviations:
+  - None.
+- Follow up needed: none.
+---
 ## [2026-05-11 12:36Z]
 - Task id
   - TASK-001
