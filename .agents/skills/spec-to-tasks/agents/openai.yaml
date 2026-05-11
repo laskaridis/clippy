@@ -1,0 +1,3 @@
+interface:
+  display_name: "Spec2Tasks"
+  short_description: "Convert a specification into a list of implementation tasks."
