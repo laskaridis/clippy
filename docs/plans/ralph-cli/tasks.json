@@ -560,7 +560,8 @@
       "dependencies": [
         "TASK-016",
         "TASK-008"
-      ]
+      ],
+      "status": "completed"
     },
     {
       "id": "TASK-018",

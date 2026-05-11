@@ -15,6 +15,7 @@
 - Keep code-phase bookkeeping validation narrow: treat missing task `status` values as pending, count only explicit `completed` entries as finished, and create `ralph.txt` only when the file is missing.
 - Keep phase execution wrappers single-shot: render the prompt, invoke the agent once, parse status, validate bookkeeping, and return a `PhaseResult` with metadata instead of prompt or response bodies.
 - For fresh run entrypoints, check the current-session pointer and lock state before creating a new session, then keep lock ownership, session creation, and the phase loop inside one `finally`-protected block so a failure cannot strand active ownership.
+- Release `.ralph/lock` through an ownership-aware best-effort cleanup helper so `finally` blocks do not mask the original run or resume failure when the lock is absent or already owned by a different session.
 
 ## [2026-05-11 12:35Z]
 - Task id
@@ -411,5 +412,26 @@
   - Minimal `PhaseResult.metadata` is enough for orchestration if it carries the agent exit code, agent diagnostics, parsed status, and bookkeeping summary.
 - Scope deviations:
   - None.
+- Follow up needed: none.
+---
+## [2026-05-11 13:25Z]
+- Task id
+  - TASK-017
+- What was implemented:
+  - Added `resume(config, agent)` to `ralph/ralph/lifecycle/orchestrator.py` so Ralph can continue exactly one incomplete persisted session instead of creating a new run.
+  - Added resume preflight logic that loads the current incomplete session, rejects missing or terminal sessions, and only reclaims a stale lock through the session store's inspection APIs.
+  - Factored the shared phase loop into a reusable internal helper and made lock cleanup best-effort and ownership-aware so cleanup never masks the original failure.
+- Files changed:
+  - `ralph/ralph/lifecycle/orchestrator.py`
+  - `docs/plans/ralph-cli/tasks.json`
+  - `docs/plans/ralph-cli/ralph.txt`
+- Verification:
+  - Ran a targeted Python smoke script with a pre-seeded incomplete session, a stale `.ralph/lock`, and a fake agent; `resume()` returned `completed`, processed two agent calls, finalized the session, and removed the lock.
+  - Confirmed the resumed session kept the existing session id and updated the terminal session record instead of creating a fresh one.
+- Learnings for future iterations:
+  - Resume logic should treat current-session loading and lock recovery as separate steps: load the persisted session first, then inspect or reclaim the lock through the session store.
+  - Cleanup should be best-effort and ownership-aware so a stale or replaced lock does not turn into a misleading secondary failure.
+- Scope deviations:
+  - Updated `AGENTS.md` with the reusable lock-cleanup convention so future Ralph work keeps cleanup best-effort and ownership-aware.
 - Follow up needed: none.
 ---

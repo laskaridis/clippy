@@ -1,8 +1,9 @@
-"""Lifecycle orchestration for a fresh Ralph run.
+"""Lifecycle orchestration for Ralph run and resume flows.
 
-This module owns the v1 new-session control flow: it starts a run, enforces
-the one-active-run-per-feature rule, drives the coding phase iteratively, and
-invokes the retrospective automatically after implementation completes.
+This module owns the v1 control flow: it starts a run, resumes an incomplete
+session, enforces the one-active-run-per-feature rule, drives the coding phase
+iteratively, and invokes the retrospective automatically after implementation
+completes.
 """
 
 from __future__ import annotations
@@ -58,14 +59,28 @@ def run(config: RunConfig, agent: Agent) -> RunOutcome:
                 "Cannot start a new Ralph run because a lock already exists; use `resume` instead."
             ) from exc
         session = store.create_session(session_id=session_id, started_at=lock.started_at)
-        report = _run_new_session(store, session, agent)
+        report = _run_session(store, session, agent)
         return report.outcome
     finally:
-        store.release_lock(session_id)
+        _release_owned_lock(store, session_id)
 
 
-def _run_new_session(store: RunSessionStore, session: RunSession, agent: Agent) -> RunReport:
-    """Drive the implementation loop for a newly created session."""
+def resume(config: RunConfig, agent: Agent) -> RunOutcome:
+    """Resume an incomplete Ralph run and return the terminal run outcome."""
+
+    store = RunSessionStore(config)
+    session = _load_resume_session(store)
+    session_id = session.session_id
+    try:
+        _prepare_resume_lock(store, session)
+        report = _run_session(store, session, agent)
+        return report.outcome
+    finally:
+        _release_owned_lock(store, session_id)
+
+
+def _run_session(store: RunSessionStore, session: RunSession, agent: Agent) -> RunReport:
+    """Drive the implementation loop for an existing session."""
 
     current_session = session
     for iteration in range(current_session.iteration_count + 1, store.config.max_iterations + 1):
@@ -163,6 +178,62 @@ def _run_new_session(store: RunSessionStore, session: RunSession, agent: Agent) 
     )
 
 
+def _load_resume_session(store: RunSessionStore) -> RunSession:
+    """Load the single incomplete session that resume is allowed to continue."""
+
+    current_session = store.load_current_session()
+    if current_session is None:
+        raise BookkeepingValidationError(
+            "Cannot resume because no incomplete Ralph session exists; start a new run instead."
+        )
+    if current_session.is_terminal:
+        raise BookkeepingValidationError(
+            f"Cannot resume terminal Ralph session {current_session.session_id} with outcome {current_session.overall_outcome!r}."
+        )
+    return current_session
+
+
+def _prepare_resume_lock(store: RunSessionStore, session: RunSession) -> None:
+    """Validate or reclaim the active-run lock for a resumed session."""
+
+    lock_inspection = store.inspect_lock()
+    if lock_inspection.state is LockState.ABSENT:
+        store.acquire_lock(session.session_id)
+        return
+
+    if lock_inspection.state is LockState.STALE:
+        if lock_inspection.lock is not None:
+            store.release_lock(lock_inspection.lock.session_id)
+        store.acquire_lock(session.session_id)
+        return
+
+    if lock_inspection.lock is None:
+        raise BookkeepingValidationError(
+            f"Cannot resume because {store.lock_path} is active but unreadable; use `resume` again after recovering the lock."
+        )
+    if lock_inspection.lock.session_id != session.session_id:
+        raise BookkeepingValidationError(
+            f"Cannot resume session {session.session_id} because {store.lock_path} belongs to {lock_inspection.lock.session_id!r}; use `resume` once that lock is released or stale."
+        )
+
+    store.refresh_lock_heartbeat(session.session_id)
+
+
+def _release_owned_lock(store: RunSessionStore, session_id: str) -> None:
+    """Release the current lock only when it still belongs to the given session."""
+
+    try:
+        lock = store.load_lock()
+    except BookkeepingValidationError:
+        return
+    if lock is None or lock.session_id != session_id:
+        return
+    try:
+        store.release_lock(session_id)
+    except BookkeepingValidationError:
+        return
+
+
 def _validate_new_run_start(store: RunSessionStore) -> None:
     """Reject any attempt to start a new run when one is already active."""
 
@@ -258,4 +329,5 @@ __all__ = [
     "RunOutcome",
     "RunReport",
     "run",
+    "resume",
 ]
