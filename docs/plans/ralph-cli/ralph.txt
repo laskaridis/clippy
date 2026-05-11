@@ -43,6 +43,29 @@
   - Created the feature progress log file because none existed yet.
 - Follow up needed: none.
 ---
+## [2026-05-11 13:38Z]
+- Task id
+  - TASK-021
+- What was implemented:
+  - Added deterministic unit tests for the resolved-config helper, session-store and lock-state helpers, coding-status parsing, code-phase bookkeeping validation, and retrospective prerequisites/phase execution.
+  - Covered the key helper contracts with temporary feature folders and fake agents so the suite stays independent from the real Codex binary.
+- Files changed:
+  - `ralph/tests/test_config.py`
+  - `ralph/tests/test_session.py`
+  - `ralph/tests/test_code_status.py`
+  - `ralph/tests/test_code_validation.py`
+  - `ralph/tests/test_retro_phase.py`
+  - `docs/plans/ralph-cli/tasks.json`
+  - `docs/plans/ralph-cli/ralph.txt`
+- Verification:
+  - Ran `python -m pip install -e ralph` successfully.
+  - Ran `python -m unittest discover -s ralph/tests` successfully; 12 tests passed.
+- Learnings for future iterations:
+  - On macOS, temporary-directory paths may resolve through `/private/var`, so config-path assertions should compare resolved paths rather than raw constructor paths.
+- Scope deviations:
+  - None.
+- Follow up needed: none.
+---
 ## [2026-05-11 13:33Z]
 - Task id
   - TASK-020
