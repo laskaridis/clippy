@@ -68,6 +68,26 @@
   - Updated `AGENTS.md` with the reusable namespace-package invocation rule.
 - Follow up needed: none.
 ---
+## [2026-05-11 13:48Z]
+- Task id
+  - TASK-024
+- What was implemented:
+  - Rewrote `ralph/README.md` to document the installed Python CLI, the `run`/`resume`/`retro` subcommands, feature-folder and `.ralph/` recovery artifacts, degraded retrospective outcomes, and the manual fallback of deleting `.ralph/` before starting fresh.
+  - Documented the legacy `./ralph/ralph.sh` compatibility shim and its `--retro-only` translation rules.
+- Files changed:
+  - `ralph/README.md`
+  - `docs/plans/ralph-cli/tasks.json`
+  - `docs/plans/ralph-cli/ralph.txt`
+- Verification:
+  - Ran `make ralph-verify`; the deterministic Ralph test suite passed (`19` tests) and Ruff reported no issues in `22` source files.
+  - Ran `./ralph/ralph.sh --help`; the legacy help still exposes `--feature-dir`, `--max-iterations`, `--coding-model`, `--retro-model`, and `--retro-only`.
+- Learnings for future iterations:
+  - The README should describe the operator recovery path in the same terms as the runtime: `resume` is the recovery command, `.ralph/` is internal control-plane state, and `degraded` is a distinct terminal outcome after implementation succeeds.
+  - The shell shim still owns only legacy flag translation, so docs should keep its behavior separate from the Python CLI entrypoints.
+- Scope deviations:
+  - Updated `docs/plans/ralph-cli/tasks.json` to mark `TASK-024` completed.
+- Follow up needed: none.
+---
 ## [2026-05-11 13:38Z]
 - Task id
   - TASK-021

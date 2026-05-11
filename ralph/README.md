@@ -1,68 +1,68 @@
 # Meet Ralph
 
-Ralph is a lightweight autonomous implementation loop for coding.
+Ralph is a repo-local Python command-line harness for feature-folder implementation loops.
 
-To use it, all you need to do is point him to a folder that contains two files:
-- A feature description file: `spec.md`
-- A task list file: `tasks.json`
+## Install
 
-For retrospective-only runs, the same feature folder must also contain `ralph.txt`.
-
-## What Ralph does
-
-For each iteration, Ralph:
-
-1. Reads the spec and tasks to understand the context
-2. Picks the next task and implements it.
-4. Continues looping until completion, blockage, or the max iteration limit.
-6. After finishing, ralph will reflect on its work and identify points for improvement.
-
-Througought the process, ralph tracks progress by leaving notes to himself in a file (`ralph.txt`) which can be used to audit his actions.
-
-At any point that ralph gets stuck, it will escalate to a human to sort things out.
-
-## Current lifecycle
-
-Ralph currently has a simple three-phase lifecycle:
-
-1. Setup
-   Ralph validates CLI arguments, resolves the feature directory, and ensures the required prompt and feature files exist for the selected mode.
-2. Implementation loop
-   Ralph repeatedly runs Codex for one task at a time until the agent reports `CONTINUE`, `COMPLETE`, or `BLOCKED`.
-3. Retrospective
-   When the agent reports `COMPLETE`, Ralph runs a second Codex pass using `prompts/retro.md`, which writes a `ralph.retro.md` review for the finished feature.
-
-Ralph also supports a retrospective-only entrypoint that skips the implementation loop and runs the retrospective directly against an existing feature folder.
-
-## Current status and boundaries
-
-Ralph is currently a prompt-driven implementation harness, not a standalone service or framework. It does not manage task planning itself; it assumes a feature folder has already been prepared with a usable `spec.md` and `tasks.json`.
-
-Its current control model is intentionally narrow:
-
-- one task per iteration
-- status-driven loop control via the first response line
-- success only when the agent explicitly reports completion
-- retrospective after successful completion, or directly via `--retro-only`
-
-If the agent reports `BLOCKED`, if Codex execution fails, or if the iteration cap is reached without completion, Ralph exits without performing the retrospective.
-
-## CLI usage
-
-Full lifecycle run:
+Install the package in editable mode from the repository root:
 
 ```bash
-./ralph/ralph.sh --feature-dir specs/my-feature
+python -m pip install -e ralph
 ```
 
-Retrospective only:
+That exposes the `ralph` console script.
 
-```bash
-./ralph/ralph.sh --feature-dir specs/my-feature --retro-only
-```
+## CLI
 
-Notes:
+Public subcommands:
 
-- `--feature-dir` is always required and must be relative to the current working directory.
-- `--retro-only` requires `spec.md`, `tasks.json`, `ralph.txt`, and `prompts/retro.md`.
-- `--retro-only` cannot be combined with `--max-iterations` or `--coding-model`.
+- `ralph run --feature-dir <relative-path>` starts a fresh implementation run.
+- `ralph resume --feature-dir <relative-path>` continues the incomplete run recorded in the feature-local session files.
+- `ralph retro --feature-dir <relative-path>` runs the retrospective pass only.
+
+Common options:
+
+- `--feature-dir` is required and must be relative to the current working directory.
+- `--max-iterations` limits coding iterations for `run` and `resume`.
+- `--coding-model` selects the model used for coding iterations.
+- `--retro-model` selects the model used for the retrospective pass.
+
+`run` and `resume` print the terminal run outcome: `completed`, `blocked`, `failed`, `max_iterations`, or `degraded`.
+`retro` prints `completed` when the retrospective succeeds and `failed` otherwise.
+
+## Feature Folder Contract
+
+Ralph expects a prepared feature folder with at least:
+
+- `spec.md`
+- `tasks.json`
+
+The retrospective pass also requires:
+
+- `ralph.txt`
+
+During execution Ralph writes feature-local control-plane state under `.ralph/`:
+
+- `.ralph/sessions/<session-id>.json` for each run session
+- `.ralph/sessions/current.json` as the current incomplete-session pointer, or the latest terminal session
+- `.ralph/lock` for active-run ownership
+
+`run` fails fast if an incomplete session or active lock already exists. `resume` is the recovery path for interrupted runs, including stale-lock reclamation when the recorded process is gone and the heartbeat is old enough.
+
+If the session state becomes corrupted beyond automated recovery, inspect the human-readable artifacts in the feature folder, delete `.ralph/` intentionally, and start a new `run`.
+
+## Retrospectives
+
+When implementation completes successfully, Ralph runs the retrospective automatically. If the retrospective fails after implementation succeeds, the run is marked `degraded` rather than `failed`.
+
+You can rerun `retro` against a completed feature folder to regenerate only the retrospective state and output it owns.
+
+## Legacy Shell Entry Point
+
+`./ralph/ralph.sh` remains a compatibility shim for the old interface. It still accepts `--feature-dir`, `--max-iterations`, `--coding-model`, `--retro-model`, and `--retro-only`, then translates them into the Python CLI.
+
+- `--retro-only` maps to `ralph retro`
+- all other legacy runs map to `ralph run`
+- when `--retro-only` is present, the shim rejects `--max-iterations` and `--coding-model`
+
+The shim keeps the old operator workflow working while the Python CLI is the primary entry point.
