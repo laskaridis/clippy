@@ -20,6 +20,7 @@
 - Keep `ralph/ralph.sh` as a compatibility shim that sets `PYTHONPATH` to the repo-local `ralph/` package root and `exec`s `python -m ralph.cli` after translating legacy flags, so the shell entrypoint stays authoritative only for argument mapping.
 - Keep deterministic Ralph test doubles in `ralph/tests/fakes.py`; script `AgentResult` values and controlled exceptions rather than patching subprocesses in each test.
 - When testing multi-iteration lifecycle flows, mutate feature-local bookkeeping files between fake-agent invocations instead of monkeypatching orchestrator internals.
+- Run Ralph Make targets from the repository root; the tests import the top-level `ralph.tests` namespace package, so `cd ralph && ...` will shadow the namespace and break discovery.
 
 ## [2026-05-11 12:35Z]
 - Task id
@@ -42,6 +43,29 @@
   - Ralph is intentionally being packaged as a separate installable unit under `ralph/`, not folded into backend packaging.
 - Scope deviations:
   - Created the feature progress log file because none existed yet.
+- Follow up needed: none.
+---
+## [2026-05-11 13:45Z]
+- Task id
+  - TASK-023
+- What was implemented:
+  - Added root `Makefile` targets for `ralph-test`, `ralph-lint`, `ralph-typecheck`, and `ralph-verify`.
+  - Wired `ralph-verify` to run Ralph's deterministic test suite plus the newly established Ruff and Mypy checks.
+  - Captured the repo-root invocation rule in the shared project guidance after discovering the namespace-package import trap.
+- Files changed:
+  - `Makefile`
+  - `AGENTS.md`
+  - `docs/plans/ralph-cli/tasks.json`
+  - `docs/plans/ralph-cli/ralph.txt`
+- Verification:
+  - Ran `make ralph-test` successfully; 19 Ralph tests passed.
+  - Ran `make ralph-verify` successfully; the test suite passed and Ruff reported no issues in 22 source files.
+  - Confirmed `make help` now exposes the Ralph task surface after editing the Makefile.
+- Learnings for future iterations:
+  - Ralph test commands must run from the repository root because the tests rely on the top-level `ralph.tests` namespace package.
+  - `ralph-verify` can stay small and reliable by reusing the dedicated `ralph-test`, `ralph-lint`, and `ralph-typecheck` targets.
+- Scope deviations:
+  - Updated `AGENTS.md` with the reusable namespace-package invocation rule.
 - Follow up needed: none.
 ---
 ## [2026-05-11 13:38Z]
