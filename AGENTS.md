@@ -34,8 +34,11 @@ When Git credentials must keep working after workspace initialization, bake a re
 ├── docs/        # project's documentation artifacts
 ├── extension/   # browser app extensions (currently only for chrome)
 ├── infra/       # infrastructure related artifacts
+├── ralph/       # standalone Ralph CLI package and feature-specific harness assets
 └── specs/       # feature specifications and implementation plans
 ```
+
+Ralph agent backends should implement `ralph.agents.base.Agent` and return `AgentResult`; keep lifecycle code backend-agnostic and avoid raw subprocess coupling.
 
 ## Front-end development
 
