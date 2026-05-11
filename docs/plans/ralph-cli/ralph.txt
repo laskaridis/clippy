@@ -14,6 +14,7 @@
 - Normalize CRLF before exact first-line status comparisons in phase-local parsers, and preserve the trailing response body for diagnostics.
 - Keep code-phase bookkeeping validation narrow: treat missing task `status` values as pending, count only explicit `completed` entries as finished, and create `ralph.txt` only when the file is missing.
 - Keep phase execution wrappers single-shot: render the prompt, invoke the agent once, parse status, validate bookkeeping, and return a `PhaseResult` with metadata instead of prompt or response bodies.
+- For fresh run entrypoints, check the current-session pointer and lock state before creating a new session, then keep lock ownership, session creation, and the phase loop inside one `finally`-protected block so a failure cannot strand active ownership.
 
 ## [2026-05-11 12:35Z]
 - Task id
@@ -168,6 +169,29 @@
   - The existing unittest smoke tree still provides a stable low-cost validation target while the rest of the harness is being built.
 - Scope deviations:
   - None.
+- Follow up needed: none.
+---
+## [2026-05-11 13:20Z]
+- Task id
+  - TASK-016
+- What was implemented:
+  - Added `ralph/ralph/lifecycle/orchestrator.py` with the new-session `run()` path, a terminal `RunOutcome` enum, and a `RunReport` helper for internal iteration tracking.
+  - Enforced the fresh-run preflight checks for incomplete current sessions and existing locks, then acquired feature ownership, drove the coding phase one iteration at a time, and refreshed the lock heartbeat at phase boundaries.
+  - Automatically invoked the retrospective phase after code completion and recorded `degraded` when implementation succeeded but the retrospective failed.
+- Files changed:
+  - `ralph/ralph/lifecycle/orchestrator.py`
+  - `AGENTS.md`
+  - `docs/plans/ralph-cli/tasks.json`
+  - `docs/plans/ralph-cli/ralph.txt`
+- Verification:
+  - Ran `python -m py_compile ralph/ralph/lifecycle/orchestrator.py ralph/ralph/session.py ralph/ralph/config.py ralph/ralph/lifecycle/phases/base.py ralph/ralph/lifecycle/phases/code/phase.py ralph/ralph/lifecycle/phases/code/status.py ralph/ralph/lifecycle/phases/code/validation.py ralph/ralph/lifecycle/phases/retro/phase.py ralph/ralph/lifecycle/phases/retro/validation.py` successfully.
+  - Ran `python -m unittest discover -s ralph/tests` successfully.
+  - Ran a targeted temporary-feature smoke script with a fake agent that completed in two coding passes, wrote `ralph.retro.md`, returned `RunOutcome.COMPLETED`, cleaned up `.ralph/lock`, and persisted the terminal session record under `.ralph/sessions/`.
+- Learnings for future iterations:
+  - Fresh-run orchestration should fail before session creation when an incomplete current session or any lock is already present, and the user-facing error should point straight to `resume`.
+  - Re-loading the session snapshot after each heartbeat refresh keeps the in-memory control flow aligned with what was actually written to disk.
+- Scope deviations:
+  - Updated `AGENTS.md` with a reusable fresh-run ownership pattern because it will matter again for resume and CLI wiring.
 - Follow up needed: none.
 ---
 ## [2026-05-11 13:13Z]
