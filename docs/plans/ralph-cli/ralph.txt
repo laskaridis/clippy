@@ -6,6 +6,7 @@
 - Keep agent backends behind `ralph.agents.base.Agent` and return `AgentResult` with stdout, exit code, and diagnostics metadata instead of raw subprocess objects.
 - For Codex-backed adapters, treat the `-o` file as the authoritative payload and keep subprocess stderr in `AgentResult.metadata` for diagnostics.
 - Resolve concrete agent backends through `ralph.agents.factory.resolve_agent()` so lifecycle code stays backend-agnostic and unknown identifiers fail through a typed Ralph error.
+- Keep run-session persistence behind `ralph.session.RunSessionStore`; store one JSON session per run under `.ralph/sessions/` and treat `current.json` as the authoritative pointer for resume.
 
 ## [2026-05-11 12:35Z]
 - Task id
@@ -177,5 +178,29 @@
   - `python -m unittest discover` exits non-zero when it finds no tests, even if the package tree exists.
 - Scope deviations:
   - Added a discovery-only smoke test hook so the scaffold task has a passing verification target.
+- Follow up needed: none.
+---
+
+## [2026-05-11 12:52Z]
+- Task id
+  - TASK-007
+- What was implemented:
+  - Added `ralph/ralph/session.py` with immutable `RunSession`, `RunSessionPointer`, and `RunLock` records plus `RunSessionStore` for feature-local session persistence.
+  - Implemented atomic writes for `.ralph/sessions/<session-id>.json` and `.ralph/sessions/current.json`, including pointer updates for both incomplete and terminal runs.
+  - Added strict JSON load/validation helpers so corrupted control-plane state fails through `BookkeepingValidationError` instead of being silently accepted.
+- Files changed:
+  - `ralph/ralph/session.py`
+  - `docs/plans/ralph-cli/tasks.json`
+  - `docs/plans/ralph-cli/ralph.txt`
+  - `AGENTS.md`
+- Verification:
+  - Ran `python -m py_compile ralph/ralph/session.py` successfully.
+  - Ran `python -m unittest discover -s ralph/tests` successfully.
+  - Ran a temporary-feature-folder smoke script that created, updated, finalized, and reloaded a session record; confirmed `.ralph/sessions/current.json` tracked the session and that the persisted session JSON did not contain prompt/response body fields.
+- Learnings for future iterations:
+  - Session state needs a dedicated pointer file so resume logic can find the active session without scanning or guessing file paths.
+  - Keep persisted session data limited to control-plane metadata; the agent payload itself should stay out of session JSON.
+- Scope deviations:
+  - Updated `AGENTS.md` and the feature progress log with the reusable session-pointer convention.
 - Follow up needed: none.
 ---
