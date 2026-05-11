@@ -68,14 +68,15 @@
       ],
       "status": "completed"
     },
-    {
-      "id": "TASK-003",
-      "title": "Implement resolved run config and feature validation",
-      "objective": "Implement the typed configuration layer that resolves CLI inputs into validated runtime settings and feature-local paths. This task should make feature-folder validation deterministic before any agent or lifecycle code runs.",
-      "type": "implementation",
-      "files": [
-        "ralph/ralph/config.py"
-      ],
+  {
+    "id": "TASK-003",
+    "title": "Implement resolved run config and feature validation",
+    "objective": "Implement the typed configuration layer that resolves CLI inputs into validated runtime settings and feature-local paths. This task should make feature-folder validation deterministic before any agent or lifecycle code runs.",
+    "type": "implementation",
+    "status": "completed",
+    "files": [
+      "ralph/ralph/config.py"
+    ],
       "constraints": [
         "Expose `RunConfig` with the resolved feature directory, max iterations, coding model, retro model, retro-only mode, and selected agent identifier.",
         "Reject absolute feature-directory paths and missing required feature files through typed failures.",
