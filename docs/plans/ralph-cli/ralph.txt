@@ -7,6 +7,7 @@
 - For Codex-backed adapters, treat the `-o` file as the authoritative payload and keep subprocess stderr in `AgentResult.metadata` for diagnostics.
 - Resolve concrete agent backends through `ralph.agents.factory.resolve_agent()` so lifecycle code stays backend-agnostic and unknown identifiers fail through a typed Ralph error.
 - Keep run-session persistence behind `ralph.session.RunSessionStore`; store one JSON session per run under `.ralph/sessions/` and treat `current.json` as the authoritative pointer for resume.
+- Keep lock staleness checks conservative: only the local host can prove a recorded PID is dead, and remote-host locks stay active until higher-level recovery decides what to do.
 
 ## [2026-05-11 12:35Z]
 - Task id
@@ -202,5 +203,28 @@
   - Keep persisted session data limited to control-plane metadata; the agent payload itself should stay out of session JSON.
 - Scope deviations:
   - Updated `AGENTS.md` and the feature progress log with the reusable session-pointer convention.
+- Follow up needed: none.
+---
+
+## [2026-05-11 13:00Z]
+- Task id
+  - TASK-008
+- What was implemented:
+  - Extended `ralph/ralph/session.py` with structured lock persistence helpers for acquire, release, heartbeat refresh, and lock inspection.
+  - Added a conservative `LockState`/`LockInspection` view so the session store can distinguish `absent`, `active`, and `stale` lock states without auto-reclaiming locks.
+  - Kept stale-lock detection host-aware and limited to the local process-liveness check plus the 10-minute heartbeat threshold.
+- Files changed:
+  - `ralph/ralph/session.py`
+  - `docs/plans/ralph-cli/tasks.json`
+  - `docs/plans/ralph-cli/ralph.txt`
+  - `AGENTS.md`
+- Verification:
+  - Reviewed the updated session-store code path for explicit lock APIs and conservative stale-state behavior.
+  - Updated the task ledger and progress log to match the implemented lock behavior.
+- Learnings for future iterations:
+  - Lock acquisition should remain separate from stale-lock inspection; the store should report state, not reclaim ownership.
+  - Remote-host locks need to stay conservative because the local process table cannot prove remote liveness.
+- Scope deviations:
+  - Updated `AGENTS.md` with the reusable conservative-lock-inspection note for future Ralph work.
 - Follow up needed: none.
 ---

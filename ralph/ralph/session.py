@@ -4,6 +4,9 @@ from __future__ import annotations
 
 from dataclasses import dataclass, replace
 from datetime import datetime, timezone
+from datetime import timedelta
+from enum import Enum
+import errno
 import json
 import os
 from pathlib import Path
@@ -18,6 +21,7 @@ from ralph.errors import BookkeepingValidationError
 SESSION_SCHEMA_VERSION = 1
 POINTER_SCHEMA_VERSION = 1
 LOCK_SCHEMA_VERSION = 1
+LOCK_STALE_AFTER = timedelta(minutes=10)
 
 SESSION_ID_ALPHABET = frozenset("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_")
 TERMINAL_RUN_OUTCOMES = ("completed", "blocked", "failed", "max_iterations", "degraded")
@@ -98,6 +102,24 @@ def _validate_mapping(raw_value: object, *, source: str) -> dict[str, Any]:
 
 def _validate_path(raw_value: object, *, source: str) -> Path:
     return Path(_validate_string(raw_value, source=source))
+
+
+def _current_hostname() -> str:
+    return socket.gethostname()
+
+
+def _process_is_running(pid: int) -> bool:
+    try:
+        os.kill(pid, 0)
+    except ProcessLookupError:
+        return False
+    except PermissionError:
+        return True
+    except OSError as exc:
+        if getattr(exc, "errno", None) == errno.ESRCH:
+            return False
+        return True
+    return True
 
 
 def _new_session_id(moment: datetime | None = None) -> str:
@@ -340,6 +362,30 @@ class RunLock:
         )
 
 
+class LockState(str, Enum):
+    """Current lock state as seen by the session store."""
+
+    ABSENT = "absent"
+    ACTIVE = "active"
+    STALE = "stale"
+
+
+@dataclass(frozen=True, slots=True)
+class LockInspection:
+    """Snapshot of the current lock state."""
+
+    state: LockState
+    lock: RunLock | None
+    checked_at: datetime
+    heartbeat_age: timedelta | None
+    host_matches: bool | None
+    process_running: bool | None
+
+    @property
+    def is_stale(self) -> bool:
+        return self.state is LockState.STALE
+
+
 @dataclass(slots=True)
 class RunSessionStore:
     """Feature-local persistence boundary for Ralph sessions."""
@@ -405,6 +451,98 @@ class RunSessionStore:
         if pointer is None:
             return None
         return self.load_session(pointer.session_id)
+
+    def load_lock(self) -> RunLock | None:
+        if not self.lock_path.is_file():
+            return None
+        return RunLock.from_dict(_read_json(self.lock_path), source=self.lock_path)
+
+    def inspect_lock(self, *, now: datetime | None = None) -> LockInspection:
+        checked_at = now or _utc_now()
+        lock = self.load_lock()
+        if lock is None:
+            return LockInspection(
+                state=LockState.ABSENT,
+                lock=None,
+                checked_at=checked_at,
+                heartbeat_age=None,
+                host_matches=None,
+                process_running=None,
+            )
+
+        host_matches = lock.hostname == _current_hostname()
+        process_running = _process_is_running(lock.pid) if host_matches else None
+        heartbeat_age = checked_at - lock.last_heartbeat_at
+        is_stale = host_matches and process_running is False and heartbeat_age > LOCK_STALE_AFTER
+        return LockInspection(
+            state=LockState.STALE if is_stale else LockState.ACTIVE,
+            lock=lock,
+            checked_at=checked_at,
+            heartbeat_age=heartbeat_age,
+            host_matches=host_matches,
+            process_running=process_running,
+        )
+
+    def is_lock_stale(self, *, now: datetime | None = None) -> bool:
+        return self.inspect_lock(now=now).is_stale
+
+    def acquire_lock(
+        self,
+        session_id: str,
+        *,
+        pid: int | None = None,
+        hostname: str | None = None,
+        started_at: datetime | None = None,
+        last_heartbeat_at: datetime | None = None,
+    ) -> RunLock:
+        session_id = _validate_session_id(session_id, source="session_id")
+        if self.load_lock() is not None:
+            raise BookkeepingValidationError(f"Cannot acquire lock while a lock already exists: {self.lock_path}")
+
+        created_at = started_at or _utc_now()
+        lock = RunLock(
+            session_id=session_id,
+            pid=_validate_positive_int(os.getpid() if pid is None else pid, source="pid", allow_zero=False),
+            hostname=_validate_string(_current_hostname() if hostname is None else hostname, source="hostname"),
+            started_at=created_at,
+            last_heartbeat_at=last_heartbeat_at or created_at,
+        )
+        self._validate_lock_for_store(lock)
+        self.ensure_state_tree()
+        self._write_lock_record(lock)
+        return lock
+
+    def refresh_lock_heartbeat(
+        self,
+        session_id: str | None = None,
+        *,
+        heartbeat_at: datetime | None = None,
+    ) -> RunLock:
+        lock = self.load_lock()
+        if lock is None:
+            raise BookkeepingValidationError(f"Cannot refresh heartbeat without an existing lock: {self.lock_path}")
+        if session_id is not None and lock.session_id != _validate_session_id(session_id, source="session_id"):
+            raise BookkeepingValidationError(
+                f"Cannot refresh heartbeat for a different session: {session_id!r} != {lock.session_id!r}"
+            )
+
+        next_lock = replace(lock, last_heartbeat_at=heartbeat_at or _utc_now())
+        self._validate_lock_for_store(next_lock)
+        self._write_lock_record(next_lock)
+        return next_lock
+
+    def release_lock(self, session_id: str | None = None) -> None:
+        lock = self.load_lock()
+        if lock is None:
+            return
+        if session_id is not None and lock.session_id != _validate_session_id(session_id, source="session_id"):
+            raise BookkeepingValidationError(
+                f"Cannot release a different session's lock: {session_id!r} != {lock.session_id!r}"
+            )
+        try:
+            self.lock_path.unlink()
+        except FileNotFoundError:
+            return
 
     def write_session(self, session: RunSession) -> RunSession:
         self._validate_session_for_store(session)
@@ -496,8 +634,23 @@ class RunSessionStore:
         if session.last_phase_outcome is not None and not session.last_phase_outcome:
             raise BookkeepingValidationError(f"Invalid phase outcome for session {session.session_id}: {session.last_phase_outcome!r}")
 
+    def _validate_lock_for_store(self, lock: RunLock) -> None:
+        if not lock.session_id:
+            raise BookkeepingValidationError("Lock session id cannot be empty")
+        if lock.pid <= 0:
+            raise BookkeepingValidationError(f"Lock pid must be positive: {lock.pid}")
+        if not lock.hostname:
+            raise BookkeepingValidationError("Lock hostname cannot be empty")
+        if lock.last_heartbeat_at < lock.started_at:
+            raise BookkeepingValidationError(
+                "Lock heartbeat cannot precede the lock start time"
+            )
+
     def _write_session_record(self, session: RunSession) -> None:
         _atomic_write_json(self.session_path(session.session_id), session.to_dict())
+
+    def _write_lock_record(self, lock: RunLock) -> None:
+        _atomic_write_json(self.lock_path, lock.to_dict())
 
     def _write_current_pointer(self, pointer: RunSessionPointer) -> None:
         _atomic_write_json(self.current_session_path, pointer.to_dict())
@@ -506,6 +659,9 @@ class RunSessionStore:
 __all__ = [
     "DEFAULT_CURRENT_PHASE",
     "LOCK_SCHEMA_VERSION",
+    "LOCK_STALE_AFTER",
+    "LockInspection",
+    "LockState",
     "POINTER_SCHEMA_VERSION",
     "RunLock",
     "RunSession",
