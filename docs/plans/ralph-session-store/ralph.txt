@@ -4,6 +4,7 @@
 - Use a singleton `active_lock` row in SQLite for run ownership, and only probe PID liveness for same-host locks.
 - Derive the current session with `ORDER BY updated_at DESC, session_id DESC` when the store can contain multiple incomplete historical sessions.
 - Run-only recovery should gate on the active lock state, reclaim only stale same-host locks, and ignore older incomplete sessions when starting a new session.
+- In lock-inspection tests, patch `ralph.session._current_hostname` and `ralph.session._process_is_running` to exercise same-host and remote-host branches deterministically.
 
 ## [2026-05-12 14:46Z]
 - Task id
@@ -179,4 +180,28 @@
   - None.
 - Follow up needed:
   - TASK-009 still needs the final repo-root verification pass once the remaining feature tasks are complete.
+---
+
+## [2026-05-12 15:19Z]
+- Task id
+  - TASK-007
+- What was implemented:
+  - Rewrote the session-store unit coverage to assert SQLite-backed behavior directly.
+  - Added explicit latest-session ordering coverage using multiple sessions with controlled timestamps.
+  - Added lock inspection coverage for active same-host locks, stale same-host locks, remote-host locks, acquire/release behavior, and ignored legacy artifacts on disk.
+- Files changed:
+  - `ralph/tests/test_session.py`
+  - `docs/plans/ralph-session-store/tasks.json`
+  - `docs/plans/ralph-session-store/ralph.txt`
+- Verification:
+  - `PYTHONPATH=. make ralph-test` -> passed, 20 tests, OK.
+  - `PYTHONPATH=. make ralph-lint` -> passed, `All checks passed!`.
+  - `PYTHONPATH=. make ralph-typecheck` -> passed, `Success: no issues found in 22 source files`.
+- Learnings for future iterations:
+  - Latest-session behavior is easiest to prove by seeding sessions with the same timestamp first, then updating an older row to move it ahead of the SQL ordering.
+  - Remote-host lock inspection should assert that `_process_is_running` is never called, because liveness checks are same-host only.
+- Scope deviations:
+  - None.
+- Follow up needed:
+  - TASK-009 still needs the final repo-root verification pass after the remaining feature tasks are complete.
 ---

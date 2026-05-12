@@ -232,7 +232,8 @@
         "TASK-001",
         "TASK-002",
         "TASK-003"
-      ]
+      ],
+      "status": "completed"
     },
     {
       "id": "TASK-008",
