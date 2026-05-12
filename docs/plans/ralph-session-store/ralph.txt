@@ -3,6 +3,7 @@
 - When using `sqlite3` connections in Ralph code, commit on success and close explicitly; the connection context manager alone does not close the handle.
 - Use a singleton `active_lock` row in SQLite for run ownership, and only probe PID liveness for same-host locks.
 - Derive the current session with `ORDER BY updated_at DESC, session_id DESC` when the store can contain multiple incomplete historical sessions.
+- Run-only recovery should gate on the active lock state, reclaim only stale same-host locks, and ignore older incomplete sessions when starting a new session.
 
 ## [2026-05-12 14:46Z]
 - Task id
@@ -80,4 +81,54 @@
   - Updated `docs/plans/ralph-session-store/tasks.json` to keep the task file list aligned with the actual touched files.
 - Follow up needed:
   - TASK-004 still needs to remove `resume` control flow from the orchestrator and stop depending on heartbeat refresh semantics.
+---
+
+## [2026-05-12 15:12Z]
+- Task id
+  - TASK-004
+- What was implemented:
+  - Refactored the orchestrator to start a fresh session on every `run()` invocation, reclaim only stale same-host locks, and drive the code and retro phases without heartbeat refreshes.
+  - Removed the resume-oriented control flow from the public lifecycle export surface by turning `resume()` into a compatibility alias outside `__all__`.
+  - Expanded the run lifecycle integration coverage so fresh-session creation after a stopped run, stale-lock takeover, live-lock rejection, blocked runs, degraded retros, and completed runs are all exercised against the SQLite-backed store.
+- Files changed:
+  - `ralph/ralph/lifecycle/orchestrator.py`
+  - `ralph/tests/test_orchestrator_run.py`
+  - `ralph/tests/test_orchestrator_resume.py`
+  - `docs/plans/ralph-session-store/tasks.json`
+  - `docs/plans/ralph-session-store/ralph.txt`
+- Verification:
+  - `PYTHONPATH=. make ralph-test` -> passed, 19 tests, OK.
+  - `PYTHONPATH=. make ralph-lint` -> passed (`All checks passed!`).
+  - `PYTHONPATH=. make ralph-typecheck` -> passed (`Success: no issues found in 22 source files`).
+- Learnings for future iterations:
+  - The code phase still requires `tasks.json` to flip all entries to `completed` before `RALPH_STATUS=COMPLETE` is accepted, so multi-step run tests need to mutate the tasks file between code invocations.
+  - Stale same-host lock takeover is easiest to exercise by patching `ralph.session._current_hostname` and `ralph.session._process_is_running` in the integration test.
+- Scope deviations:
+  - Broadened the task-4 scope to include the run lifecycle integration tests so the repo stayed green after removing resume-oriented lifecycle behavior.
+- Follow up needed:
+  - TASK-005 still needs to remove the CLI resume subcommand and import path.
+---
+
+## [2026-05-12 15:12Z]
+- Task id
+  - TASK-008
+- What was implemented:
+  - Replaced the resume-oriented lifecycle integration coverage with run-only scenarios that validate fresh-session creation, stale same-host lock reclamation, live-lock rejection, blocked runs, degraded retros, and unchanged completed outcomes.
+  - Deleted the obsolete resume-specific lifecycle test file after the orchestrator moved to a run-only contract.
+- Files changed:
+  - `ralph/tests/test_orchestrator_run.py`
+  - `ralph/tests/test_orchestrator_resume.py`
+  - `docs/plans/ralph-session-store/tasks.json`
+  - `docs/plans/ralph-session-store/ralph.txt`
+- Verification:
+  - `PYTHONPATH=. make ralph-test` -> passed, 19 tests, OK.
+  - `PYTHONPATH=. make ralph-lint` -> passed.
+  - `PYTHONPATH=. make ralph-typecheck` -> passed.
+- Learnings for future iterations:
+  - The run-only lifecycle tests can stay deterministic by scripting the agent responses and mutating `tasks.json` mid-test rather than introducing subprocess-backed orchestration.
+  - A fresh run after a stopped session is best asserted by comparing the latest session id to the seeded historical session and then loading the historical row directly from SQLite.
+- Scope deviations:
+  - None beyond the lifecycle test file replacement required by the run-only migration.
+- Follow up needed:
+  - TASK-009 still needs the final repo-root verification pass after the remaining migration tasks complete.
 ---

@@ -107,7 +107,9 @@
       "objective": "Remove `resume` control flow from the Ralph lifecycle and make `run()` the only session entrypoint. A new `run()` must create a fresh session whenever no live lock blocks execution, while reclaiming dead same-host locks before it starts.",
       "type": "implementation",
       "files": [
-        "ralph/ralph/lifecycle/orchestrator.py"
+        "ralph/ralph/lifecycle/orchestrator.py",
+        "ralph/tests/test_orchestrator_run.py",
+        "ralph/tests/test_orchestrator_resume.py"
       ],
       "constraints": [
         "`run()` must not reject a start solely because an older incomplete session exists in the database.",
@@ -131,10 +133,11 @@
       "assumptions": [
         "The code and retro phases already infer progress from feature artifacts on disk, so a fresh session beginning at `code` with iteration count `0` is sufficient to continue work after an interrupted run."
       ],
-      "dependencies": [
-        "TASK-003"
-      ]
-    },
+    "dependencies": [
+      "TASK-003"
+    ],
+    "status": "completed"
+  },
     {
       "id": "TASK-005",
       "title": "Remove `resume` from the Ralph CLI",
@@ -260,7 +263,8 @@
       "dependencies": [
         "TASK-003",
         "TASK-004"
-      ]
+      ],
+      "status": "completed"
     },
     {
       "id": "TASK-009",

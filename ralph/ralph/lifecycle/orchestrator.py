@@ -1,9 +1,8 @@
-"""Lifecycle orchestration for Ralph run and resume flows.
+"""Lifecycle orchestration for Ralph run-only session flows.
 
-This module owns the v1 control flow: it starts a run, resumes an incomplete
-session, enforces the one-active-run-per-feature rule, drives the coding phase
-iteratively, and invokes the retrospective automatically after implementation
-completes.
+This module owns the v2 control flow: it starts a fresh run, enforces the
+one-active-run-per-feature rule, drives the coding phase iteratively, and
+invokes the retrospective automatically after implementation completes.
 """
 
 from __future__ import annotations
@@ -20,7 +19,7 @@ from ralph.errors import BookkeepingValidationError, RalphError
 from ralph.lifecycle.phases.base import PhaseOutcome, PhaseResult
 from ralph.lifecycle.phases.code.phase import CODE_PHASE_NAME, run_code_phase
 from ralph.lifecycle.phases.retro.phase import RETRO_PHASE_NAME, run_retro_phase
-from ralph.session import LockState, RunSession, RunSessionStore
+from ralph.session import LockState, RunLock, RunSession, RunSessionStore
 
 RUN_PHASE_NAME = "run"
 
@@ -48,16 +47,9 @@ def run(config: RunConfig, agent: Agent) -> RunOutcome:
     """Start a fresh Ralph run and return the terminal run outcome."""
 
     store = RunSessionStore(config)
-    _validate_new_run_start(store)
-
     session_id = _new_run_session_id()
     try:
-        try:
-            lock = store.acquire_lock(session_id)
-        except BookkeepingValidationError as exc:
-            raise BookkeepingValidationError(
-                "Cannot start a new Ralph run because a lock already exists; use `resume` instead."
-            ) from exc
+        lock = _acquire_startup_lock(store, session_id)
         session = store.create_session(session_id=session_id, started_at=lock.started_at)
         report = _run_session(store, session, agent)
         return report.outcome
@@ -66,17 +58,9 @@ def run(config: RunConfig, agent: Agent) -> RunOutcome:
 
 
 def resume(config: RunConfig, agent: Agent) -> RunOutcome:
-    """Resume an incomplete Ralph run and return the terminal run outcome."""
+    """Backward-compatible alias for starting a fresh run."""
 
-    store = RunSessionStore(config)
-    session = _load_resume_session(store)
-    session_id = session.session_id
-    try:
-        _prepare_resume_lock(store, session)
-        report = _run_session(store, session, agent)
-        return report.outcome
-    finally:
-        _release_owned_lock(store, session_id)
+    return run(config, agent)
 
 
 def _run_session(store: RunSessionStore, session: RunSession, agent: Agent) -> RunReport:
@@ -84,7 +68,6 @@ def _run_session(store: RunSessionStore, session: RunSession, agent: Agent) -> R
 
     current_session = session
     for iteration in range(current_session.iteration_count + 1, store.config.max_iterations + 1):
-        current_session = _refresh_lock_heartbeat(store, current_session)
         try:
             phase_result = run_code_phase(store.config, agent)
         except RalphError as exc:
@@ -105,7 +88,6 @@ def _run_session(store: RunSessionStore, session: RunSession, agent: Agent) -> R
             iteration_count=iteration,
             phase_result=phase_result,
         )
-        current_session = _refresh_lock_heartbeat(store, current_session)
 
         if phase_result.outcome is PhaseOutcome.NEXT_ITERATION:
             if iteration >= store.config.max_iterations:
@@ -132,7 +114,6 @@ def _run_session(store: RunSessionStore, session: RunSession, agent: Agent) -> R
             last_phase_outcome=phase_result.outcome.value,
             last_agent_result_metadata=_phase_result_metadata(phase_result),
         )
-        current_session = _refresh_lock_heartbeat(store, current_session)
 
         try:
             retro_result = run_retro_phase(store.config, agent)
@@ -178,47 +159,6 @@ def _run_session(store: RunSessionStore, session: RunSession, agent: Agent) -> R
     )
 
 
-def _load_resume_session(store: RunSessionStore) -> RunSession:
-    """Load the single incomplete session that resume is allowed to continue."""
-
-    current_session = store.load_current_session()
-    if current_session is None:
-        raise BookkeepingValidationError(
-            "Cannot resume because no incomplete Ralph session exists; start a new run instead."
-        )
-    if current_session.is_terminal:
-        raise BookkeepingValidationError(
-            f"Cannot resume terminal Ralph session {current_session.session_id} with outcome {current_session.overall_outcome!r}."
-        )
-    return current_session
-
-
-def _prepare_resume_lock(store: RunSessionStore, session: RunSession) -> None:
-    """Validate or reclaim the active-run lock for a resumed session."""
-
-    lock_inspection = store.inspect_lock()
-    if lock_inspection.state is LockState.ABSENT:
-        store.acquire_lock(session.session_id)
-        return
-
-    if lock_inspection.state is LockState.STALE:
-        if lock_inspection.lock is not None:
-            store.release_lock(lock_inspection.lock.session_id)
-        store.acquire_lock(session.session_id)
-        return
-
-    if lock_inspection.lock is None:
-        raise BookkeepingValidationError(
-            f"Cannot resume because {store.lock_path} is active but unreadable; use `resume` again after recovering the lock."
-        )
-    if lock_inspection.lock.session_id != session.session_id:
-        raise BookkeepingValidationError(
-            f"Cannot resume session {session.session_id} because {store.lock_path} belongs to {lock_inspection.lock.session_id!r}; use `resume` once that lock is released or stale."
-        )
-
-    store.refresh_lock_heartbeat(session.session_id)
-
-
 def _release_owned_lock(store: RunSessionStore, session_id: str) -> None:
     """Release the current lock only when it still belongs to the given session."""
 
@@ -234,20 +174,22 @@ def _release_owned_lock(store: RunSessionStore, session_id: str) -> None:
         return
 
 
-def _validate_new_run_start(store: RunSessionStore) -> None:
-    """Reject any attempt to start a new run when one is already active."""
-
-    current_session = store.load_current_session()
-    if current_session is not None and not current_session.is_terminal:
-        raise BookkeepingValidationError(
-            "Cannot start a new Ralph run because an incomplete session already exists; use `resume` instead."
-        )
-
+def _acquire_startup_lock(store: RunSessionStore, session_id: str) -> RunLock:
     lock_inspection = store.inspect_lock()
-    if lock_inspection.state is not LockState.ABSENT:
+    if lock_inspection.state is LockState.STALE:
+        if lock_inspection.lock is not None:
+            store.release_lock(lock_inspection.lock.session_id)
+    elif lock_inspection.state is not LockState.ABSENT:
         raise BookkeepingValidationError(
-            f"Cannot start a new Ralph run because {store.lock_path} is {lock_inspection.state.value}; use `resume` instead."
+            f"Cannot start a new Ralph run because {store.config.db_path} records an active lock in state {lock_inspection.state.value}."
         )
+
+    try:
+        return store.acquire_lock(session_id)
+    except BookkeepingValidationError as exc:
+        raise BookkeepingValidationError(
+            f"Cannot start a new Ralph run because {store.config.db_path} already records an active lock."
+        ) from exc
 
 
 def _record_phase_result(
@@ -288,13 +230,6 @@ def _record_phase_failure(
     )
 
 
-def _refresh_lock_heartbeat(store: RunSessionStore, session: RunSession) -> RunSession:
-    """Refresh the active-run heartbeat and return the latest session snapshot."""
-
-    store.refresh_lock_heartbeat(session.session_id)
-    return store.load_session(session.session_id)
-
-
 def _finalize_session(store: RunSessionStore, session_id: str, overall_outcome: RunOutcome) -> RunSession:
     """Mark the session terminal and persist the final pointer state."""
 
@@ -329,5 +264,4 @@ __all__ = [
     "RunOutcome",
     "RunReport",
     "run",
-    "resume",
 ]

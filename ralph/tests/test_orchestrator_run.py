@@ -1,11 +1,13 @@
 from __future__ import annotations
 
 import json
-from dataclasses import dataclass, field
 from collections.abc import Callable
+from dataclasses import dataclass, field
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 import tempfile
 import unittest
+from unittest.mock import patch
 
 from ralph.agents.base import AgentResult
 from ralph.config import resolve_run_config
@@ -70,6 +72,16 @@ class RunLifecycleIntegrationTests(unittest.TestCase):
         )
         return resolve_run_config("feature", cwd=root, max_iterations=3)
 
+    def _seed_stopped_session(self, store: RunSessionStore, *, session_id: str, started_at: datetime) -> None:
+        store.create_session(session_id=session_id, started_at=started_at)
+        store.update_session(
+            session_id,
+            current_phase="code",
+            iteration_count=1,
+            last_phase_outcome="next_iteration",
+            updated_at=started_at + timedelta(minutes=1),
+        )
+
     def test_run_completes_after_multiple_iterations_and_retro_pass(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
@@ -120,20 +132,12 @@ class RunLifecycleIntegrationTests(unittest.TestCase):
                 [call[1] for call in agent.calls],
                 [config.coding_model, config.coding_model, config.retro_model],
             )
-            self.assertFalse(config.lock_path.exists())
             self.assertTrue(config.db_path.is_file())
-            self.assertFalse(config.current_session_path.exists())
+            self.assertIsNone(store.load_lock())
 
-            pointer = store.load_current_pointer()
-            self.assertIsNotNone(pointer)
-            assert pointer is not None
             session = store.load_current_session()
             self.assertIsNotNone(session)
             assert session is not None
-            self.assertEqual(pointer.session_id, session.session_id)
-            self.assertEqual(pointer.status, "completed")
-            self.assertEqual(pointer.overall_outcome, "completed")
-
             self.assertEqual(session.iteration_count, 2)
             self.assertEqual(session.current_phase, "retro")
             self.assertEqual(session.last_phase_outcome, "completed")
@@ -158,15 +162,8 @@ class RunLifecycleIntegrationTests(unittest.TestCase):
 
             self.assertEqual(outcome, RunOutcome.BLOCKED)
             self.assertEqual(agent.invocation_count, 1)
-            self.assertFalse(config.lock_path.exists())
             self.assertTrue(config.db_path.is_file())
-            self.assertFalse(config.current_session_path.exists())
-
-            pointer = store.load_current_pointer()
-            self.assertIsNotNone(pointer)
-            assert pointer is not None
-            self.assertEqual(pointer.status, "blocked")
-            self.assertEqual(pointer.overall_outcome, "blocked")
+            self.assertIsNone(store.load_lock())
 
             session = store.load_current_session()
             self.assertIsNotNone(session)
@@ -175,24 +172,159 @@ class RunLifecycleIntegrationTests(unittest.TestCase):
             self.assertEqual(session.last_phase_outcome, "blocked")
             self.assertEqual(session.iteration_count, 1)
 
-    def test_run_refuses_to_start_when_incomplete_session_already_exists(self) -> None:
+    def test_run_creates_fresh_session_after_stopped_run(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             config = self._make_config(root)
             store = RunSessionStore(config)
-            store.create_session(session_id="existing-session")
+            started_at = datetime(2026, 5, 11, 12, 0, tzinfo=timezone.utc)
+            self._seed_stopped_session(store, session_id="existing-session", started_at=started_at)
+
+            def complete_tasks_on_second_code_call() -> None:
+                config.tasks_path.write_text(
+                    json.dumps(
+                        {
+                            "tasks": [
+                                {"title": "first task", "status": "completed"},
+                                {"title": "second task", "status": "completed"},
+                            ]
+                        },
+                        indent=2,
+                    )
+                    + "\n",
+                    encoding="utf-8",
+                )
+
+            agent = ScriptedLifecycleAgent(
+                responses=[
+                    AgentResult(
+                        stdout="RALPH_STATUS=CONTINUE\nStill working.\n",
+                        exit_code=0,
+                        metadata={"phase": "code-1"},
+                    ),
+                    AgentResult(
+                        stdout="RALPH_STATUS=COMPLETE\nFresh work finished.\n",
+                        exit_code=0,
+                        metadata={"phase": "code-2"},
+                    ),
+                    AgentResult(
+                        stdout="Retrospective complete.\n",
+                        exit_code=0,
+                        metadata={"phase": "retro"},
+                    ),
+                ],
+                callbacks={1: complete_tasks_on_second_code_call},
+            )
+
+            outcome = run(config, agent)
+
+            self.assertEqual(outcome, RunOutcome.COMPLETED)
+            self.assertEqual(agent.invocation_count, 3)
+            self.assertTrue(config.db_path.is_file())
+            self.assertIsNone(store.load_lock())
+
+            latest_session = store.load_current_session()
+            self.assertIsNotNone(latest_session)
+            assert latest_session is not None
+            self.assertNotEqual(latest_session.session_id, "existing-session")
+            self.assertEqual(latest_session.current_phase, "retro")
+            self.assertEqual(latest_session.iteration_count, 2)
+            self.assertEqual(latest_session.overall_outcome, "completed")
+
+            historical_session = store.load_session("existing-session")
+            self.assertIsNone(historical_session.overall_outcome)
+            self.assertEqual(historical_session.current_phase, "code")
+            self.assertEqual(historical_session.iteration_count, 1)
+
+    def test_run_reclaims_stale_same_host_lock(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            config = self._make_config(root)
+            store = RunSessionStore(config)
+            started_at = datetime(2026, 5, 11, 11, 0, tzinfo=timezone.utc)
+            self._seed_stopped_session(store, session_id="stale-session", started_at=started_at)
+            store.acquire_lock(
+                "stale-session",
+                pid=12345,
+                hostname="stale-host",
+                started_at=started_at,
+            )
+
+            def complete_tasks_on_second_code_call() -> None:
+                config.tasks_path.write_text(
+                    json.dumps(
+                        {
+                            "tasks": [
+                                {"title": "first task", "status": "completed"},
+                                {"title": "second task", "status": "completed"},
+                            ]
+                        },
+                        indent=2,
+                    )
+                    + "\n",
+                    encoding="utf-8",
+                )
+
+            agent = ScriptedLifecycleAgent(
+                responses=[
+                    AgentResult(
+                        stdout="RALPH_STATUS=CONTINUE\nStill working.\n",
+                        exit_code=0,
+                        metadata={"phase": "code-1"},
+                    ),
+                    AgentResult(
+                        stdout="RALPH_STATUS=COMPLETE\nFresh work finished.\n",
+                        exit_code=0,
+                        metadata={"phase": "code-2"},
+                    ),
+                    AgentResult(
+                        stdout="Retrospective complete.\n",
+                        exit_code=0,
+                        metadata={"phase": "retro"},
+                    ),
+                ],
+                callbacks={1: complete_tasks_on_second_code_call},
+            )
+
+            with patch("ralph.session._current_hostname", return_value="stale-host"), patch(
+                "ralph.session._process_is_running",
+                return_value=False,
+            ):
+                outcome = run(config, agent)
+
+            self.assertEqual(outcome, RunOutcome.COMPLETED)
+            self.assertEqual(agent.invocation_count, 3)
+            self.assertTrue(config.db_path.is_file())
+            self.assertIsNone(store.load_lock())
+
+            latest_session = store.load_current_session()
+            self.assertIsNotNone(latest_session)
+            assert latest_session is not None
+            self.assertNotEqual(latest_session.session_id, "stale-session")
+            self.assertEqual(latest_session.overall_outcome, "completed")
+
+    def test_run_rejects_live_remote_host_lock(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            config = self._make_config(root)
+            store = RunSessionStore(config)
+            store.acquire_lock(
+                "live-session",
+                pid=12345,
+                hostname="remote-host",
+                started_at=datetime(2026, 5, 11, 12, 0, tzinfo=timezone.utc),
+            )
             agent = ScriptedLifecycleAgent(responses=[])
 
             with self.assertRaises(BookkeepingValidationError):
                 run(config, agent)
 
             self.assertEqual(agent.invocation_count, 0)
-            session = store.load_current_session()
-            self.assertIsNotNone(session)
-            assert session is not None
-            self.assertIsNone(session.overall_outcome)
             self.assertTrue(config.db_path.is_file())
-            self.assertFalse(config.current_session_path.exists())
+            lock = store.load_lock()
+            self.assertIsNotNone(lock)
+            assert lock is not None
+            self.assertEqual(lock.session_id, "live-session")
 
     def test_run_degrades_when_retrospective_fails_after_completion(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -228,9 +360,8 @@ class RunLifecycleIntegrationTests(unittest.TestCase):
 
             self.assertEqual(outcome, RunOutcome.DEGRADED)
             self.assertEqual(agent.invocation_count, 2)
-            self.assertFalse(config.lock_path.exists())
             self.assertTrue(config.db_path.is_file())
-            self.assertFalse(config.current_session_path.exists())
+            self.assertIsNone(store.load_lock())
 
             session = store.load_current_session()
             self.assertIsNotNone(session)
