@@ -3,13 +3,27 @@ You are evaluating the quality of an implementation task plan generated from a s
 You will receive:
 
 1. A specification document
-2. A generated implementation task plan
+2. A generated implementation task plan for that specification document.
 
 Your job is to critically evaluate how well the task plan translates the specification into implementation-ready tasks for low-reasoning coding agents.
 
 You must evaluate conservatively and consistently across runs.
 
 Your output MUST be valid JSON only.
+
+Desired characteristics for each task:
+- Every task has one clear, specific and unambiguous outcome that aligns with the specification.
+- Every task has a small, clear and tightly bunded file scope.
+- Every task has clean, unambiguous and verifiable acceptance criteria.
+- No task requires second guessing how it will be implemented.
+- Dependencies reference valid task IDs and there are no circular dependencies between tasks.
+- Every task depends on all earlier tasks that produce files, modules, interfaces, fixtures, or artifacts it directly relies on.
+- Validation tasks depend on every implementation task whose output they verify.
+- Test tasks depend on the implementation tasks for every module they test.
+- No dependency may exist only because it is convenient ordering; dependencies must reflect actual producer-consumer relationships.
+- Every functional and non-functional requirement from the specification must map to at least one task.
+- Every explicit compatibility requirement, non-goal, prohibition, idempotence rule, and dependency/tooling constraint maps to at least one task.
+- A low-reasoning coding agent could implement it without guessing hidden policy, hidden dependencies, or unstated acceptance checks.
 
 Scoring principles:
 
@@ -77,72 +91,72 @@ Scoring rubric:
 Output schema (MUST MATCH EXACTLY):
 
 {
-"summary": {
-"overall_quality": 0,
-"major_findings": [
-"<short finding>"
-]
-},
-"scores": {
-"coverage": 0,
-"correctness": 0,
-"granularity": 0,
-"acceptance_criteria_quality": 0,
-"implementation_guidance": 0,
-"dependency_quality": 0,
-"scope_control": 0,
-"testability": 0,
-"low_reasoning_agent_safety": 0
-},
-"requirement_coverage": [
-{
-"requirement": "<explicit requirement from specification>",
-"covered": true,
-"task_ids": ["TASK-001"],
-"notes": "<brief explanation>"
-}
-],
-"issues": {
-"missing_requirements": [
-"<requirement>"
-],
-"invented_requirements": [
-"<invented requirement>"
-],
-"oversized_tasks": [
-{
-"task_id": "TASK-001",
-"reason": "<why oversized>"
-}
-],
-"vague_tasks": [
-{
-"task_id": "TASK-001",
-"reason": "<why vague>"
-}
-],
-"weak_acceptance_criteria": [
-{
-"task_id": "TASK-001",
-"reason": "<problem>"
-}
-],
-"dependency_problems": [
-{
-"task_id": "TASK-001",
-"reason": "<problem>"
-}
-]
-},
-"metrics": {
-"total_tasks": 0,
-"tasks_with_missing_dependencies": 0,
-"tasks_with_broad_scope": 0,
-"tasks_with_weak_acceptance_criteria": 0,
-"requirements_uncovered": 0,
-"invented_requirement_count": 0
-},
-"verdict": "excellent|good|acceptable|weak|poor"
+  "summary": {
+    "overall_quality": 0,
+    "major_findings": [
+      "<short finding>"
+    ]
+  },
+  "scores": {
+    "coverage": 0,
+    "correctness": 0,
+    "granularity": 0,
+    "acceptance_criteria_quality": 0,
+    "implementation_guidance": 0,
+    "dependency_quality": 0,
+    "scope_control": 0,
+    "testability": 0,
+    "low_reasoning_agent_safety": 0
+  },
+  "requirement_coverage": [
+    {
+    "requirement": "<explicit requirement from specification>",
+    "covered": true,
+    "task_ids": ["TASK-001"],
+    "notes": "<brief explanation>"
+    }
+  ],
+  "issues": {
+    "missing_requirements": [
+      "<requirement>"
+    ],
+    "invented_requirements": [
+      "<invented requirement>"
+    ],
+    "oversized_tasks": [
+      {
+      "task_id": "TASK-001",
+      "reason": "<why oversized>"
+      }
+    ],
+    "vague_tasks": [
+      {
+      "task_id": "TASK-001",
+      "reason": "<why vague>"
+      }
+    ],
+    "weak_acceptance_criteria": [
+      {
+      "task_id": "TASK-001",
+      "reason": "<problem>"
+      }
+    ],
+    "dependency_problems": [
+      {
+      "task_id": "TASK-001",
+      "reason": "<problem>"
+      }
+    ]
+  },
+  "metrics": {
+    "total_tasks": 0,
+    "tasks_with_missing_dependencies": 0,
+    "tasks_with_broad_scope": 0,
+    "tasks_with_weak_acceptance_criteria": 0,
+    "requirements_uncovered": 0,
+    "invented_requirement_count": 0
+  },
+  "verdict": "excellent|good|acceptable|weak|poor"
 }
 
 Important rules:

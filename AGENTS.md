@@ -50,6 +50,7 @@ Acquire `.ralph/lock` with an exclusive create or equivalent atomic filesystem p
 Phase-local status parsers should normalize CRLF before exact first-line comparisons and preserve the remaining response body for diagnostics.
 Keep deterministic Ralph test doubles in `ralph/tests/fakes.py`; script `AgentResult` values and controlled exceptions instead of patching subprocesses in each test.
 Run Ralph Make targets from the repository root; the test suite imports the top-level `ralph.tests` namespace package, so `cd ralph && ...` will shadow the namespace and break discovery.
+When invoking `make ralph-test` in this checkout, keep the repository root on `PYTHONPATH` so unittest discovery can import `ralph.tests` correctly.
 
 ## Front-end development
 

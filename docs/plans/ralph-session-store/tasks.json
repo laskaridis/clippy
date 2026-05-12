@@ -1,0 +1,298 @@
+{
+  "spec_path": "docs/plans/ralph-session-store/spec.md",
+  "repo_root": "/Users/e.laskaridis/Projects/sandbox/webclippings/.worktrees/ralph-cli",
+  "tasks": [
+    {
+      "id": "TASK-001",
+      "title": "Add `db_path` to `RunConfig` and remove file-store paths",
+      "objective": "Update Ralph runtime configuration so the feature-local SQLite database path is the only public session-store path derived from the feature directory. Keep `ralph_dir` intact and remove the file-backed path fields that only describe the legacy JSON layout.",
+      "type": "implementation",
+      "files": [
+        "ralph/ralph/config.py"
+      ],
+      "constraints": [
+        "`RunConfig.db_path` must resolve to `feature_dir / \".ralph\" / \"sessions.sqlite3\"`.",
+        "Remove the public `sessions_dir`, `current_session_path`, and `lock_path` fields from `RunConfig` without changing feature layout validation for `spec.md` and `tasks.json`.",
+        "Do not add new CLI flags, environment variables, or non-spec configuration fields."
+      ],
+      "implementation_notes": [
+        "Replace the file-store constants that only exist to build `sessions/`, `current.json`, and `.ralph/lock` paths with a constant for `sessions.sqlite3`.",
+        "Keep the existing derived paths for `spec_path`, `tasks_path`, `ralph_txt_path`, `retro_path`, and `ralph_dir` unchanged.",
+        "Update `__all__` exports so downstream modules import the new config surface cleanly."
+      ],
+      "acceptance_criteria": [
+        "`ralph/ralph/config.py` defines `RunConfig.db_path` and no longer defines `RunConfig.sessions_dir`, `RunConfig.current_session_path`, or `RunConfig.lock_path`.",
+        "`resolve_run_config()` still returns a valid `RunConfig` for an existing feature directory and derives `db_path` as `<feature>/.ralph/sessions.sqlite3`.",
+        "No config code in `ralph/ralph/config.py` derives or exports legacy `sessions/`, `current.json`, or `.ralph/lock` paths."
+      ],
+      "assumptions": [
+        "No code outside the Ralph package in this repository depends on the removed `RunConfig` path fields; follow-up tasks will update the remaining Ralph call sites."
+      ],
+      "dependencies": [],
+      "status": "completed"
+    },
+    {
+      "id": "TASK-002",
+      "title": "Implement SQLite session storage and schema versioning",
+      "objective": "Replace the file-backed session persistence in `RunSessionStore` with a SQLite database located at `config.db_path`. The store must lazily create `.ralph/`, initialize the schema on first use, and treat the database as the sole Ralph state source.",
+      "type": "implementation",
+      "files": [
+        "ralph/ralph/session.py"
+      ],
+      "constraints": [
+        "Use Python's built-in `sqlite3` module only; do not add an ORM or any third-party SQL dependency.",
+        "Initialize and validate the schema with `PRAGMA user_version`, and fail fast when an existing database advertises an unsupported schema version.",
+        "Do not read, validate, migrate, clean up, or write legacy artifacts such as `sessions/*.json`, `sessions/current.json`, or `.ralph/lock`."
+      ],
+      "implementation_notes": [
+        "Create the SQLite database at `config.db_path` and create both `sessions` and `active_lock` tables during schema initialization so later lock work can rely on the same file.",
+        "Store the config snapshot and last-agent metadata as JSON text columns while preserving the existing `RunSession` in-memory shape where practical.",
+        "Implement `create_session()`, `load_session()`, `load_current_session()`, `update_session()`, and `finalize_session()` as transactional SQL operations.",
+        "Resolve the current/latest session with deterministic ordering `updated_at DESC, session_id DESC`.",
+        "If `load_current_pointer()` remains in the module, make it a derived query helper only and never persist a separate pointer artifact."
+      ],
+      "acceptance_criteria": [
+        "The first store operation that writes session state creates `.ralph/sessions.sqlite3` under the feature directory.",
+        "`ralph/ralph/session.py` initializes a schema version constant and sets `PRAGMA user_version` for supported databases.",
+        "`RunSessionStore.load_current_session()` reads the newest session via SQL ordering by `updated_at DESC, session_id DESC` instead of any pointer file.",
+        "No session-persistence code in `ralph/ralph/session.py` reads or writes per-session JSON files or `current.json`."
+      ],
+      "assumptions": [
+        "The Python and SQLite versions already used by the Ralph test suite support `PRAGMA user_version` and text columns without requiring optional SQLite extensions."
+      ],
+      "dependencies": [
+        "TASK-001"
+      ]
+    },
+    {
+      "id": "TASK-003",
+      "title": "Implement SQLite-backed active-lock handling",
+      "objective": "Replace file-based lock persistence and heartbeat freshness rules with an `active_lock` row stored in the same SQLite database. Keep lock decisions compatible with the run-only design: live locks block, dead same-host locks are stale, and remote-host locks remain active.",
+      "type": "implementation",
+      "files": [
+        "ralph/ralph/session.py"
+      ],
+      "constraints": [
+        "The persisted active-lock record must store only `session_id`, `pid`, `hostname`, and `started_at`.",
+        "`inspect_lock()` may call the PID liveness check only when the stored hostname matches the current host.",
+        "`LockState.STALE` must be reported only when the host matches and the recorded PID is proven dead.",
+        "Do not reintroduce heartbeat timestamps, freshness windows, or legacy lock files."
+      ],
+      "implementation_notes": [
+        "Enforce the `active_lock` singleton as zero or one row in SQLite, for example with a fixed primary-key value or an equivalent invariant.",
+        "Make `acquire_lock(session_id)` and `release_lock(session_id)` transactional so concurrent callers either complete atomically or leave the previous state intact.",
+        "Preserve `LockInspection` and `RunLock` as structured values where practical, but align their data to the simplified lock schema instead of the old heartbeat model.",
+        "Keep best-effort ownership checks so callers can avoid deleting another session's live lock during cleanup."
+      ],
+      "acceptance_criteria": [
+        "`RunSessionStore.inspect_lock()` returns `ABSENT`, `ACTIVE`, or `STALE` using the SQLite-backed lock row and does not inspect `.ralph/lock`.",
+        "`RunSessionStore.acquire_lock(session_id)` refuses to overwrite an existing active lock row and persists only `session_id`, `pid`, `hostname`, and `started_at` for the winning lock.",
+        "`RunSessionStore.release_lock(session_id)` removes only the owned lock row and leaves unrelated active locks intact.",
+        "No caller or test is required to refresh a lock heartbeat to keep a run alive."
+      ],
+      "assumptions": [
+        "Once orchestrator code is updated, no supported Ralph caller needs public `load_lock()` or `refresh_lock_heartbeat()` behavior."
+      ],
+      "dependencies": [
+        "TASK-002"
+      ]
+    },
+    {
+      "id": "TASK-004",
+      "title": "Refactor orchestrator to run-only session semantics",
+      "objective": "Remove `resume` control flow from the Ralph lifecycle and make `run()` the only session entrypoint. A new `run()` must create a fresh session whenever no live lock blocks execution, while reclaiming dead same-host locks before it starts.",
+      "type": "implementation",
+      "files": [
+        "ralph/ralph/lifecycle/orchestrator.py"
+      ],
+      "constraints": [
+        "`run()` must not reject a start solely because an older incomplete session exists in the database.",
+        "`run()` must create a new session that starts at phase `code` with `iteration_count = 0` whenever a new run is allowed.",
+        "`run()` may reclaim only stale same-host locks; it must not steal a live lock from another Ralph process.",
+        "Finally-block cleanup must release only the lock owned by the current session.",
+        "Error strings must stop referring to `.ralph/lock` and instead refer to `store.config.db_path` or database-backed lock state."
+      ],
+      "implementation_notes": [
+        "Remove the `resume()` entrypoint and any helpers that depend on continuing an existing session.",
+        "Stop calling lock-heartbeat refresh helpers during the phase loop; the new store semantics rely on ownership, not periodic heartbeats.",
+        "Preserve the existing phase execution contract so code and retro phases still produce the same run outcomes and metadata updates.",
+        "When a stale lock is reclaimed, acquire a new lock before creating the fresh session so the run lease stays single-owner throughout startup."
+      ],
+      "acceptance_criteria": [
+        "`ralph/ralph/lifecycle/orchestrator.py` exports `run` but no longer exports `resume`.",
+        "`run()` creates a fresh session after a previously stopped run as long as the existing lock is absent or reclaimable as stale.",
+        "`run()` rejects startup when `inspect_lock()` reports a live lock, including remote-host locks.",
+        "No orchestrator error message or branch refers to `store.lock_path`, `current.json`, or heartbeat refresh behavior."
+      ],
+      "assumptions": [
+        "The code and retro phases already infer progress from feature artifacts on disk, so a fresh session beginning at `code` with iteration count `0` is sufficient to continue work after an interrupted run."
+      ],
+      "dependencies": [
+        "TASK-003"
+      ]
+    },
+    {
+      "id": "TASK-005",
+      "title": "Remove `resume` from the Ralph CLI",
+      "objective": "Update the Python CLI surface so `ralph run` and `ralph retro` remain supported while `ralph resume` disappears from the product contract. Keep exit-code behavior for run outcomes unchanged unless the spec explicitly changes it.",
+      "type": "implementation",
+      "files": [
+        "ralph/ralph/cli.py"
+      ],
+      "constraints": [
+        "Do not add replacement flags or a new recovery subcommand.",
+        "Keep `ralph run` and `ralph retro` option parsing unchanged except for removing the `resume` branch.",
+        "Preserve the existing exit-code mapping for run outcomes and retro outcomes."
+      ],
+      "implementation_notes": [
+        "Remove `COMMAND_RESUME`, `_handle_resume()`, and the import of `resume` from the orchestrator.",
+        "Keep shared option parsing centralized in `_add_common_options()`.",
+        "Make the `run` help text reflect that interrupted work is recovered by starting a fresh run, not by a dedicated `resume` command."
+      ],
+      "acceptance_criteria": [
+        "`ralph/ralph/cli.py` registers `run` and `retro` subcommands but no `resume` subcommand.",
+        "There is no import of `resume` or call to `resume_run` in `ralph/ralph/cli.py`.",
+        "`ralph run` still prints the terminal run outcome and uses `_exit_code_for_run_outcome()` exactly as before."
+      ],
+      "assumptions": [
+        "The legacy shell shim `ralph/ralph.sh` already maps only normal runs and `--retro-only`, so removing the Python `resume` command does not require shim changes unless a later verification step finds a hidden dependency."
+      ],
+      "dependencies": [
+        "TASK-004"
+      ]
+    },
+    {
+      "id": "TASK-006",
+      "title": "Update Ralph README for run-only SQLite sessions",
+      "objective": "Rewrite the Ralph usage document so it matches the new run-only lifecycle and SQLite-backed persistence contract. The README should describe the supported commands, the sole on-disk state file, and the new crash-recovery behavior accurately.",
+      "type": "documentation",
+      "files": [
+        "ralph/README.md"
+      ],
+      "constraints": [
+        "Document `.ralph/sessions.sqlite3` as Ralph's authoritative feature-local state file.",
+        "Remove instructions that tell users to run `ralph resume` or inspect `.ralph/lock`, `sessions/*.json`, or `sessions/current.json`.",
+        "Do not invent new commands, recovery policies, or storage artifacts."
+      ],
+      "implementation_notes": [
+        "Update the command list, run lifecycle explanation, outcomes section, and session-state section to reflect the new contract.",
+        "Explain that a fresh `ralph run` can reclaim only a dead same-host lease and otherwise respects live-lock blocking.",
+        "Note that leftover legacy file-backed artifacts are ignored by the SQLite-backed implementation rather than migrated or cleaned up."
+      ],
+      "acceptance_criteria": [
+        "`ralph/README.md` no longer references a `ralph resume` command.",
+        "`ralph/README.md` documents `.ralph/sessions.sqlite3` as the sole Ralph persistence artifact under `.ralph/`.",
+        "`ralph/README.md` states that interrupted work is recovered by starting a fresh `ralph run`, with stale-lock takeover limited to dead same-host leases."
+      ],
+      "assumptions": [
+        "The repository does not contain another Ralph user guide that intentionally preserves the old `resume` contract."
+      ],
+      "dependencies": [
+        "TASK-002",
+        "TASK-005"
+      ]
+    },
+    {
+      "id": "TASK-007",
+      "title": "Rewrite config and session store tests for SQLite",
+      "objective": "Update the Ralph unit tests so they assert the SQLite-backed configuration and session-store behavior directly. The revised tests must make the storage cutover observable without depending on the removed JSON files, pointer file, lock file, or heartbeat refresh logic.",
+      "type": "validation",
+      "files": [
+        "ralph/tests/test_config.py",
+        "ralph/tests/test_session.py"
+      ],
+      "constraints": [
+        "Test expectations must assert `config.db_path` instead of removed file-store paths.",
+        "At least one test must prove that `.ralph/sessions.sqlite3` exists after a session mutation.",
+        "Do not keep assertions that inspect `.ralph/sessions/*.json`, `.ralph/sessions/current.json`, `.ralph/lock`, or heartbeat timestamps."
+      ],
+      "implementation_notes": [
+        "Cover latest-session derivation with multiple stored sessions so ordering by `updated_at DESC, session_id DESC` is explicit in the test suite.",
+        "Add coverage for lock acquisition, lock release, live same-host locks, stale same-host locks, and remote-host lock behavior through `inspect_lock()`.",
+        "Add a targeted unit test that leaves legacy JSON or lock artifacts on disk and proves the SQLite-backed store ignores them."
+      ],
+      "acceptance_criteria": [
+        "`ralph/tests/test_config.py` asserts `config.db_path == feature_dir / \".ralph\" / \"sessions.sqlite3\"` and no longer references removed config path fields.",
+        "`ralph/tests/test_session.py` proves session creation writes to `.ralph/sessions.sqlite3`, resolves the latest session by SQL ordering, and validates lock inspect/acquire/release behavior against the database.",
+        "Neither updated unit test file depends on `current.json`, per-session JSON files, `.ralph/lock`, or heartbeat refresh behavior."
+      ],
+      "assumptions": [
+        "Temporary-directory unit tests can verify SQLite-backed behavior by checking files and public store methods without invoking external SQLite tooling."
+      ],
+      "dependencies": [
+        "TASK-001",
+        "TASK-002",
+        "TASK-003"
+      ]
+    },
+    {
+      "id": "TASK-008",
+      "title": "Replace resume-oriented lifecycle tests with run-only coverage",
+      "objective": "Rework Ralph lifecycle integration tests so they validate the new run-only recovery semantics instead of the removed `resume` workflow. The suite must prove that fresh runs create fresh sessions, reclaim stale same-host locks safely, and still preserve the existing terminal run outcomes.",
+      "type": "validation",
+      "files": [
+        "ralph/tests/test_orchestrator_run.py",
+        "ralph/tests/test_orchestrator_resume.py"
+      ],
+      "constraints": [
+        "The integration suite must not import or call a `resume` entrypoint once the lifecycle refactor is complete.",
+        "Keep deterministic agent behavior in tests; do not reintroduce subprocess-backed orchestration tests.",
+        "Do not assert legacy pointer-file or lock-file paths as part of the run lifecycle checks."
+      ],
+      "implementation_notes": [
+        "Use the existing fake-agent helpers under `ralph.tests` where possible so run-only scenarios stay deterministic and readable.",
+        "Replace the old \"incomplete session already exists\" rejection case with a test that seeds an earlier stopped session, runs `run()` again, and verifies that a new session ID is created while the older incomplete session remains historical state.",
+        "Add explicit coverage for live-lock rejection, dead same-host lock takeover, blocked runs, degraded retros, and unchanged completed outcomes.",
+        "Either delete `ralph/tests/test_orchestrator_resume.py` or rewrite it to hold run-only recovery scenarios under a new name; in either case, the test suite must stop modeling `resume` as supported behavior."
+      ],
+      "acceptance_criteria": [
+        "`ralph/tests/test_orchestrator_run.py` covers blocked runs, degraded retros, dead same-host lock takeover, live-lock rejection, and fresh-session creation after an earlier stopped run.",
+        "No lifecycle test imports or calls `ralph.lifecycle.orchestrator.resume`.",
+        "At least one integration test proves that a second allowed `run()` creates a different session ID and that `RunSessionStore.load_current_session()` resolves to the newer session while the older incomplete session remains stored."
+      ],
+      "assumptions": [
+        "The run-only recovery scenarios can be expressed with temporary feature directories and the existing deterministic test doubles without changing phase modules or prompt files."
+      ],
+      "dependencies": [
+        "TASK-003",
+        "TASK-004"
+      ]
+    },
+    {
+      "id": "TASK-009",
+      "title": "Run Ralph verification targets from the repo root",
+      "objective": "Validate the completed migration with the repository's canonical Ralph targets. Use the Makefile entrypoints named in the spec and treat failures as implementation defects to fix rather than as reasons to weaken the tests.",
+      "type": "validation",
+      "files": [
+        "Makefile"
+      ],
+      "constraints": [
+        "Run `make ralph-test`, `make ralph-lint`, and `make ralph-typecheck` from the repository root.",
+        "Do not substitute `cd ralph && ...` command variants; the spec and repo guidance require repo-root execution.",
+        "If a command fails, fix the behavioral or typing issue it reveals instead of deleting the corresponding check."
+      ],
+      "implementation_notes": [
+        "Execute the verification commands only after the config, store, lifecycle, CLI, documentation, and test tasks are complete.",
+        "Record the exact failing target first if verification surfaces a regression, then address the producer task that owns the defect before rerunning the target."
+      ],
+      "acceptance_criteria": [
+        "`make ralph-test` exits successfully from `/Users/e.laskaridis/Projects/sandbox/webclippings/.worktrees/ralph-cli`.",
+        "`make ralph-lint` exits successfully from `/Users/e.laskaridis/Projects/sandbox/webclippings/.worktrees/ralph-cli`.",
+        "`make ralph-typecheck` exits successfully from `/Users/e.laskaridis/Projects/sandbox/webclippings/.worktrees/ralph-cli`."
+      ],
+      "assumptions": [
+        "The existing Makefile targets already install or reference the tooling needed for Ralph verification in this worktree."
+      ],
+      "dependencies": [
+        "TASK-001",
+        "TASK-002",
+        "TASK-003",
+        "TASK-004",
+        "TASK-005",
+        "TASK-006",
+        "TASK-007",
+        "TASK-008"
+      ]
+    }
+  ]
+}

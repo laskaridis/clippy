@@ -1,0 +1,27 @@
+## Codebase Patterns
+- Run Ralph unittest discovery from the repository root with `PYTHONPATH=.` so `ralph.tests` resolves cleanly during `python -m unittest discover -s ralph/tests`.
+
+## [2026-05-12 14:46Z]
+- Task id
+  - TASK-001
+- What was implemented:
+  - Added `RunConfig.db_path` pointing at `<feature>/.ralph/sessions.sqlite3`.
+  - Removed the dataclass fields for `sessions_dir`, `current_session_path`, and `lock_path` from `RunConfig`.
+  - Kept read-only compatibility properties for the legacy paths so the current tree remains runnable while later tasks migrate call sites.
+- Files changed:
+  - `ralph/ralph/config.py`
+  - `docs/plans/ralph-session-store/tasks.json`
+  - `docs/plans/ralph-session-store/ralph.txt`
+- Verification:
+  - `make ralph-lint` -> passed.
+  - `make ralph-typecheck` -> passed.
+  - `make ralph-test` -> initially failed with `ModuleNotFoundError: No module named 'ralph.tests'` during unittest discovery.
+  - `PYTHONPATH=. make ralph-test` -> passed, 20 tests, OK.
+- Learnings for future iterations:
+  - `python -m unittest discover -s ralph/tests` in this checkout needs the repository root on `PYTHONPATH`; otherwise discovery imports lose `ralph.tests`.
+  - The config migration can be staged safely by adding `db_path` first and removing downstream file-store users in later tasks.
+- Scope deviations:
+  - None.
+- Follow up needed:
+  - TASK-002 and the downstream session/orchestrator tasks still need to migrate the runtime away from the legacy compatibility properties.
+---

@@ -16,9 +16,7 @@ FEATURE_TASKS_FILENAME = "tasks.json"
 FEATURE_LOG_FILENAME = "ralph.txt"
 FEATURE_RETRO_FILENAME = "ralph.retro.md"
 RALPH_STATE_DIRECTORY = ".ralph"
-RALPH_SESSIONS_DIRECTORY = "sessions"
-RALPH_CURRENT_SESSION_FILENAME = "current.json"
-RALPH_LOCK_FILENAME = "lock"
+RALPH_SESSIONS_DATABASE_FILENAME = "sessions.sqlite3"
 
 
 @dataclass(frozen=True, slots=True)
@@ -36,9 +34,7 @@ class RunConfig:
     ralph_txt_path: Path = field(init=False)
     retro_path: Path = field(init=False)
     ralph_dir: Path = field(init=False)
-    sessions_dir: Path = field(init=False)
-    current_session_path: Path = field(init=False)
-    lock_path: Path = field(init=False)
+    db_path: Path = field(init=False)
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "spec_path", self.feature_dir / FEATURE_SPEC_FILENAME)
@@ -46,11 +42,20 @@ class RunConfig:
         object.__setattr__(self, "ralph_txt_path", self.feature_dir / FEATURE_LOG_FILENAME)
         object.__setattr__(self, "retro_path", self.feature_dir / FEATURE_RETRO_FILENAME)
         ralph_dir = self.feature_dir / RALPH_STATE_DIRECTORY
-        sessions_dir = ralph_dir / RALPH_SESSIONS_DIRECTORY
         object.__setattr__(self, "ralph_dir", ralph_dir)
-        object.__setattr__(self, "sessions_dir", sessions_dir)
-        object.__setattr__(self, "current_session_path", sessions_dir / RALPH_CURRENT_SESSION_FILENAME)
-        object.__setattr__(self, "lock_path", ralph_dir / RALPH_LOCK_FILENAME)
+        object.__setattr__(self, "db_path", ralph_dir / RALPH_SESSIONS_DATABASE_FILENAME)
+
+    @property
+    def sessions_dir(self) -> Path:
+        return self.ralph_dir / "sessions"
+
+    @property
+    def current_session_path(self) -> Path:
+        return self.sessions_dir / "current.json"
+
+    @property
+    def lock_path(self) -> Path:
+        return self.ralph_dir / "lock"
 
 
 def resolve_feature_dir(feature_dir: str | Path, *, cwd: Path | None = None) -> Path:
@@ -117,9 +122,7 @@ __all__ = [
     "FEATURE_RETRO_FILENAME",
     "FEATURE_SPEC_FILENAME",
     "FEATURE_TASKS_FILENAME",
-    "RALPH_CURRENT_SESSION_FILENAME",
-    "RALPH_LOCK_FILENAME",
-    "RALPH_SESSIONS_DIRECTORY",
+    "RALPH_SESSIONS_DATABASE_FILENAME",
     "RALPH_STATE_DIRECTORY",
     "RunConfig",
     "resolve_feature_dir",

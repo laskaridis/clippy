@@ -5,7 +5,7 @@ description: Convert the specified specification document into a list of tasks t
 
 ## Purpose
 
-Convert a specification file into a strict JSON implementation task plan for low-reasoning coding agents.
+Convert a specification file into a strict JSON implementation task plan to be implemented by low-reasoning coding agents.
 
 The output must contain small, tightly bounded, implementation-ready tasks with clear instructions, explicit scope, dependencies, and verifiable acceptance criteria.
 
@@ -17,7 +17,7 @@ This skill is meant to be use for planning only. It must not modify any reposito
 
 Required:
 
-- a specification file, usualy spec.md
+- a specification file
 
 ## Operating Rules
 
@@ -49,6 +49,8 @@ Required:
 - Assumptions may fill implementation gaps, but they must not add new product behavior or policy.
 - If an assumption would change CLI behavior, lifecycle semantics, persistence semantics, artifact ownership, or compatibility behavior, stop and ask the user instead of assuming.
 - Tasks must be safe for low-reasoning implementation agents.
+- If any explicit requirement is uncovered, revise the tasks instead of returning a partial plan.
+- If a task cannot be traced back to an explicit requirement or necessary implementation support, remove it or narrow it.
 
 ## Task Quality Examples
 
@@ -127,6 +129,4 @@ Before returning, verify that:
 - No implementation work was performed
 - Every functional and non-functional requirement from the specification must map to at least one task.
 - Every explicit compatibility requirement, non-goal, prohibition, idempotence rule, and dependency/tooling constraint maps to at least one task.
-- If any explicit requirement is uncovered, revise the tasks instead of returning a partial plan.
-- If a task cannot be traced back to an explicit requirement or necessary implementation support, remove it or narrow it.
 - For each task, verify that a low-reasoning coding agent could implement it without guessing hidden policy, hidden dependencies, or unstated acceptance checks.
