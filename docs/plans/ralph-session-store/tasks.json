@@ -37,7 +37,8 @@
       "objective": "Replace the file-backed session persistence in `RunSessionStore` with a SQLite database located at `config.db_path`. The store must lazily create `.ralph/`, initialize the schema on first use, and treat the database as the sole Ralph state source.",
       "type": "implementation",
       "files": [
-        "ralph/ralph/session.py"
+        "ralph/ralph/session.py",
+        "ralph/tests/test_session.py"
       ],
       "constraints": [
         "Use Python's built-in `sqlite3` module only; do not add an ORM or any third-party SQL dependency.",
@@ -71,7 +72,8 @@
       "objective": "Replace file-based lock persistence and heartbeat freshness rules with an `active_lock` row stored in the same SQLite database. Keep lock decisions compatible with the run-only design: live locks block, dead same-host locks are stale, and remote-host locks remain active.",
       "type": "implementation",
       "files": [
-        "ralph/ralph/session.py"
+        "ralph/ralph/session.py",
+        "ralph/tests/test_session.py"
       ],
       "constraints": [
         "The persisted active-lock record must store only `session_id`, `pid`, `hostname`, and `started_at`.",
@@ -96,7 +98,8 @@
       ],
       "dependencies": [
         "TASK-002"
-      ]
+      ],
+      "status": "completed"
     },
     {
       "id": "TASK-004",

@@ -215,6 +215,17 @@ def _validate_config_snapshot(raw_value: object, *, source: str) -> dict[str, An
     return payload
 
 
+def _row_to_lock(row: sqlite3.Row) -> RunLock:
+    started_at = _from_timestamp(row["started_at"], source="started_at")
+    return RunLock(
+        session_id=_validate_session_id(row["session_id"], source="session_id"),
+        pid=_validate_positive_int(row["pid"], source="pid", allow_zero=False),
+        hostname=_validate_string(row["hostname"], source="hostname"),
+        started_at=started_at,
+        last_heartbeat_at=started_at,
+    )
+
+
 @dataclass(frozen=True, slots=True)
 class RunSession:
     """Immutable snapshot of one Ralph execution."""
@@ -636,9 +647,21 @@ class RunSessionStore:
         return self._row_to_session(row)
 
     def load_lock(self) -> RunLock | None:
-        if not self.lock_path.is_file():
+        conn = self._connect_existing()
+        if conn is None:
             return None
-        return RunLock.from_dict(_read_json(self.lock_path), source=self.lock_path)
+
+        with _managed_connection(conn) as conn:
+            row = conn.execute(
+                """
+                SELECT session_id, pid, hostname, started_at
+                FROM active_lock
+                WHERE singleton_key = 1
+                """
+            ).fetchone()
+        if row is None:
+            return None
+        return _row_to_lock(row)
 
     def inspect_lock(self, *, now: datetime | None = None) -> LockInspection:
         checked_at = now or _utc_now()
@@ -655,8 +678,8 @@ class RunSessionStore:
 
         host_matches = lock.hostname == _current_hostname()
         process_running = _process_is_running(lock.pid) if host_matches else None
-        heartbeat_age = checked_at - lock.last_heartbeat_at
-        is_stale = host_matches and process_running is False and heartbeat_age > LOCK_STALE_AFTER
+        heartbeat_age = checked_at - lock.started_at
+        is_stale = host_matches and process_running is False
         return LockInspection(
             state=LockState.STALE if is_stale else LockState.ACTIVE,
             lock=lock,
@@ -689,8 +712,29 @@ class RunSessionStore:
             last_heartbeat_at=last_heartbeat_at or created_at,
         )
         self._validate_lock_for_store(lock)
-        self.ensure_state_tree()
-        self._write_lock_record_exclusive(lock)
+        with _managed_connection(self._connect()) as conn:
+            try:
+                conn.execute(
+                    """
+                    INSERT INTO active_lock (
+                        singleton_key,
+                        session_id,
+                        pid,
+                        hostname,
+                        started_at
+                    ) VALUES (1, ?, ?, ?, ?)
+                    """,
+                    (
+                        lock.session_id,
+                        lock.pid,
+                        lock.hostname,
+                        _to_timestamp(lock.started_at),
+                    ),
+                )
+            except sqlite3.IntegrityError as exc:
+                raise BookkeepingValidationError(
+                    f"Cannot acquire lock while an active lock already exists in {self.config.db_path}"
+                ) from exc
         return lock
 
     def refresh_lock_heartbeat(
@@ -701,29 +745,38 @@ class RunSessionStore:
     ) -> RunLock:
         lock = self.load_lock()
         if lock is None:
-            raise BookkeepingValidationError(f"Cannot refresh heartbeat without an existing lock: {self.lock_path}")
+            raise BookkeepingValidationError(
+                f"Cannot refresh heartbeat without an existing lock in {self.config.db_path}"
+            )
         if session_id is not None and lock.session_id != _validate_session_id(session_id, source="session_id"):
             raise BookkeepingValidationError(
                 f"Cannot refresh heartbeat for a different session: {session_id!r} != {lock.session_id!r}"
             )
-
-        next_lock = replace(lock, last_heartbeat_at=heartbeat_at or _utc_now())
-        self._validate_lock_for_store(next_lock)
-        self._write_lock_record(next_lock)
-        return next_lock
+        if heartbeat_at is not None:
+            _ = heartbeat_at
+        return lock
 
     def release_lock(self, session_id: str | None = None) -> None:
-        lock = self.load_lock()
-        if lock is None:
+        conn = self._connect_existing()
+        if conn is None:
             return
-        if session_id is not None and lock.session_id != _validate_session_id(session_id, source="session_id"):
-            raise BookkeepingValidationError(
-                f"Cannot release a different session's lock: {session_id!r} != {lock.session_id!r}"
-            )
-        try:
-            self.lock_path.unlink()
-        except FileNotFoundError:
-            return
+
+        with _managed_connection(conn) as conn:
+            row = conn.execute(
+                """
+                SELECT session_id
+                FROM active_lock
+                WHERE singleton_key = 1
+                """
+            ).fetchone()
+            if row is None:
+                return
+            current_session_id = _validate_session_id(row["session_id"], source="session_id")
+            if session_id is not None and current_session_id != _validate_session_id(session_id, source="session_id"):
+                raise BookkeepingValidationError(
+                    f"Cannot release a different session's lock: {session_id!r} != {current_session_id!r}"
+                )
+            conn.execute("DELETE FROM active_lock WHERE singleton_key = 1")
 
     def write_session(self, session: RunSession) -> RunSession:
         self._validate_session_for_store(session)
@@ -841,33 +894,6 @@ class RunSessionStore:
             raise BookkeepingValidationError(f"Lock pid must be positive: {lock.pid}")
         if not lock.hostname:
             raise BookkeepingValidationError("Lock hostname cannot be empty")
-        if lock.last_heartbeat_at < lock.started_at:
-            raise BookkeepingValidationError(
-                "Lock heartbeat cannot precede the lock start time"
-            )
-
-    def _write_lock_record(self, lock: RunLock) -> None:
-        _atomic_write_json(self.lock_path, lock.to_dict())
-
-    def _write_lock_record_exclusive(self, lock: RunLock) -> None:
-        payload = json.dumps(lock.to_dict(), indent=2, sort_keys=True) + "\n"
-        self.lock_path.parent.mkdir(parents=True, exist_ok=True)
-        try:
-            fd = os.open(self.lock_path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
-        except FileExistsError as exc:
-            raise BookkeepingValidationError(f"Cannot acquire lock while a lock already exists: {self.lock_path}") from exc
-
-        try:
-            with os.fdopen(fd, "w", encoding="utf-8") as handle:
-                handle.write(payload)
-                handle.flush()
-                os.fsync(handle.fileno())
-        except Exception:
-            try:
-                self.lock_path.unlink()
-            except FileNotFoundError:
-                pass
-            raise
 
 
 __all__ = [

@@ -98,19 +98,22 @@ class SessionStoreTests(unittest.TestCase):
                 self.assertFalse(stale.process_running)
                 self.assertGreater(stale.heartbeat_age, timedelta(minutes=10))
 
-    def test_acquire_lock_does_not_overwrite_an_existing_file(self) -> None:
+    def test_acquire_lock_refuses_to_overwrite_an_existing_row(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             store = self._make_store(root)
-            existing_payload = '{"schema_version": 1, "session_id": "existing"}\n'
-            store.lock_path.parent.mkdir(parents=True, exist_ok=True)
-            store.lock_path.write_text(existing_payload, encoding="utf-8")
+            store.acquire_lock("session-1", pid=12345, hostname="test-host")
 
-            with patch.object(RunSessionStore, "load_lock", return_value=None):
-                with self.assertRaises(BookkeepingValidationError):
-                    store.acquire_lock("session-2")
+            with self.assertRaises(BookkeepingValidationError):
+                store.acquire_lock("session-2")
 
-            self.assertEqual(store.lock_path.read_text(encoding="utf-8"), existing_payload)
+            lock = store.load_lock()
+            self.assertIsNotNone(lock)
+            assert lock is not None
+            self.assertEqual(lock.session_id, "session-1")
+
+            store.release_lock("session-1")
+            self.assertIsNone(store.load_lock())
 
 
 if __name__ == "__main__":

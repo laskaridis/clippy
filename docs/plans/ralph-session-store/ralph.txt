@@ -1,6 +1,8 @@
 ## Codebase Patterns
 - Run Ralph unittest discovery from the repository root with `PYTHONPATH=.` so `ralph.tests` resolves cleanly during `python -m unittest discover -s ralph/tests`.
 - When using `sqlite3` connections in Ralph code, commit on success and close explicitly; the connection context manager alone does not close the handle.
+- Use a singleton `active_lock` row in SQLite for run ownership, and only probe PID liveness for same-host locks.
+- Derive the current session with `ORDER BY updated_at DESC, session_id DESC` when the store can contain multiple incomplete historical sessions.
 
 ## [2026-05-12 14:46Z]
 - Task id
@@ -52,4 +54,30 @@
   - Updated `ralph/tests/test_config.py`, `ralph/tests/test_session.py`, and `ralph/tests/test_orchestrator_run.py` so the visible suite matches the SQLite-backed session store and no longer depends on `current.json`.
 - Follow up needed:
   - TASK-003 still needs to move active-lock behavior onto the shared SQLite database.
+---
+
+## [2026-05-12 15:06Z]
+- Task id
+  - TASK-003
+- What was implemented:
+  - Moved active-lock persistence onto the shared SQLite database at `.ralph/sessions.sqlite3`.
+  - Changed lock inspection to derive state from the `active_lock` row, with same-host PID checks and stale detection based on dead processes instead of heartbeat freshness windows.
+  - Updated the session-store test that previously depended on a pre-existing lock file so it now asserts lock-row refusal and release behavior.
+- Files changed:
+  - `ralph/ralph/session.py`
+  - `ralph/tests/test_session.py`
+  - `docs/plans/ralph-session-store/tasks.json`
+  - `docs/plans/ralph-session-store/ralph.txt`
+- Verification:
+  - `PYTHONPATH=. make ralph-test` -> passed, 20 tests, OK.
+  - `PYTHONPATH=. make ralph-lint` -> passed.
+  - `PYTHONPATH=. make ralph-typecheck` -> passed.
+- Learnings for future iterations:
+  - SQLite can enforce the singleton lock invariant cleanly with a fixed primary key on `active_lock`.
+  - Same-host stale-lock detection no longer needs a freshness window once PID liveness is the deciding factor.
+- Scope deviations:
+  - Updated `ralph/tests/test_session.py` so the repository’s visible test suite matches the SQLite-backed lock contract.
+  - Updated `docs/plans/ralph-session-store/tasks.json` to keep the task file list aligned with the actual touched files.
+- Follow up needed:
+  - TASK-004 still needs to remove `resume` control flow from the orchestrator and stop depending on heartbeat refresh semantics.
 ---
