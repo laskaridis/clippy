@@ -132,3 +132,26 @@
 - Follow up needed:
   - TASK-009 still needs the final repo-root verification pass after the remaining migration tasks complete.
 ---
+
+## [2026-05-12 15:15Z]
+- Task id
+  - TASK-005
+- What was implemented:
+  - Removed the `resume` subcommand from the Ralph CLI parser.
+  - Deleted the CLI import and handler that called the orchestrator resume alias.
+  - Updated the `run` help text to describe interrupted-work recovery as a fresh `ralph run`.
+- Files changed:
+  - `ralph/ralph/cli.py`
+  - `docs/plans/ralph-session-store/tasks.json`
+  - `docs/plans/ralph-session-store/ralph.txt`
+- Verification:
+  - `PYTHONPATH=. make ralph-test` -> passed, 19 tests, OK.
+  - `PYTHONPATH=. make ralph-lint` -> passed (`All checks passed!`).
+  - `PYTHONPATH=. make ralph-typecheck` -> passed (`Success: no issues found in 22 source files`).
+- Learnings for future iterations:
+  - The user-facing CLI contract can diverge from compatibility aliases that remain in lower layers, so parser registration and import cleanup are the important public-surface checks.
+- Scope deviations:
+  - None.
+- Follow up needed:
+  - TASK-006 still needs the run-only SQLite session documentation refresh.
+---

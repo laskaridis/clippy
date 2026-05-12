@@ -9,12 +9,10 @@ from typing import Sequence
 from ralph.agents.factory import resolve_agent
 from ralph.config import DEFAULT_CODING_MODEL, DEFAULT_RETRO_MODEL, RunConfig, resolve_run_config
 from ralph.errors import RalphError
-from ralph.lifecycle.orchestrator import resume as resume_run
 from ralph.lifecycle.orchestrator import run as run_run
 from ralph.lifecycle.phases.retro.phase import run_retro_phase
 
 COMMAND_RUN = "run"
-COMMAND_RESUME = "resume"
 COMMAND_RETRO = "retro"
 
 
@@ -34,16 +32,9 @@ def build_parser() -> argparse.ArgumentParser:
     subparsers.add_parser(
         COMMAND_RUN,
         parents=[shared],
-        help="Start a fresh Ralph run.",
+        help="Start a fresh Ralph run; interrupted work is recovered by running again.",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     ).set_defaults(handler=_handle_run)
-
-    subparsers.add_parser(
-        COMMAND_RESUME,
-        parents=[shared],
-        help="Resume an incomplete Ralph run.",
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-    ).set_defaults(handler=_handle_resume)
 
     subparsers.add_parser(
         COMMAND_RETRO,
@@ -95,14 +86,6 @@ def _handle_run(args: argparse.Namespace) -> int:
     config = _resolve_config(args, retro_only=False)
     agent = resolve_agent(config.agent_identifier)
     outcome = run_run(config, agent)
-    print(outcome.value)
-    return _exit_code_for_run_outcome(outcome.value)
-
-
-def _handle_resume(args: argparse.Namespace) -> int:
-    config = _resolve_config(args, retro_only=False)
-    agent = resolve_agent(config.agent_identifier)
-    outcome = resume_run(config, agent)
     print(outcome.value)
     return _exit_code_for_run_outcome(outcome.value)
 
