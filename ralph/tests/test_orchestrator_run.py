@@ -121,6 +121,8 @@ class RunLifecycleIntegrationTests(unittest.TestCase):
                 [config.coding_model, config.coding_model, config.retro_model],
             )
             self.assertFalse(config.lock_path.exists())
+            self.assertTrue(config.db_path.is_file())
+            self.assertFalse(config.current_session_path.exists())
 
             pointer = store.load_current_pointer()
             self.assertIsNotNone(pointer)
@@ -157,6 +159,8 @@ class RunLifecycleIntegrationTests(unittest.TestCase):
             self.assertEqual(outcome, RunOutcome.BLOCKED)
             self.assertEqual(agent.invocation_count, 1)
             self.assertFalse(config.lock_path.exists())
+            self.assertTrue(config.db_path.is_file())
+            self.assertFalse(config.current_session_path.exists())
 
             pointer = store.load_current_pointer()
             self.assertIsNotNone(pointer)
@@ -187,7 +191,8 @@ class RunLifecycleIntegrationTests(unittest.TestCase):
             self.assertIsNotNone(session)
             assert session is not None
             self.assertIsNone(session.overall_outcome)
-            self.assertTrue(config.current_session_path.is_file())
+            self.assertTrue(config.db_path.is_file())
+            self.assertFalse(config.current_session_path.exists())
 
     def test_run_degrades_when_retrospective_fails_after_completion(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -224,6 +229,8 @@ class RunLifecycleIntegrationTests(unittest.TestCase):
             self.assertEqual(outcome, RunOutcome.DEGRADED)
             self.assertEqual(agent.invocation_count, 2)
             self.assertFalse(config.lock_path.exists())
+            self.assertTrue(config.db_path.is_file())
+            self.assertFalse(config.current_session_path.exists())
 
             session = store.load_current_session()
             self.assertIsNotNone(session)

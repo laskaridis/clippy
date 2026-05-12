@@ -60,10 +60,11 @@
       "assumptions": [
         "The Python and SQLite versions already used by the Ralph test suite support `PRAGMA user_version` and text columns without requiring optional SQLite extensions."
       ],
-      "dependencies": [
-        "TASK-001"
-      ]
-    },
+    "dependencies": [
+      "TASK-001"
+    ],
+    "status": "completed"
+  },
     {
       "id": "TASK-003",
       "title": "Implement SQLite-backed active-lock handling",

@@ -1,5 +1,6 @@
 ## Codebase Patterns
 - Run Ralph unittest discovery from the repository root with `PYTHONPATH=.` so `ralph.tests` resolves cleanly during `python -m unittest discover -s ralph/tests`.
+- When using `sqlite3` connections in Ralph code, commit on success and close explicitly; the connection context manager alone does not close the handle.
 
 ## [2026-05-12 14:46Z]
 - Task id
@@ -24,4 +25,31 @@
   - None.
 - Follow up needed:
   - TASK-002 and the downstream session/orchestrator tasks still need to migrate the runtime away from the legacy compatibility properties.
+---
+
+## [2026-05-12 14:56Z]
+- Task id
+  - TASK-002
+- What was implemented:
+  - Replaced the file-backed session persistence layer with a SQLite-backed store at `.ralph/sessions.sqlite3`.
+  - Stored session snapshots as rows in a `sessions` table and derived the current session from SQL ordering instead of a pointer file.
+  - Added schema initialization with `PRAGMA user_version` and kept the active-lock table in the same database for the later lock migration.
+- Files changed:
+  - `ralph/ralph/session.py`
+  - `ralph/tests/test_config.py`
+  - `ralph/tests/test_session.py`
+  - `ralph/tests/test_orchestrator_run.py`
+  - `docs/plans/ralph-session-store/tasks.json`
+  - `docs/plans/ralph-session-store/ralph.txt`
+- Verification:
+  - `PYTHONPATH=. make ralph-test` -> passed, 20 tests, OK.
+  - `PYTHONPATH=. make ralph-lint` -> passed.
+  - `PYTHONPATH=. make ralph-typecheck` -> passed.
+- Learnings for future iterations:
+  - SQLite connections need explicit close handling in this codebase; the connection context manager does not close the file descriptor.
+  - The latest session can be derived deterministically with `ORDER BY updated_at DESC, session_id DESC`.
+- Scope deviations:
+  - Updated `ralph/tests/test_config.py`, `ralph/tests/test_session.py`, and `ralph/tests/test_orchestrator_run.py` so the visible suite matches the SQLite-backed session store and no longer depends on `current.json`.
+- Follow up needed:
+  - TASK-003 still needs to move active-lock behavior onto the shared SQLite database.
 ---

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import sqlite3
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 import tempfile
@@ -26,26 +27,36 @@ class SessionStoreTests(unittest.TestCase):
             store = self._make_store(root)
             started_at = datetime(2026, 5, 11, 12, 0, tzinfo=timezone.utc)
 
-            session = store.create_session(session_id="session-1", started_at=started_at)
+            first_session = store.create_session(session_id="session-1", started_at=started_at)
+            second_session = store.create_session(session_id="session-2", started_at=started_at)
 
-            session_path = store.session_path("session-1")
-            self.assertTrue(session_path.is_file())
-            self.assertEqual(session.session_id, "session-1")
-            self.assertEqual(session.feature_dir, store.config.feature_dir)
-            self.assertEqual(session.iteration_count, 0)
-            self.assertIsNone(session.overall_outcome)
+            self.assertTrue(store.config.db_path.is_file())
+            self.assertFalse(store.current_session_path.exists())
+            self.assertEqual(first_session.session_id, "session-1")
+            self.assertEqual(second_session.session_id, "session-2")
+            self.assertEqual(first_session.feature_dir, store.config.feature_dir)
+            self.assertEqual(first_session.iteration_count, 0)
+            self.assertIsNone(first_session.overall_outcome)
+
+            with sqlite3.connect(store.config.db_path) as conn:
+                self.assertEqual(conn.execute("PRAGMA user_version").fetchone()[0], 1)
+                self.assertEqual(conn.execute("SELECT COUNT(*) FROM sessions").fetchone()[0], 2)
 
             pointer = store.load_current_pointer()
             self.assertIsNotNone(pointer)
             assert pointer is not None
-            self.assertEqual(pointer.session_id, "session-1")
+            self.assertEqual(pointer.session_id, "session-2")
             self.assertEqual(pointer.status, "incomplete")
             self.assertIsNone(pointer.overall_outcome)
 
             loaded = store.load_current_session()
             self.assertIsNotNone(loaded)
             assert loaded is not None
-            self.assertEqual(loaded.session_id, session.session_id)
+            self.assertEqual(loaded.session_id, second_session.session_id)
+
+            first_loaded = store.load_session("session-1")
+            self.assertEqual(first_loaded.session_id, "session-1")
+            self.assertEqual(first_loaded.started_at, started_at)
 
     def test_inspect_lock_reports_absent_active_and_stale_states(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

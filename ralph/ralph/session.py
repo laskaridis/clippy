@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from contextlib import contextmanager
 from dataclasses import dataclass, replace
 from datetime import datetime, timezone
 from datetime import timedelta
@@ -10,6 +11,7 @@ import errno
 import json
 import os
 from pathlib import Path
+import sqlite3
 import socket
 import tempfile
 from typing import Any, Mapping
@@ -140,9 +142,7 @@ def _config_snapshot(config: RunConfig) -> dict[str, Any]:
         "ralph_txt_path": str(config.ralph_txt_path),
         "retro_path": str(config.retro_path),
         "ralph_dir": str(config.ralph_dir),
-        "sessions_dir": str(config.sessions_dir),
-        "current_session_path": str(config.current_session_path),
-        "lock_path": str(config.lock_path),
+        "db_path": str(config.db_path),
     }
 
 
@@ -171,6 +171,28 @@ def _read_json(path: Path) -> dict[str, Any]:
     return parsed
 
 
+def _deserialize_json(raw_value: str, *, source: str) -> dict[str, Any]:
+    try:
+        parsed = json.loads(raw_value)
+    except json.JSONDecodeError as exc:
+        raise BookkeepingValidationError(f"Failed to parse JSON text at {source}") from exc
+    if not isinstance(parsed, dict):
+        raise BookkeepingValidationError(f"JSON text must contain an object at {source}: {raw_value!r}")
+    return parsed
+
+
+@contextmanager
+def _managed_connection(conn: sqlite3.Connection):
+    try:
+        yield conn
+        conn.commit()
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        conn.close()
+
+
 def _validate_config_snapshot(raw_value: object, *, source: str) -> dict[str, Any]:
     payload = _validate_mapping(raw_value, source=source)
     required_keys = (
@@ -185,9 +207,7 @@ def _validate_config_snapshot(raw_value: object, *, source: str) -> dict[str, An
         "ralph_txt_path",
         "retro_path",
         "ralph_dir",
-        "sessions_dir",
-        "current_session_path",
-        "lock_path",
+        "db_path",
     )
     for key in required_keys:
         if key not in payload:
@@ -409,7 +429,148 @@ class RunSessionStore:
         return self.config.lock_path
 
     def ensure_state_tree(self) -> None:
-        self.sessions_dir.mkdir(parents=True, exist_ok=True)
+        self.ralph_dir.mkdir(parents=True, exist_ok=True)
+
+    def _connect(self) -> sqlite3.Connection:
+        self.ensure_state_tree()
+        conn = sqlite3.connect(self.config.db_path)
+        conn.row_factory = sqlite3.Row
+        self._ensure_database(conn)
+        return conn
+
+    def _connect_existing(self) -> sqlite3.Connection | None:
+        if not self.config.db_path.exists():
+            return None
+        if not self.config.db_path.is_file():
+            raise BookkeepingValidationError(f"Ralph database path is not a file: {self.config.db_path}")
+        conn = sqlite3.connect(self.config.db_path)
+        conn.row_factory = sqlite3.Row
+        self._ensure_database(conn)
+        return conn
+
+    def _ensure_database(self, conn: sqlite3.Connection) -> None:
+        version_row = conn.execute("PRAGMA user_version").fetchone()
+        user_version = 0 if version_row is None else int(version_row[0])
+        if user_version not in (0, SESSION_SCHEMA_VERSION):
+            raise BookkeepingValidationError(
+                f"Unsupported Ralph database schema version at {self.config.db_path}: {user_version}"
+            )
+
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS sessions (
+                session_id TEXT PRIMARY KEY,
+                feature_dir TEXT NOT NULL,
+                config_json TEXT NOT NULL,
+                current_phase TEXT NOT NULL,
+                iteration_count INTEGER NOT NULL,
+                last_phase_outcome TEXT,
+                last_agent_result_metadata_json TEXT,
+                started_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL,
+                ended_at TEXT,
+                overall_outcome TEXT
+            )
+            """
+        )
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS active_lock (
+                singleton_key INTEGER PRIMARY KEY CHECK (singleton_key = 1),
+                session_id TEXT NOT NULL,
+                pid INTEGER NOT NULL,
+                hostname TEXT NOT NULL,
+                started_at TEXT NOT NULL
+            )
+            """
+        )
+        if user_version != SESSION_SCHEMA_VERSION:
+            conn.execute(f"PRAGMA user_version = {SESSION_SCHEMA_VERSION}")
+
+    def _session_row_payload(self, session: RunSession) -> dict[str, Any]:
+        return {
+            "session_id": session.session_id,
+            "feature_dir": str(session.feature_dir),
+            "config_json": json.dumps(dict(session.config), sort_keys=True),
+            "current_phase": session.current_phase,
+            "iteration_count": session.iteration_count,
+            "last_phase_outcome": session.last_phase_outcome,
+            "last_agent_result_metadata_json": None
+            if session.last_agent_result_metadata is None
+            else json.dumps(dict(session.last_agent_result_metadata), sort_keys=True),
+            "started_at": _to_timestamp(session.started_at),
+            "updated_at": _to_timestamp(session.updated_at),
+            "ended_at": None if session.ended_at is None else _to_timestamp(session.ended_at),
+            "overall_outcome": session.overall_outcome,
+        }
+
+    def _row_to_session(self, row: sqlite3.Row) -> RunSession:
+        config_payload = _deserialize_json(row["config_json"], source=f"{self.config.db_path}.sessions[{row['session_id']}].config_json")
+        last_agent_result_metadata_json = row["last_agent_result_metadata_json"]
+        return RunSession(
+            session_id=_validate_session_id(row["session_id"], source="session_id"),
+            feature_dir=_validate_path(row["feature_dir"], source="feature_dir"),
+            config=_validate_config_snapshot(config_payload, source=f"{self.config.db_path}.sessions[{row['session_id']}].config"),
+            current_phase=_validate_string(row["current_phase"], source="current_phase"),
+            iteration_count=_validate_positive_int(row["iteration_count"], source="iteration_count"),
+            last_phase_outcome=_validate_optional_string(row["last_phase_outcome"], source="last_phase_outcome"),
+            last_agent_result_metadata=None
+            if last_agent_result_metadata_json is None
+            else _validate_mapping(
+                _deserialize_json(
+                    last_agent_result_metadata_json,
+                    source=f"{self.config.db_path}.sessions[{row['session_id']}].last_agent_result_metadata_json",
+                ),
+                source="last_agent_result_metadata",
+            ),
+            started_at=_from_timestamp(row["started_at"], source="started_at"),
+            updated_at=_from_timestamp(row["updated_at"], source="updated_at"),
+            ended_at=None if row["ended_at"] is None else _from_timestamp(row["ended_at"], source="ended_at"),
+            overall_outcome=_validate_outcome(row["overall_outcome"], source="overall_outcome"),
+        )
+
+    def _save_session(self, conn: sqlite3.Connection, session: RunSession) -> None:
+        conn.execute(
+            """
+            INSERT INTO sessions (
+                session_id,
+                feature_dir,
+                config_json,
+                current_phase,
+                iteration_count,
+                last_phase_outcome,
+                last_agent_result_metadata_json,
+                started_at,
+                updated_at,
+                ended_at,
+                overall_outcome
+            ) VALUES (
+                :session_id,
+                :feature_dir,
+                :config_json,
+                :current_phase,
+                :iteration_count,
+                :last_phase_outcome,
+                :last_agent_result_metadata_json,
+                :started_at,
+                :updated_at,
+                :ended_at,
+                :overall_outcome
+            )
+            ON CONFLICT(session_id) DO UPDATE SET
+                feature_dir=excluded.feature_dir,
+                config_json=excluded.config_json,
+                current_phase=excluded.current_phase,
+                iteration_count=excluded.iteration_count,
+                last_phase_outcome=excluded.last_phase_outcome,
+                last_agent_result_metadata_json=excluded.last_agent_result_metadata_json,
+                started_at=excluded.started_at,
+                updated_at=excluded.updated_at,
+                ended_at=excluded.ended_at,
+                overall_outcome=excluded.overall_outcome
+            """,
+            self._session_row_payload(session),
+        )
 
     def create_session(
         self,
@@ -432,25 +593,47 @@ class RunSessionStore:
             ended_at=None,
             overall_outcome=None,
         )
-        return self.write_session(session)
+        self._validate_session_for_store(session)
+        with _managed_connection(self._connect()) as conn:
+            self._save_session(conn, session)
+        return session
 
     def load_session(self, session_id: str) -> RunSession:
         session_id = _validate_session_id(session_id, source="session_id")
-        path = self.session_path(session_id)
-        if not path.is_file():
-            raise BookkeepingValidationError(f"Missing session record: {path}")
-        return RunSession.from_dict(_read_json(path), source=path)
+        conn = self._connect_existing()
+        if conn is None:
+            raise BookkeepingValidationError(f"Missing session record in {self.config.db_path}: {session_id}")
+        with _managed_connection(conn) as conn:
+            row = conn.execute(
+                "SELECT * FROM sessions WHERE session_id = ?",
+                (session_id,),
+            ).fetchone()
+        if row is None:
+            raise BookkeepingValidationError(f"Missing session record in {self.config.db_path}: {session_id}")
+        return self._row_to_session(row)
 
     def load_current_pointer(self) -> RunSessionPointer | None:
-        if not self.current_session_path.is_file():
+        current_session = self.load_current_session()
+        if current_session is None:
             return None
-        return RunSessionPointer.from_dict(_read_json(self.current_session_path), source=self.current_session_path)
+        return RunSessionPointer(
+            session_id=current_session.session_id,
+            status="incomplete" if not current_session.is_terminal else current_session.overall_outcome or "incomplete",
+            updated_at=current_session.updated_at,
+            overall_outcome=current_session.overall_outcome,
+        )
 
     def load_current_session(self) -> RunSession | None:
-        pointer = self.load_current_pointer()
-        if pointer is None:
+        conn = self._connect_existing()
+        if conn is None:
             return None
-        return self.load_session(pointer.session_id)
+        with _managed_connection(conn) as conn:
+            row = conn.execute(
+                "SELECT * FROM sessions ORDER BY updated_at DESC, session_id DESC LIMIT 1"
+            ).fetchone()
+        if row is None:
+            return None
+        return self._row_to_session(row)
 
     def load_lock(self) -> RunLock | None:
         if not self.lock_path.is_file():
@@ -544,14 +727,8 @@ class RunSessionStore:
 
     def write_session(self, session: RunSession) -> RunSession:
         self._validate_session_for_store(session)
-        self.ensure_state_tree()
-        self._write_session_record(session)
-        self._write_current_pointer(RunSessionPointer(
-            session_id=session.session_id,
-            status="incomplete" if not session.is_terminal else session.overall_outcome or "incomplete",
-            updated_at=session.updated_at,
-            overall_outcome=session.overall_outcome,
-        ))
+        with _managed_connection(self._connect()) as conn:
+            self._save_session(conn, session)
         return session
 
     def update_session(
@@ -564,32 +741,46 @@ class RunSessionStore:
         last_agent_result_metadata: Mapping[str, Any] | None | object = _MISSING,
         updated_at: datetime | None = None,
     ) -> RunSession:
-        session = self.load_session(session_id)
-        if session.is_terminal:
-            raise BookkeepingValidationError(f"Cannot update terminal session: {session_id}")
+        session_id = _validate_session_id(session_id, source="session_id")
+        conn = self._connect_existing()
+        if conn is None:
+            raise BookkeepingValidationError(f"Missing session record in {self.config.db_path}: {session_id}")
 
-        next_session = session
-        if current_phase is not None:
-            next_session = replace(next_session, current_phase=_validate_string(current_phase, source="current_phase"))
-        if iteration_count is not None:
-            next_session = replace(
-                next_session,
-                iteration_count=_validate_positive_int(iteration_count, source="iteration_count"),
-            )
-        if last_phase_outcome is not _MISSING:
-            next_session = replace(
-                next_session,
-                last_phase_outcome=_validate_optional_string(last_phase_outcome, source="last_phase_outcome"),
-            )
-        if last_agent_result_metadata is not _MISSING:
-            next_session = replace(
-                next_session,
-                last_agent_result_metadata=None
-                if last_agent_result_metadata is None
-                else _validate_mapping(last_agent_result_metadata, source="last_agent_result_metadata"),
-            )
-        next_session = replace(next_session, updated_at=updated_at or _utc_now())
-        return self.write_session(next_session)
+        with _managed_connection(conn) as conn:
+            row = conn.execute(
+                "SELECT * FROM sessions WHERE session_id = ?",
+                (session_id,),
+            ).fetchone()
+            if row is None:
+                raise BookkeepingValidationError(f"Missing session record in {self.config.db_path}: {session_id}")
+
+            session = self._row_to_session(row)
+            if session.is_terminal:
+                raise BookkeepingValidationError(f"Cannot update terminal session: {session_id}")
+
+            next_session = session
+            if current_phase is not None:
+                next_session = replace(next_session, current_phase=_validate_string(current_phase, source="current_phase"))
+            if iteration_count is not None:
+                next_session = replace(
+                    next_session,
+                    iteration_count=_validate_positive_int(iteration_count, source="iteration_count"),
+                )
+            if last_phase_outcome is not _MISSING:
+                next_session = replace(
+                    next_session,
+                    last_phase_outcome=_validate_optional_string(last_phase_outcome, source="last_phase_outcome"),
+                )
+            if last_agent_result_metadata is not _MISSING:
+                next_session = replace(
+                    next_session,
+                    last_agent_result_metadata=None
+                    if last_agent_result_metadata is None
+                    else _validate_mapping(last_agent_result_metadata, source="last_agent_result_metadata"),
+                )
+            next_session = replace(next_session, updated_at=updated_at or _utc_now())
+            self._save_session(conn, next_session)
+            return next_session
 
     def finalize_session(
         self,
@@ -598,25 +789,36 @@ class RunSessionStore:
         overall_outcome: str,
         ended_at: datetime | None = None,
     ) -> RunSession:
-        session = self.load_session(session_id)
-        if session.is_terminal:
-            raise BookkeepingValidationError(f"Cannot finalize terminal session: {session_id}")
+        session_id = _validate_session_id(session_id, source="session_id")
+        conn = self._connect_existing()
+        if conn is None:
+            raise BookkeepingValidationError(f"Missing session record in {self.config.db_path}: {session_id}")
+
         terminal_outcome = _validate_outcome(overall_outcome, source="overall_outcome")
         if terminal_outcome is None:
             raise BookkeepingValidationError(f"Session outcome must be terminal: {overall_outcome!r}")
         finished_at = ended_at or _utc_now()
 
-        next_session = replace(
-            session,
-            overall_outcome=terminal_outcome,
-            ended_at=finished_at,
-            updated_at=finished_at,
-        )
-        return self.write_session(next_session)
+        with _managed_connection(conn) as conn:
+            row = conn.execute(
+                "SELECT * FROM sessions WHERE session_id = ?",
+                (session_id,),
+            ).fetchone()
+            if row is None:
+                raise BookkeepingValidationError(f"Missing session record in {self.config.db_path}: {session_id}")
 
-    def session_path(self, session_id: str) -> Path:
-        session_id = _validate_session_id(session_id, source="session_id")
-        return self.sessions_dir / f"{session_id}.json"
+            session = self._row_to_session(row)
+            if session.is_terminal:
+                raise BookkeepingValidationError(f"Cannot finalize terminal session: {session_id}")
+
+            next_session = replace(
+                session,
+                overall_outcome=terminal_outcome,
+                ended_at=finished_at,
+                updated_at=finished_at,
+            )
+            self._save_session(conn, next_session)
+            return next_session
 
     def _validate_session_for_store(self, session: RunSession) -> None:
         if session.feature_dir != self.config.feature_dir:
@@ -644,9 +846,6 @@ class RunSessionStore:
                 "Lock heartbeat cannot precede the lock start time"
             )
 
-    def _write_session_record(self, session: RunSession) -> None:
-        _atomic_write_json(self.session_path(session.session_id), session.to_dict())
-
     def _write_lock_record(self, lock: RunLock) -> None:
         _atomic_write_json(self.lock_path, lock.to_dict())
 
@@ -669,9 +868,6 @@ class RunSessionStore:
             except FileNotFoundError:
                 pass
             raise
-
-    def _write_current_pointer(self, pointer: RunSessionPointer) -> None:
-        _atomic_write_json(self.current_session_path, pointer.to_dict())
 
 
 __all__ = [

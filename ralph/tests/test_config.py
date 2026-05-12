@@ -39,9 +39,7 @@ class RunConfigTests(unittest.TestCase):
             self.assertEqual(config.ralph_txt_path, feature_dir / "ralph.txt")
             self.assertEqual(config.retro_path, feature_dir / "ralph.retro.md")
             self.assertEqual(config.ralph_dir, feature_dir / ".ralph")
-            self.assertEqual(config.sessions_dir, feature_dir / ".ralph" / "sessions")
-            self.assertEqual(config.current_session_path, feature_dir / ".ralph" / "sessions" / "current.json")
-            self.assertEqual(config.lock_path, feature_dir / ".ralph" / "lock")
+            self.assertEqual(config.db_path, feature_dir / ".ralph" / "sessions.sqlite3")
             self.assertTrue(config.retro_only)
             self.assertEqual(config.agent_identifier, "codex")
 
