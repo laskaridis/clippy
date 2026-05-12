@@ -1,6 +1,6 @@
 # Meet Ralph
 
-Ralph is a repo-local Python CLI that runs one feature-folder implementation loop at a time through the `codex` CLI, persists run state under the feature folder, and can resume interrupted runs.
+Ralph is a repo-local Python CLI that runs one feature-folder implementation loop at a time through the `codex` CLI, persists run state in `.ralph/sessions.sqlite3`, and recovers interrupted work by starting a fresh run.
 
 ## What Ralph Expects
 
@@ -38,12 +38,6 @@ Start a fresh run:
 ralph run --feature-dir docs/plans/ralph-cli
 ```
 
-Resume an interrupted run:
-
-```bash
-ralph resume --feature-dir docs/plans/ralph-cli
-```
-
 Run the retrospective only:
 
 ```bash
@@ -72,23 +66,24 @@ ralph run \
 `ralph run`:
 
 1. Validates that the feature folder exists and contains `spec.md` and `tasks.json`.
-2. Rejects the run if the feature already has an incomplete Ralph session or an active `.ralph/lock`.
-3. Renders the coding prompt and invokes `codex`.
-4. Requires the coding response to start with exactly one of:
+2. Creates a fresh session whenever startup is allowed. Older incomplete sessions remain historical state and do not block a new run.
+3. Rejects startup when `.ralph/sessions.sqlite3` records a live lock. A dead same-host lock may be reclaimed automatically before the new session starts.
+4. Renders the coding prompt and invokes `codex`.
+5. Requires the coding response to start with exactly one of:
    - `RALPH_STATUS=CONTINUE`
    - `RALPH_STATUS=COMPLETE`
    - `RALPH_STATUS=BLOCKED`
-5. Validates bookkeeping after each coding pass:
+6. Validates bookkeeping after each coding pass:
    - `tasks.json` must still be valid JSON with a top-level `tasks` list.
    - `RALPH_STATUS=COMPLETE` is accepted only when every task is marked `completed`.
    - `RALPH_STATUS=CONTINUE` is accepted only when at least one task is still not completed.
    - `RALPH_STATUS=BLOCKED` must include a human-readable blocker line immediately after the status line.
-6. Repeats until the run completes, blocks, fails, or hits the iteration cap.
-7. Automatically runs the retrospective after coding completes.
+7. Repeats until the run completes, blocks, fails, or hits the iteration cap.
+8. Automatically runs the retrospective after coding completes.
 
 ## Outcomes And Exit Codes
 
-`ralph run` and `ralph resume` print one terminal outcome:
+`ralph run` prints one terminal outcome:
 
 - `completed`
 - `blocked`
@@ -108,23 +103,15 @@ Current exit behavior is strict:
 
 `degraded` means the coding loop completed, but the retrospective phase failed.
 
-## Session Files
+## Session Store
 
-Ralph stores feature-local control-plane state under `.ralph/`:
+Ralph stores feature-local control-plane state in `.ralph/sessions.sqlite3`.
 
-- `.ralph/sessions/<session-id>.json`: per-run session record
-- `.ralph/sessions/current.json`: pointer to the current incomplete session, or the latest terminal session
-- `.ralph/lock`: active-run ownership and heartbeat record
+The database is the sole source of truth for session history and the active lock. It contains the current run state, older historical sessions, and the active lock row used to gate new runs.
 
-Only `resume` is allowed to continue an incomplete session. If a process dies mid-run, use:
+Legacy file-backed artifacts such as `.ralph/sessions/*.json`, `.ralph/sessions/current.json`, and `.ralph/lock` are ignored by this version of Ralph. They do not need to be migrated and do not affect startup.
 
-```bash
-ralph resume --feature-dir <feature-dir>
-```
-
-`resume` can reclaim a stale lock only when the lock belongs to the local host, the recorded process is no longer running, and the heartbeat is older than the built-in stale threshold.
-
-If the feature-local session state is corrupted beyond recovery, inspect the human-readable artifacts in the feature folder, delete `.ralph/` intentionally, and start a fresh `run`.
+If a run is interrupted, start another `ralph run`. The new run can reclaim only a dead same-host lock; otherwise it respects the live lock state recorded in the database and begins a fresh session once startup is allowed.
 
 ## Retrospective Behavior
 

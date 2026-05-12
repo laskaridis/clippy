@@ -198,7 +198,8 @@
       "dependencies": [
         "TASK-002",
         "TASK-005"
-      ]
+      ],
+      "status": "completed"
     },
     {
       "id": "TASK-007",

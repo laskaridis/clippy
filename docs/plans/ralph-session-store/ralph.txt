@@ -155,3 +155,28 @@
 - Follow up needed:
   - TASK-006 still needs the run-only SQLite session documentation refresh.
 ---
+
+## [2026-05-12 15:17Z]
+- Task id
+  - TASK-006
+- What was implemented:
+  - Rewrote the Ralph README to describe the run-only SQLite-backed session store contract.
+  - Removed the `resume` command example and documented fresh-run recovery instead.
+  - Replaced the old session-files section with a SQLite session-store description that points at `.ralph/sessions.sqlite3`.
+- Files changed:
+  - `ralph/README.md`
+  - `docs/plans/ralph-session-store/tasks.json`
+  - `docs/plans/ralph-session-store/ralph.txt`
+- Verification:
+  - `PYTHONPATH=. make ralph-test` -> passed, 19 tests, OK.
+  - `PYTHONPATH=. make ralph-lint` -> passed (`All checks passed!`).
+  - `PYTHONPATH=. make ralph-typecheck` -> passed (`Success: no issues found in 22 source files`).
+  - `rg -n 'resume|\\.ralph/lock|current\\.json|sessions/\\*\\.json' ralph/README.md` -> no `resume` references; remaining legacy-artifact mentions are the explicit "ignored by this version" note.
+- Learnings for future iterations:
+  - The user guide should frame interrupted-work recovery as a fresh `ralph run` against the SQLite database, not as a separate recovery flow.
+  - It is safe to document legacy file-backed artifacts as ignored when the implementation has already switched to SQLite-only startup behavior.
+- Scope deviations:
+  - None.
+- Follow up needed:
+  - TASK-009 still needs the final repo-root verification pass once the remaining feature tasks are complete.
+---
