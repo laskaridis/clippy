@@ -291,19 +291,20 @@
         "`make ralph-lint` exits successfully from `/Users/e.laskaridis/Projects/sandbox/webclippings/.worktrees/ralph-cli`.",
         "`make ralph-typecheck` exits successfully from `/Users/e.laskaridis/Projects/sandbox/webclippings/.worktrees/ralph-cli`."
       ],
-      "assumptions": [
-        "The existing Makefile targets already install or reference the tooling needed for Ralph verification in this worktree."
-      ],
-      "dependencies": [
-        "TASK-001",
+    "assumptions": [
+    "The existing Makefile targets already install or reference the tooling needed for Ralph verification in this worktree."
+  ],
+  "dependencies": [
+    "TASK-001",
         "TASK-002",
         "TASK-003",
         "TASK-004",
         "TASK-005",
-        "TASK-006",
-        "TASK-007",
-        "TASK-008"
-      ]
-    }
+    "TASK-006",
+    "TASK-007",
+    "TASK-008"
+  ],
+  "status": "completed"
+}
   ]
 }

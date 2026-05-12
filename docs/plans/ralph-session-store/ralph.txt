@@ -205,3 +205,24 @@
 - Follow up needed:
   - TASK-009 still needs the final repo-root verification pass after the remaining feature tasks are complete.
 ---
+
+## [2026-05-12 15:21Z]
+- Task id
+  - TASK-009
+- What was implemented:
+  - Ran the repository-root Ralph verification targets and confirmed the completed migration still passes the canonical checks.
+  - Marked the final verification task complete in `tasks.json`.
+- Files changed:
+  - `docs/plans/ralph-session-store/tasks.json`
+  - `docs/plans/ralph-session-store/ralph.txt`
+- Verification:
+  - `PYTHONPATH=. make ralph-test` -> passed, 20 tests, OK.
+  - `PYTHONPATH=. make ralph-lint` -> passed, `All checks passed!`.
+  - `PYTHONPATH=. make ralph-typecheck` -> passed, `Success: no issues found in 22 source files`.
+- Learnings for future iterations:
+  - Repo-root Ralph checks continue to require `PYTHONPATH=.` in this worktree so unittest discovery can resolve `ralph.tests`.
+- Scope deviations:
+  - None.
+- Follow up needed:
+  - None.
+---
