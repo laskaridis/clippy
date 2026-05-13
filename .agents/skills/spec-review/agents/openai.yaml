@@ -1,0 +1,3 @@
+interface:
+  display_name: "Spec review"
+  short_description: "Reviews a specification document making sure it's ready for implementation by an autonomous coding agent"

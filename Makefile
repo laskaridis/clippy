@@ -8,7 +8,8 @@ PYTHON ?= python
 	worktree-start \
 	backend-init backend-test-unit backend-test-e2e backend-lint backend-format backend-format-check backend-typecheck backend-run backend-clean \
 	extension-init extension-build extension-test-unit extension-test-e2e extension-test-a11y extension-lint extension-format extension-format-check extension-typecheck extension-clean \
-	all-verify backend-verify extension-verify
+	all-verify backend-verify extension-verify \
+	ralph-test ralph-lint ralph-typecheck ralph-verify
 
 # Show available commands
 help:
@@ -39,6 +40,12 @@ help:
 	@echo "  make extension-typecheck       - Run extension type checks (tsc --noEmit)"
 	@echo "  make extension-clean           - Remove extension build artifacts"
 	@echo "  make extension-verify          - Run all extension releasability checks"
+	@echo ""
+	@echo "Ralph development targets:"
+	@echo "  make ralph-test                - Run the deterministic Ralph test suite"
+	@echo "  make ralph-lint                - Run Ralph lint checks (ruff)"
+	@echo "  make ralph-typecheck           - Run Ralph type checks (mypy)"
+	@echo "  make ralph-verify              - Run all Ralph releasability checks"
 	@echo ""
 	@echo "Project targets:"
 	@echo "  make all-init                  - Install dependencies/hooks for all sub-projects"
@@ -87,6 +94,18 @@ all-clean:
 all-verify:
 	@$(MAKE) backend-verify
 	@$(MAKE) extension-verify
+
+# Run Ralph tests only
+ralph-test:
+	@python -m unittest discover -s ralph/tests
+
+# Run Ralph lint checks
+ralph-lint:
+	@python -m ruff check ralph/ralph ralph/tests
+
+# Run Ralph type checks
+ralph-typecheck:
+	@python -m mypy ralph/ralph
 
 # Create a feature worktree without GitHub issue integration (slug required)
 worktree-start:
@@ -186,3 +205,9 @@ extension-typecheck:
 # Remove extension build artifacts
 extension-clean:
 	@rm -rf extension/chrome/dist
+
+# Runs all Ralph checks (test, lint, typecheck) to verify that Ralph is releasable.
+ralph-verify:
+	@$(MAKE) ralph-test
+	@$(MAKE) ralph-lint
+	@$(MAKE) ralph-typecheck

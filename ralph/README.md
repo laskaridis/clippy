@@ -1,68 +1,150 @@
 # Meet Ralph
 
-Ralph is a lightweight autonomous implementation loop for coding.
+Ralph is a repo-local Python CLI that runs one feature-folder implementation loop at a time through the `codex` CLI, persists run state in `.ralph/sessions.sqlite3`, and recovers interrupted work by starting a fresh run.
 
-To use it, all you need to do is point him to a folder that contains two files:
-- A feature description file: `spec.md`
-- A task list file: `tasks.json`
+## What Ralph Expects
 
-For retrospective-only runs, the same feature folder must also contain `ralph.txt`.
+Run Ralph from the repository root and point it at a feature folder using a relative path.
 
-## What Ralph does
+The feature folder must contain:
 
-For each iteration, Ralph:
+- `spec.md`
+- `tasks.json`
 
-1. Reads the spec and tasks to understand the context
-2. Picks the next task and implements it.
-4. Continues looping until completion, blockage, or the max iteration limit.
-6. After finishing, ralph will reflect on its work and identify points for improvement.
+The coding agent is expected to maintain:
 
-Througought the process, ralph tracks progress by leaving notes to himself in a file (`ralph.txt`) which can be used to audit his actions.
+- `ralph.txt`
+- `ralph.retro.md`
 
-At any point that ralph gets stuck, it will escalate to a human to sort things out.
+Ralph creates `ralph.txt` on the first coding iteration if it does not exist already. Retrospective-only runs require `ralph.txt` to already exist.
 
-## Current lifecycle
+## Prerequisites
 
-Ralph currently has a simple three-phase lifecycle:
-
-1. Setup
-   Ralph validates CLI arguments, resolves the feature directory, and ensures the required prompt and feature files exist for the selected mode.
-2. Implementation loop
-   Ralph repeatedly runs Codex for one task at a time until the agent reports `CONTINUE`, `COMPLETE`, or `BLOCKED`.
-3. Retrospective
-   When the agent reports `COMPLETE`, Ralph runs a second Codex pass using `prompts/retro.md`, which writes a `ralph.retro.md` review for the finished feature.
-
-Ralph also supports a retrospective-only entrypoint that skips the implementation loop and runs the retrospective directly against an existing feature folder.
-
-## Current status and boundaries
-
-Ralph is currently a prompt-driven implementation harness, not a standalone service or framework. It does not manage task planning itself; it assumes a feature folder has already been prepared with a usable `spec.md` and `tasks.json`.
-
-Its current control model is intentionally narrow:
-
-- one task per iteration
-- status-driven loop control via the first response line
-- success only when the agent explicitly reports completion
-- retrospective after successful completion, or directly via `--retro-only`
-
-If the agent reports `BLOCKED`, if Codex execution fails, or if the iteration cap is reached without completion, Ralph exits without performing the retrospective.
-
-## CLI usage
-
-Full lifecycle run:
+Install the package in editable mode from the repository root:
 
 ```bash
-./ralph/ralph.sh --feature-dir specs/my-feature
+python -m pip install -e ralph
 ```
 
-Retrospective only:
+That exposes the `ralph` console script.
+
+Ralph currently resolves only one agent backend: `codex`. The `codex` binary must be installed and usable in your shell environment.
+
+## Commands
+
+Start a fresh run:
 
 ```bash
-./ralph/ralph.sh --feature-dir specs/my-feature --retro-only
+ralph run --feature-dir docs/plans/ralph-cli
 ```
 
-Notes:
+Run the retrospective only:
 
-- `--feature-dir` is always required and must be relative to the current working directory.
-- `--retro-only` requires `spec.md`, `tasks.json`, `ralph.txt`, and `prompts/retro.md`.
-- `--retro-only` cannot be combined with `--max-iterations` or `--coding-model`.
+```bash
+ralph retro --feature-dir docs/plans/ralph-cli
+```
+
+Common options:
+
+- `--feature-dir` is required and must be relative to your current working directory.
+- `--max-iterations` defaults to `50`.
+- `--coding-model` defaults to `gpt-5.4-mini`.
+- `--retro-model` defaults to `gpt-5.4-medium`.
+
+Example with explicit models:
+
+```bash
+ralph run \
+  --feature-dir docs/plans/ralph-cli \
+  --max-iterations 10 \
+  --coding-model gpt-5.4-mini \
+  --retro-model gpt-5.4-medium
+```
+
+## How A Run Works
+
+`ralph run`:
+
+1. Validates that the feature folder exists and contains `spec.md` and `tasks.json`.
+2. Creates a fresh session whenever startup is allowed. Older incomplete sessions remain historical state and do not block a new run.
+3. Rejects startup when `.ralph/sessions.sqlite3` records a live lock. A dead same-host lock may be reclaimed automatically before the new session starts.
+4. Renders the coding prompt and invokes `codex`.
+5. Requires the coding response to start with exactly one of:
+   - `RALPH_STATUS=CONTINUE`
+   - `RALPH_STATUS=COMPLETE`
+   - `RALPH_STATUS=BLOCKED`
+6. Validates bookkeeping after each coding pass:
+   - `tasks.json` must still be valid JSON with a top-level `tasks` list.
+   - `RALPH_STATUS=COMPLETE` is accepted only when every task is marked `completed`.
+   - `RALPH_STATUS=CONTINUE` is accepted only when at least one task is still not completed.
+   - `RALPH_STATUS=BLOCKED` must include a human-readable blocker line immediately after the status line.
+7. Repeats until the run completes, blocks, fails, or hits the iteration cap.
+8. Automatically runs the retrospective after coding completes.
+
+## Outcomes And Exit Codes
+
+`ralph run` prints one terminal outcome:
+
+- `completed`
+- `blocked`
+- `failed`
+- `max_iterations`
+- `degraded`
+
+Current exit behavior is strict:
+
+- `completed` exits `0`
+- every other run outcome exits `1`
+
+`ralph retro` prints:
+
+- `completed` and exits `0`
+- `failed` and exits `1`
+
+`degraded` means the coding loop completed, but the retrospective phase failed.
+
+## Session Store
+
+Ralph stores feature-local control-plane state in `.ralph/sessions.sqlite3`.
+
+The database is the sole source of truth for session history and the active lock. It contains the current run state, older historical sessions, and the active lock row used to gate new runs.
+
+Legacy file-backed artifacts such as `.ralph/sessions/*.json`, `.ralph/sessions/current.json`, and `.ralph/lock` are ignored by this version of Ralph. They do not need to be migrated and do not affect startup.
+
+If a run is interrupted, start another `ralph run`. The new run can reclaim only a dead same-host lock; otherwise it respects the live lock state recorded in the database and begins a fresh session once startup is allowed.
+
+## Retrospective Behavior
+
+The retrospective phase reads the same feature folder and requires `ralph.txt`. It succeeds only when:
+
+- the agent exits with code `0`
+- `ralph.retro.md` exists after the run
+
+You can rerun it later:
+
+```bash
+ralph retro --feature-dir docs/plans/ralph-cli
+```
+
+That is the supported way to regenerate the retrospective output.
+
+## Legacy Shell Entry Point
+
+`./ralph/ralph.sh` remains a compatibility shim.
+
+Legacy usage:
+
+```bash
+./ralph/ralph.sh --feature-dir docs/plans/ralph-cli
+./ralph/ralph.sh --feature-dir docs/plans/ralph-cli --retro-only
+```
+
+The shim behavior is:
+
+- normal runs map to `ralph run`
+- `--retro-only` maps to `ralph retro`
+- `--retro-only` rejects `--max-iterations`
+- `--retro-only` rejects `--coding-model`
+- `PYTHON_BIN` can override the Python executable used by the shim
+
+The Python CLI is the primary interface. The shell entry point exists to preserve the older workflow.

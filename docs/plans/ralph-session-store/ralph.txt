@@ -1,0 +1,228 @@
+## Codebase Patterns
+- Run Ralph unittest discovery from the repository root with `PYTHONPATH=.` so `ralph.tests` resolves cleanly during `python -m unittest discover -s ralph/tests`.
+- When using `sqlite3` connections in Ralph code, commit on success and close explicitly; the connection context manager alone does not close the handle.
+- Use a singleton `active_lock` row in SQLite for run ownership, and only probe PID liveness for same-host locks.
+- Derive the current session with `ORDER BY updated_at DESC, session_id DESC` when the store can contain multiple incomplete historical sessions.
+- Run-only recovery should gate on the active lock state, reclaim only stale same-host locks, and ignore older incomplete sessions when starting a new session.
+- In lock-inspection tests, patch `ralph.session._current_hostname` and `ralph.session._process_is_running` to exercise same-host and remote-host branches deterministically.
+
+## [2026-05-12 14:46Z]
+- Task id
+  - TASK-001
+- What was implemented:
+  - Added `RunConfig.db_path` pointing at `<feature>/.ralph/sessions.sqlite3`.
+  - Removed the dataclass fields for `sessions_dir`, `current_session_path`, and `lock_path` from `RunConfig`.
+  - Kept read-only compatibility properties for the legacy paths so the current tree remains runnable while later tasks migrate call sites.
+- Files changed:
+  - `ralph/ralph/config.py`
+  - `docs/plans/ralph-session-store/tasks.json`
+  - `docs/plans/ralph-session-store/ralph.txt`
+- Verification:
+  - `make ralph-lint` -> passed.
+  - `make ralph-typecheck` -> passed.
+  - `make ralph-test` -> initially failed with `ModuleNotFoundError: No module named 'ralph.tests'` during unittest discovery.
+  - `PYTHONPATH=. make ralph-test` -> passed, 20 tests, OK.
+- Learnings for future iterations:
+  - `python -m unittest discover -s ralph/tests` in this checkout needs the repository root on `PYTHONPATH`; otherwise discovery imports lose `ralph.tests`.
+  - The config migration can be staged safely by adding `db_path` first and removing downstream file-store users in later tasks.
+- Scope deviations:
+  - None.
+- Follow up needed:
+  - TASK-002 and the downstream session/orchestrator tasks still need to migrate the runtime away from the legacy compatibility properties.
+---
+
+## [2026-05-12 14:56Z]
+- Task id
+  - TASK-002
+- What was implemented:
+  - Replaced the file-backed session persistence layer with a SQLite-backed store at `.ralph/sessions.sqlite3`.
+  - Stored session snapshots as rows in a `sessions` table and derived the current session from SQL ordering instead of a pointer file.
+  - Added schema initialization with `PRAGMA user_version` and kept the active-lock table in the same database for the later lock migration.
+- Files changed:
+  - `ralph/ralph/session.py`
+  - `ralph/tests/test_config.py`
+  - `ralph/tests/test_session.py`
+  - `ralph/tests/test_orchestrator_run.py`
+  - `docs/plans/ralph-session-store/tasks.json`
+  - `docs/plans/ralph-session-store/ralph.txt`
+- Verification:
+  - `PYTHONPATH=. make ralph-test` -> passed, 20 tests, OK.
+  - `PYTHONPATH=. make ralph-lint` -> passed.
+  - `PYTHONPATH=. make ralph-typecheck` -> passed.
+- Learnings for future iterations:
+  - SQLite connections need explicit close handling in this codebase; the connection context manager does not close the file descriptor.
+  - The latest session can be derived deterministically with `ORDER BY updated_at DESC, session_id DESC`.
+- Scope deviations:
+  - Updated `ralph/tests/test_config.py`, `ralph/tests/test_session.py`, and `ralph/tests/test_orchestrator_run.py` so the visible suite matches the SQLite-backed session store and no longer depends on `current.json`.
+- Follow up needed:
+  - TASK-003 still needs to move active-lock behavior onto the shared SQLite database.
+---
+
+## [2026-05-12 15:06Z]
+- Task id
+  - TASK-003
+- What was implemented:
+  - Moved active-lock persistence onto the shared SQLite database at `.ralph/sessions.sqlite3`.
+  - Changed lock inspection to derive state from the `active_lock` row, with same-host PID checks and stale detection based on dead processes instead of heartbeat freshness windows.
+  - Updated the session-store test that previously depended on a pre-existing lock file so it now asserts lock-row refusal and release behavior.
+- Files changed:
+  - `ralph/ralph/session.py`
+  - `ralph/tests/test_session.py`
+  - `docs/plans/ralph-session-store/tasks.json`
+  - `docs/plans/ralph-session-store/ralph.txt`
+- Verification:
+  - `PYTHONPATH=. make ralph-test` -> passed, 20 tests, OK.
+  - `PYTHONPATH=. make ralph-lint` -> passed.
+  - `PYTHONPATH=. make ralph-typecheck` -> passed.
+- Learnings for future iterations:
+  - SQLite can enforce the singleton lock invariant cleanly with a fixed primary key on `active_lock`.
+  - Same-host stale-lock detection no longer needs a freshness window once PID liveness is the deciding factor.
+- Scope deviations:
+  - Updated `ralph/tests/test_session.py` so the repository’s visible test suite matches the SQLite-backed lock contract.
+  - Updated `docs/plans/ralph-session-store/tasks.json` to keep the task file list aligned with the actual touched files.
+- Follow up needed:
+  - TASK-004 still needs to remove `resume` control flow from the orchestrator and stop depending on heartbeat refresh semantics.
+---
+
+## [2026-05-12 15:12Z]
+- Task id
+  - TASK-004
+- What was implemented:
+  - Refactored the orchestrator to start a fresh session on every `run()` invocation, reclaim only stale same-host locks, and drive the code and retro phases without heartbeat refreshes.
+  - Removed the resume-oriented control flow from the public lifecycle export surface by turning `resume()` into a compatibility alias outside `__all__`.
+  - Expanded the run lifecycle integration coverage so fresh-session creation after a stopped run, stale-lock takeover, live-lock rejection, blocked runs, degraded retros, and completed runs are all exercised against the SQLite-backed store.
+- Files changed:
+  - `ralph/ralph/lifecycle/orchestrator.py`
+  - `ralph/tests/test_orchestrator_run.py`
+  - `ralph/tests/test_orchestrator_resume.py`
+  - `docs/plans/ralph-session-store/tasks.json`
+  - `docs/plans/ralph-session-store/ralph.txt`
+- Verification:
+  - `PYTHONPATH=. make ralph-test` -> passed, 19 tests, OK.
+  - `PYTHONPATH=. make ralph-lint` -> passed (`All checks passed!`).
+  - `PYTHONPATH=. make ralph-typecheck` -> passed (`Success: no issues found in 22 source files`).
+- Learnings for future iterations:
+  - The code phase still requires `tasks.json` to flip all entries to `completed` before `RALPH_STATUS=COMPLETE` is accepted, so multi-step run tests need to mutate the tasks file between code invocations.
+  - Stale same-host lock takeover is easiest to exercise by patching `ralph.session._current_hostname` and `ralph.session._process_is_running` in the integration test.
+- Scope deviations:
+  - Broadened the task-4 scope to include the run lifecycle integration tests so the repo stayed green after removing resume-oriented lifecycle behavior.
+- Follow up needed:
+  - TASK-005 still needs to remove the CLI resume subcommand and import path.
+---
+
+## [2026-05-12 15:12Z]
+- Task id
+  - TASK-008
+- What was implemented:
+  - Replaced the resume-oriented lifecycle integration coverage with run-only scenarios that validate fresh-session creation, stale same-host lock reclamation, live-lock rejection, blocked runs, degraded retros, and unchanged completed outcomes.
+  - Deleted the obsolete resume-specific lifecycle test file after the orchestrator moved to a run-only contract.
+- Files changed:
+  - `ralph/tests/test_orchestrator_run.py`
+  - `ralph/tests/test_orchestrator_resume.py`
+  - `docs/plans/ralph-session-store/tasks.json`
+  - `docs/plans/ralph-session-store/ralph.txt`
+- Verification:
+  - `PYTHONPATH=. make ralph-test` -> passed, 19 tests, OK.
+  - `PYTHONPATH=. make ralph-lint` -> passed.
+  - `PYTHONPATH=. make ralph-typecheck` -> passed.
+- Learnings for future iterations:
+  - The run-only lifecycle tests can stay deterministic by scripting the agent responses and mutating `tasks.json` mid-test rather than introducing subprocess-backed orchestration.
+  - A fresh run after a stopped session is best asserted by comparing the latest session id to the seeded historical session and then loading the historical row directly from SQLite.
+- Scope deviations:
+  - None beyond the lifecycle test file replacement required by the run-only migration.
+- Follow up needed:
+  - TASK-009 still needs the final repo-root verification pass after the remaining migration tasks complete.
+---
+
+## [2026-05-12 15:15Z]
+- Task id
+  - TASK-005
+- What was implemented:
+  - Removed the `resume` subcommand from the Ralph CLI parser.
+  - Deleted the CLI import and handler that called the orchestrator resume alias.
+  - Updated the `run` help text to describe interrupted-work recovery as a fresh `ralph run`.
+- Files changed:
+  - `ralph/ralph/cli.py`
+  - `docs/plans/ralph-session-store/tasks.json`
+  - `docs/plans/ralph-session-store/ralph.txt`
+- Verification:
+  - `PYTHONPATH=. make ralph-test` -> passed, 19 tests, OK.
+  - `PYTHONPATH=. make ralph-lint` -> passed (`All checks passed!`).
+  - `PYTHONPATH=. make ralph-typecheck` -> passed (`Success: no issues found in 22 source files`).
+- Learnings for future iterations:
+  - The user-facing CLI contract can diverge from compatibility aliases that remain in lower layers, so parser registration and import cleanup are the important public-surface checks.
+- Scope deviations:
+  - None.
+- Follow up needed:
+  - TASK-006 still needs the run-only SQLite session documentation refresh.
+---
+
+## [2026-05-12 15:17Z]
+- Task id
+  - TASK-006
+- What was implemented:
+  - Rewrote the Ralph README to describe the run-only SQLite-backed session store contract.
+  - Removed the `resume` command example and documented fresh-run recovery instead.
+  - Replaced the old session-files section with a SQLite session-store description that points at `.ralph/sessions.sqlite3`.
+- Files changed:
+  - `ralph/README.md`
+  - `docs/plans/ralph-session-store/tasks.json`
+  - `docs/plans/ralph-session-store/ralph.txt`
+- Verification:
+  - `PYTHONPATH=. make ralph-test` -> passed, 19 tests, OK.
+  - `PYTHONPATH=. make ralph-lint` -> passed (`All checks passed!`).
+  - `PYTHONPATH=. make ralph-typecheck` -> passed (`Success: no issues found in 22 source files`).
+  - `rg -n 'resume|\\.ralph/lock|current\\.json|sessions/\\*\\.json' ralph/README.md` -> no `resume` references; remaining legacy-artifact mentions are the explicit "ignored by this version" note.
+- Learnings for future iterations:
+  - The user guide should frame interrupted-work recovery as a fresh `ralph run` against the SQLite database, not as a separate recovery flow.
+  - It is safe to document legacy file-backed artifacts as ignored when the implementation has already switched to SQLite-only startup behavior.
+- Scope deviations:
+  - None.
+- Follow up needed:
+  - TASK-009 still needs the final repo-root verification pass once the remaining feature tasks are complete.
+---
+
+## [2026-05-12 15:19Z]
+- Task id
+  - TASK-007
+- What was implemented:
+  - Rewrote the session-store unit coverage to assert SQLite-backed behavior directly.
+  - Added explicit latest-session ordering coverage using multiple sessions with controlled timestamps.
+  - Added lock inspection coverage for active same-host locks, stale same-host locks, remote-host locks, acquire/release behavior, and ignored legacy artifacts on disk.
+- Files changed:
+  - `ralph/tests/test_session.py`
+  - `docs/plans/ralph-session-store/tasks.json`
+  - `docs/plans/ralph-session-store/ralph.txt`
+- Verification:
+  - `PYTHONPATH=. make ralph-test` -> passed, 20 tests, OK.
+  - `PYTHONPATH=. make ralph-lint` -> passed, `All checks passed!`.
+  - `PYTHONPATH=. make ralph-typecheck` -> passed, `Success: no issues found in 22 source files`.
+- Learnings for future iterations:
+  - Latest-session behavior is easiest to prove by seeding sessions with the same timestamp first, then updating an older row to move it ahead of the SQL ordering.
+  - Remote-host lock inspection should assert that `_process_is_running` is never called, because liveness checks are same-host only.
+- Scope deviations:
+  - None.
+- Follow up needed:
+  - TASK-009 still needs the final repo-root verification pass after the remaining feature tasks are complete.
+---
+
+## [2026-05-12 15:21Z]
+- Task id
+  - TASK-009
+- What was implemented:
+  - Ran the repository-root Ralph verification targets and confirmed the completed migration still passes the canonical checks.
+  - Marked the final verification task complete in `tasks.json`.
+- Files changed:
+  - `docs/plans/ralph-session-store/tasks.json`
+  - `docs/plans/ralph-session-store/ralph.txt`
+- Verification:
+  - `PYTHONPATH=. make ralph-test` -> passed, 20 tests, OK.
+  - `PYTHONPATH=. make ralph-lint` -> passed, `All checks passed!`.
+  - `PYTHONPATH=. make ralph-typecheck` -> passed, `Success: no issues found in 22 source files`.
+- Learnings for future iterations:
+  - Repo-root Ralph checks continue to require `PYTHONPATH=.` in this worktree so unittest discovery can resolve `ralph.tests`.
+- Scope deviations:
+  - None.
+- Follow up needed:
+  - None.
+---
