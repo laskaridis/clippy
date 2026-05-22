@@ -453,7 +453,7 @@
       "title": "Add automated verification for the Ralph harness MVP",
       "objective": "Create the focused automated test coverage that proves the new CLI, orchestrator, step parsing, logging, and wrapper behaviors match the MVP contract.",
       "type": "validation",
-      "status": "pending",
+      "status": "completed",
       "story_addressed": "UC-003",
       "requirements_addressed": [
         "FR-001",
@@ -485,6 +485,7 @@
         "NFR-007"
       ],
       "files": [
+        "ralph/tests/__init__.py",
         "ralph/tests/test_cli.py",
         "ralph/tests/test_agents.py",
         "ralph/tests/test_code_step.py",

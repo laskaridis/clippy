@@ -8,6 +8,8 @@
 - Keep shell compatibility wrappers as pure translators that `exec` the Python module entrypoint, so the wrapper preserves the underlying exit code and never reimplements lifecycle logic.
 - When a wrapper must import the local checkout from arbitrary launch directories, prepend the repository root to `PYTHONPATH` before the `exec` call instead of changing the caller's working directory.
 - When a migration shell wrapper remains, document the Python CLI as the canonical entrypoint and describe the wrapper as compatibility-only.
+- Keep `ralph/tests` as an importable package when using `unittest discover`; a bare test directory will not be discovered from the repo root.
+- When testing frozen dataclasses, patch class-level methods rather than instance attributes so `unittest.mock` does not trip over generated `__setattr__` methods.
 
 ## [2026-05-22 12:30:23 EEST]
 - Task id
@@ -30,6 +32,35 @@
   - If the wrapper is launched from outside the repository root, adding the repo root to `PYTHONPATH` is enough to import the local package without changing the caller's working directory.
 - Scope deviations:
   - None.
+- Follow up needed:
+  - None.
+---
+## [2026-05-22 12:41:20 EEST]
+- Task id
+  - TASK-009
+- What was implemented:
+  - Added a focused `unittest` suite under `ralph/tests` covering CLI parsing and defaults, built-in agent registry and Codex invocation, Code step JSON validation, orchestrator transitions and setup checks, terminal and JSONL logging, and shell-wrapper delegation.
+  - Added `ralph/tests/__init__.py` so `unittest discover` can import the suite from the repository root.
+- Files changed:
+  - `ralph/tests/__init__.py`
+  - `ralph/tests/test_cli.py`
+  - `ralph/tests/test_agents.py`
+  - `ralph/tests/test_code_step.py`
+  - `ralph/tests/test_orchestrator.py`
+  - `ralph/tests/test_logging.py`
+  - `ralph/tests/test_wrapper.py`
+  - `docs/plans/ralph-harness/tasks.json`
+  - `docs/plans/ralph-harness/ralph.txt`
+- Verification:
+  - `python -m unittest discover -s ralph/tests -t . -v` passed with 20 tests.
+  - `python -m compileall ralph` passed.
+  - `git diff --check` passed.
+  - `python -m ralph run --help >/dev/null` passed.
+- Learnings for future iterations:
+  - `unittest discover` needs `ralph/tests` to be an importable package in this repo, so a package marker keeps the suite runnable without custom loaders.
+  - When testing frozen dataclasses, patch class-level methods rather than instance attributes because `unittest.mock.patch.object` can trip over generated `__setattr__` methods.
+- Scope deviations:
+  - `ralph/tests/__init__.py` was added even though it was not listed in the task files array, because it is required for standard `unittest discover` to import the new suite.
 - Follow up needed:
   - None.
 ---
