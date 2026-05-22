@@ -1,6 +1,7 @@
 ## Codebase Patterns
 - When multiple editable installs expose the same top-level package, verify `sys.meta_path` ordering; distribution naming can affect which checkout wins.
 - Use frozen dataclasses for run-context and terminal outcome types so orchestration state stays immutable and easy to reason about.
+- Keep built-in registries static and expose a dedicated lookup helper that raises a specific unknown-item error so callers can fail fast without inspecting the mapping directly.
 
 ## [2026-05-22 11:59:04 EEST]
 - Task id
@@ -44,6 +45,30 @@
 - Learnings for future iterations:
   - Frozen dataclasses plus `Literal`-typed outcome fields give a compact contract layer that is easy to extend without introducing hidden mutation.
   - Keeping the run identifier on the immutable run context makes later logging and orchestration code simpler because all shared run metadata travels together.
+- Scope deviations:
+  - None.
+- Follow up needed:
+  - None.
+---
+## [2026-05-22 12:09:37 EEST]
+- Task id
+  - TASK-003
+- What was implemented:
+  - Added the `ralph.agents` package with a typed `AgentRequest`/`AgentResult` contract and a protocol for built-in agent implementations.
+  - Added a static built-in registry that resolves `codex` and raises `UnknownAgentError` for unknown names.
+  - Implemented `CodexAgent` as a single AFK subprocess invocation that preserves the Codex raw response file content and process metadata.
+- Files changed:
+  - `ralph/agents/__init__.py`
+  - `ralph/agents/base.py`
+  - `ralph/agents/codex.py`
+  - `docs/plans/ralph-harness/tasks.json`
+  - `docs/plans/ralph-harness/ralph.txt`
+- Verification:
+  - `python -m compileall ralph` completed successfully.
+  - A direct import probe resolved `codex`, rejected an unknown agent with `UnknownAgentError`, and instantiated `AgentRequest` with the expected typed fields.
+- Learnings for future iterations:
+  - Static built-in registries are a clean fit for Ralph because the spec wants fast failure for unknown names and no runtime discovery.
+  - The Codex adapter should capture the output file before cleanup so later steps can parse the raw agent response reliably.
 - Scope deviations:
   - None.
 - Follow up needed:
