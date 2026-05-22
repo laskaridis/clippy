@@ -2,67 +2,104 @@
 
 Ralph is a lightweight autonomous implementation loop for coding.
 
-To use it, all you need to do is point him to a folder that contains two files:
-- A feature description file: `spec.md`
-- A task list file: `tasks.json`
+Use the Python CLI entrypoint `ralph run <path>` against a feature directory that contains:
 
-For retrospective-only runs, the same feature folder must also contain `ralph.txt`.
+- `spec.md`
+- `tasks.json`
+
+The progress log `ralph.txt` is still the traceability file used during runs, and should live in the same feature folder.
+
+The legacy `ralph/ralph.sh` script remains only as a compatibility wrapper. It translates supported legacy run flags into the Python CLI and rejects retired retrospective flags.
 
 ## What Ralph does
 
-For each iteration, Ralph:
+For each run, Ralph:
 
-1. Reads the spec and tasks to understand the context
-2. Picks the next task and implements it.
-4. Continues looping until completion, blockage, or the max iteration limit.
-6. After finishing, ralph will reflect on its work and identify points for improvement.
+1. Reads the spec and task list to understand the feature context.
+2. Picks the next eligible task and implements one coding iteration at a time.
+3. Reports clear progress in the terminal.
+4. Optionally writes a machine-readable JSONL event log.
+5. Stops when the workflow completes, becomes blocked, fails, or reaches the max-iterations limit.
 
-Througought the process, ralph tracks progress by leaving notes to himself in a file (`ralph.txt`) which can be used to audit his actions.
-
-At any point that ralph gets stuck, it will escalate to a human to sort things out.
-
-## Current lifecycle
-
-Ralph currently has a simple three-phase lifecycle:
-
-1. Setup
-   Ralph validates CLI arguments, resolves the feature directory, and ensures the required prompt and feature files exist for the selected mode.
-2. Implementation loop
-   Ralph repeatedly runs Codex for one task at a time until the agent reports `CONTINUE`, `COMPLETE`, or `BLOCKED`.
-3. Retrospective
-   When the agent reports `COMPLETE`, Ralph runs a second Codex pass using `prompts/retro.md`, which writes a `ralph.retro.md` review for the finished feature.
-
-Ralph also supports a retrospective-only entrypoint that skips the implementation loop and runs the retrospective directly against an existing feature folder.
-
-## Current status and boundaries
-
-Ralph is currently a prompt-driven implementation harness, not a standalone service or framework. It does not manage task planning itself; it assumes a feature folder has already been prepared with a usable `spec.md` and `tasks.json`.
-
-Its current control model is intentionally narrow:
-
-- one task per iteration
-- status-driven loop control via the first response line
-- success only when the agent explicitly reports completion
-- retrospective after successful completion, or directly via `--retro-only`
-
-If the agent reports `BLOCKED`, if Codex execution fails, or if the iteration cap is reached without completion, Ralph exits without performing the retrospective.
+Ralph does not run a retrospective in the MVP Python CLI.
 
 ## CLI usage
 
-Full lifecycle run:
+Primary entrypoint:
 
 ```bash
-./ralph/ralph.sh --feature-dir specs/my-feature
+ralph run path/to/feature
 ```
 
-Retrospective only:
+The same execution path is also available through:
 
 ```bash
-./ralph/ralph.sh --feature-dir specs/my-feature --retro-only
+python -m ralph run path/to/feature
 ```
+
+Supported `run` flags:
+
+- `--agent codex` - built-in agent name, default `codex`
+- `--model gpt-5.4` - model name passed through to the selected agent, default `gpt-5.4`
+- `--max-iterations 50` - maximum number of code-step iterations to run, default `50`
+- `--log path/to/events.jsonl` - optional JSONL event log path
 
 Notes:
 
-- `--feature-dir` is always required and must be relative to the current working directory.
-- `--retro-only` requires `spec.md`, `tasks.json`, `ralph.txt`, and `prompts/retro.md`.
-- `--retro-only` cannot be combined with `--max-iterations` or `--coding-model`.
+- `feature_dir` is a positional argument and must point to the feature directory for the run.
+- The CLI validates that the feature directory exists and contains `spec.md` and `tasks.json` before any agent execution starts.
+- If `--log` is provided and the file cannot be opened, Ralph exits with a setup error.
+- The shell wrapper accepts `--feature-dir`, `--max-iterations`, and `--coding-model` for migration purposes only. Retired retrospective flags such as `--retro-only` and `--retro-model` fail fast with explicit migration errors.
+
+## Terminal output
+
+Ralph always prints human-readable progress in the terminal.
+
+The terminal output covers:
+
+- run start
+- step start
+- agent invocation
+- step finish
+- final run outcome
+
+Blocked runs print the blocker text exactly as returned by the workflow. Failed runs print the failure summary. Setup and usage errors are reported as distinct terminal errors.
+
+## JSONL logging
+
+When `--log <path>` is set, Ralph appends one JSON object per line to the requested file.
+
+The JSONL schema is stable and every record includes:
+
+- `event`
+- `timestamp`
+- `run_id`
+
+Required event types:
+
+- `run_started`
+- `step_started`
+- `agent_invoked`
+- `step_finished`
+- `run_finished`
+
+Event-specific fields are added as needed:
+
+- `run_started` includes `feature_dir`, `agent_name`, `model`, and `max_iterations`
+- `step_started` includes `iteration` and `step_id`
+- `agent_invoked` includes `iteration`, `step_id`, `agent_name`, and `model`
+- `step_finished` includes `iteration`, `step_id`, `outcome`, and optional `blocker_text`, `failure_summary`, or `raw_response`
+- `run_finished` includes `outcome`, `iterations`, and optional `message`, `blocker_text`, `failure_summary`, `raw_response`, or `missing_artifacts`
+
+If a step fails because the agent response cannot be parsed or validated, the raw agent response is preserved in the log record.
+
+## Exit behavior
+
+Ralph uses deterministic exit codes:
+
+- `0` - successful completion
+- `1` - failed termination
+- `2` - invalid usage or setup error
+- `3` - blocked termination
+
+Setup errors include missing feature directories, missing required workflow artifacts, and JSONL log-path open failures.
