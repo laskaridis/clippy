@@ -62,7 +62,7 @@
       "title": "Define immutable run and lifecycle contracts",
       "objective": "Introduce the shared typed contracts that let the CLI, orchestrator, workflow steps, and agents interact without hidden mutable state.",
       "type": "implementation",
-      "status": "pending",
+      "status": "completed",
       "story_addressed": "UC-003",
       "requirements_addressed": [
         "FR-011",
