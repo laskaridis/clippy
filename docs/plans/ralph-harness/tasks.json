@@ -1,0 +1,539 @@
+{
+  "spec_path": "docs/plans/ralph-harness/spec.md",
+  "tasks": [
+    {
+      "id": "TASK-001",
+      "title": "Create the installable Ralph CLI entrypoint",
+      "objective": "Add the Python package scaffold and `ralph run <path>` command surface that becomes the stable public entrypoint for the harness.",
+      "type": "implementation",
+      "status": "pending",
+      "story_addressed": "UC-001",
+      "requirements_addressed": [
+        "FR-001",
+        "FR-002",
+        "FR-003",
+        "FR-004",
+        "FR-005",
+        "FR-016",
+        "NFR-002"
+      ],
+      "files": [
+        "pyproject.toml",
+        "ralph/__init__.py",
+        "ralph/__main__.py",
+        "ralph/cli.py"
+      ],
+      "out_of_scope": [
+        "Do not implement lifecycle looping or step execution logic in this task.",
+        "Do not modify `backend/pyproject.toml` or backend packaging.",
+        "Do not keep any retrospective-only CLI mode in the new Python interface."
+      ],
+      "existing_context": [
+        "The repository currently exposes Ralph only through `ralph/ralph.sh`.",
+        "The spec requires the stable public command shape `ralph run <path>`.",
+        "The glossary in `ralph/CONTEXT.md` defines the CLI as the owner of command parsing and exit-code mapping."
+      ],
+      "constraints": [
+        "The primary public entrypoint must be `ralph run <path>` rather than legacy flag-only invocation.",
+        "Parse `--agent`, `--model`, `--max-iterations`, and `--log` on the `run` subcommand and pass them into the run context unchanged.",
+        "Expose defaults of `codex` for `--agent` and `gpt-5.4` for `--model` at the CLI layer.",
+        "Keep the CLI package rooted under `ralph/` while using a repository-root package manifest to expose the console script."
+      ],
+      "implementation_guidelines": [
+        "Create a repository-root `pyproject.toml` that installs a console-script entrypoint named `ralph` and points it at the Python CLI main function.",
+        "Implement `ralph/__main__.py` so `python -m ralph` and the console script share the same execution path.",
+        "Model the `run` subcommand as a thin adapter that validates command-line syntax and forwards typed values to the orchestrator layer.",
+        "Keep help text and argument names aligned with the spec wording so later wrapper delegation is mechanical."
+      ],
+      "acceptance_criteria": [
+        "The repository contains a Python package entrypoint that exposes `ralph run <path>` through both `python -m ralph` and a console-script definition.",
+        "The `run` subcommand help text documents `--agent`, `--model`, `--max-iterations`, and `--log`.",
+        "The CLI layer defines `codex` as the default agent and `gpt-5.4` as the default model when the user omits both flags.",
+        "No lifecycle loop, prompt execution, or shell-wrapper compatibility logic is implemented inside `ralph/cli.py`."
+      ],
+      "assumptions": [
+        "Adding a repository-root `pyproject.toml` for the Ralph package is acceptable even though the backend already has its own `backend/pyproject.toml`.",
+        "A dedicated retrospective command is intentionally excluded from the MVP because the spec limits the public CLI to `run` mode."
+      ],
+      "dependencies": []
+    },
+    {
+      "id": "TASK-002",
+      "title": "Define immutable run and lifecycle contracts",
+      "objective": "Introduce the shared typed contracts that let the CLI, orchestrator, workflow steps, and agents interact without hidden mutable state.",
+      "type": "implementation",
+      "status": "pending",
+      "story_addressed": "UC-003",
+      "requirements_addressed": [
+        "FR-011",
+        "FR-018",
+        "NFR-001",
+        "NFR-005",
+        "NFR-007"
+      ],
+      "files": [
+        "ralph/lifecycle.py",
+        "ralph/orchestrator.py"
+      ],
+      "out_of_scope": [
+        "Do not implement the Code step prompt flow in this task.",
+        "Do not execute any agent process in this task.",
+        "Do not wire shell-wrapper argument translation in this task."
+      ],
+      "existing_context": [
+        "The spec defines `Step`, `Step result`, and `Run context` as the core lifecycle contracts.",
+        "The glossary in `ralph/CONTEXT.md` requires the run context to be immutable and to include a stable run identifier.",
+        "The spec requires deterministic exit outcomes for success, blocked, failure, and invalid usage or setup errors."
+      ],
+      "constraints": [
+        "The only valid step outcomes are `repeat`, `complete`, `blocked`, and `fail`.",
+        "The run context must be immutable after creation and must include the feature directory, selected agent, selected model, max-iterations limit, and stable `run_id`.",
+        "Exit outcomes must be representable without inspecting workflow artifact contents.",
+        "Keep lifecycle contracts independent of any specific agent implementation."
+      ],
+      "implementation_guidelines": [
+        "Define typed data structures for step results, run outcomes, and the immutable run context before implementing orchestration behavior.",
+        "Keep the run identifier generation contract inside the orchestrator-facing types so observability and tests can rely on one source of truth.",
+        "Represent blocked and failed terminal states separately so the CLI can map them to distinct exit codes later.",
+        "Document any serialization-facing fields that will be reused by the JSONL logger."
+      ],
+      "acceptance_criteria": [
+        "The lifecycle module exposes a structured step-result type whose allowed outcomes are limited to `repeat`, `complete`, `blocked`, and `fail`.",
+        "The orchestrator-facing run-context type is immutable and includes a stable `run_id` plus all shared run inputs named in the spec.",
+        "The codebase contains a distinct representation for successful completion, blocked termination, failed termination, and usage or setup errors.",
+        "No lifecycle contract type depends on a concrete Codex command line or prompt file path."
+      ],
+      "assumptions": [
+        "The optional `--log` destination can live on the run context as nullable metadata because it does not violate run-context immutability.",
+        "A deterministic iteration-cap termination will be modeled as a failure outcome rather than a blocked outcome."
+      ],
+      "dependencies": [
+        "TASK-001"
+      ]
+    },
+    {
+      "id": "TASK-003",
+      "title": "Implement the built-in agent registry and Codex runner",
+      "objective": "Add the built-in agent abstraction and the MVP `codex` implementation that performs one AFK prompt invocation per request.",
+      "type": "implementation",
+      "status": "pending",
+      "story_addressed": "UC-003",
+      "requirements_addressed": [
+        "FR-002",
+        "FR-003",
+        "FR-004",
+        "FR-005",
+        "FR-009",
+        "FR-020",
+        "NFR-001"
+      ],
+      "files": [
+        "ralph/agents/__init__.py",
+        "ralph/agents/base.py",
+        "ralph/agents/codex.py"
+      ],
+      "out_of_scope": [
+        "Do not add support for runtime-discovered or user-defined agents.",
+        "Do not implement orchestration retry logic in this task.",
+        "Do not parse the Code step JSON contract in this task."
+      ],
+      "existing_context": [
+        "The current shell script invokes Codex directly with non-interactive approval flags.",
+        "The spec fixes the built-in agent registry to static names and declares `codex` as the default.",
+        "The glossary in `ralph/CONTEXT.md` distinguishes agent execution from workflow-step logic."
+      ],
+      "constraints": [
+        "Agent lookup must be by built-in name and must fail fast for unknown names.",
+        "Each agent execution must issue exactly one prompt invocation and return exactly one structured agent result.",
+        "The Codex implementation must run in AFK mode without interactive approval prompts.",
+        "The selected model must be passed through from the run context without the workflow layer renaming it."
+      ],
+      "implementation_guidelines": [
+        "Define an agent interface that accepts the prompt payload plus typed run metadata and returns a structured result with raw stdout or response text.",
+        "Centralize the built-in registry so the CLI or orchestrator can validate the requested agent name without hard-coding `codex` in multiple places.",
+        "Carry enough process metadata in the agent result to distinguish successful execution from transport or subprocess failure.",
+        "Mirror the current shell harness AFK behavior instead of inventing any approval or sandbox configuration knobs."
+      ],
+      "acceptance_criteria": [
+        "The agents module exposes a built-in registry that resolves `codex` and rejects unknown names before workflow execution continues.",
+        "The Codex agent implementation performs a single non-interactive invocation per request and accepts the caller-selected model value.",
+        "Agent execution returns a structured result that preserves the raw response text for later parsing and logging.",
+        "No user-configurable agent plugin or discovery mechanism is introduced."
+      ],
+      "assumptions": [
+        "The MVP can continue using the existing Codex AFK execution style as the behavioral baseline for the first built-in agent.",
+        "Subprocess-level failures from Codex should surface as failed agent results rather than thrown uncaught exceptions."
+      ],
+      "dependencies": [
+        "TASK-002"
+      ]
+    },
+    {
+      "id": "TASK-004",
+      "title": "Implement the single-iteration Code step contract",
+      "objective": "Build the Code step so it loads the built-in prompt, invokes the selected agent once, and converts only strict JSON responses into step results.",
+      "type": "implementation",
+      "status": "pending",
+      "story_addressed": "UC-003",
+      "requirements_addressed": [
+        "FR-008",
+        "FR-009",
+        "FR-010",
+        "FR-011",
+        "NFR-001",
+        "NFR-006"
+      ],
+      "files": [
+        "ralph/workflow/__init__.py",
+        "ralph/workflow/code.py",
+        "ralph/prompts/code.md"
+      ],
+      "out_of_scope": [
+        "Do not add any retrospective step or follow-up workflow step.",
+        "Do not let the orchestrator inspect `tasks.json` directly in this task.",
+        "Do not let the harness write or normalize `ralph.txt` contents in this task."
+      ],
+      "existing_context": [
+        "The existing prompt template already lives at `ralph/prompts/code.md`.",
+        "The spec assigns task selection and prompt construction to the Code step, not to the orchestrator.",
+        "The glossary in `ralph/CONTEXT.md` defines the Code step as exactly one coding iteration."
+      ],
+      "constraints": [
+        "The Code step must perform exactly one agent invocation per execution.",
+        "Only a JSON-only agent response may be parsed successfully; surrounding prose or malformed content must be rejected.",
+        "The converted step result may expose only `repeat`, `complete`, `blocked`, or `fail` outcomes.",
+        "Prompt handling must keep workflow artifacts such as `ralph.txt` model-managed rather than harness-managed."
+      ],
+      "implementation_guidelines": [
+        "Load the checked-in code-step prompt template from `ralph/prompts/code.md` and substitute the feature-directory input without re-embedding the prompt text in Python.",
+        "Treat any agent subprocess failure as a `fail` step result with a concise failure summary and preserved raw response metadata.",
+        "Validate the entire returned payload as JSON rather than scanning for a sentinel line or parsing partial text.",
+        "Convert valid JSON responses into typed step results and reject any unexpected status value or missing required field."
+      ],
+      "acceptance_criteria": [
+        "Executing the Code step reads the checked-in prompt template and issues exactly one agent call.",
+        "A JSON payload that matches the step contract is converted into a structured step result with one of the four allowed outcomes.",
+        "A response that includes extra prose, malformed JSON, or an unknown outcome is rejected as a failed step result.",
+        "The harness-side Code step code does not create, truncate, or rewrite `ralph.txt`."
+      ],
+      "assumptions": [
+        "Leading and trailing whitespace around an otherwise valid JSON document may be trimmed before validation, but any non-whitespace wrapper text must be rejected.",
+        "If prompt-template edits are required, they should be limited to placeholder compatibility with the new Python step implementation."
+      ],
+      "dependencies": [
+        "TASK-002",
+        "TASK-003"
+      ]
+    },
+    {
+      "id": "TASK-005",
+      "title": "Implement the hard-coded run orchestrator",
+      "objective": "Add the Ralph lifecycle orchestrator that validates required artifacts, runs the Code step loop, and terminates with deterministic outcomes.",
+      "type": "implementation",
+      "status": "pending",
+      "story_addressed": "UC-001",
+      "requirements_addressed": [
+        "FR-001",
+        "FR-006",
+        "FR-007",
+        "FR-012",
+        "FR-013",
+        "FR-014",
+        "FR-015",
+        "NFR-004",
+        "NFR-005",
+        "NFR-007"
+      ],
+      "files": [
+        "ralph/orchestrator.py",
+        "ralph/cli.py"
+      ],
+      "out_of_scope": [
+        "Do not add runtime-configurable workflow composition or additional step types.",
+        "Do not inspect or validate the internal contents of `spec.md` or `tasks.json` beyond required-file existence.",
+        "Do not add retrospective execution paths."
+      ],
+      "existing_context": [
+        "The spec hard-codes a single-step MVP workflow whose only step id is `code`.",
+        "The current shell script already validates feature-directory existence and required files before execution.",
+        "The glossary in `ralph/CONTEXT.md` states that workflow transitions belong only to the orchestrator."
+      ],
+      "constraints": [
+        "The orchestrator must validate that the feature directory exists and contains `spec.md` and `tasks.json` before invoking any step.",
+        "A `repeat` step result reruns the last executed step, which is the Code step in the MVP.",
+        "A `complete` result ends the run successfully when no follow-up step exists.",
+        "A `blocked` result must print the blocker text exactly as returned, and a `fail` result must print the failure summary with a failure exit outcome."
+      ],
+      "implementation_guidelines": [
+        "Keep the MVP transition table explicit in code instead of deriving it from configuration or workflow artifacts.",
+        "Track iterations in the orchestrator so `--max-iterations` is enforced independently of the Code step prompt.",
+        "Return typed run outcomes to the CLI rather than calling `sys.exit()` from deep inside the orchestrator.",
+        "Handle the iteration cap as a deterministic terminal failure with a human-readable summary."
+      ],
+      "acceptance_criteria": [
+        "Starting a run against a missing directory or a directory missing `spec.md` or `tasks.json` stops before any agent invocation.",
+        "A `repeat` Code-step result causes the orchestrator to rerun the Code step until a non-repeat terminal outcome or the iteration cap is reached.",
+        "A `complete` result from the Code step ends the run successfully because no follow-up step exists in the MVP.",
+        "Blocked, failed, and iteration-cap terminations are distinguishable from successful completion through deterministic run outcomes and CLI exit-code mapping."
+      ],
+      "assumptions": [
+        "Reaching the iteration cap is treated as a failed termination rather than a blocked termination because the spec only reserves blocked for agent-supplied unblock text.",
+        "Setup errors such as a missing feature directory will use the invalid usage or setup exit path rather than the workflow failure path."
+      ],
+      "dependencies": [
+        "TASK-002",
+        "TASK-004"
+      ]
+    },
+    {
+      "id": "TASK-006",
+      "title": "Add terminal progress output and JSONL event logging",
+      "objective": "Implement the always-on human-readable run reporting and the optional stable JSONL event stream for machine consumers.",
+      "type": "implementation",
+      "status": "pending",
+      "story_addressed": "UC-002",
+      "requirements_addressed": [
+        "FR-016",
+        "FR-017",
+        "FR-018",
+        "NFR-003",
+        "NFR-007"
+      ],
+      "files": [
+        "ralph/logging.py",
+        "ralph/orchestrator.py",
+        "ralph/cli.py"
+      ],
+      "out_of_scope": [
+        "Do not make machine-readable logging enabled by default.",
+        "Do not mutate workflow artifacts such as `ralph.txt` to store run events.",
+        "Do not change the step-result contract to accommodate logging-only fields."
+      ],
+      "existing_context": [
+        "The shell harness currently prints human-readable progress directly from Bash.",
+        "The spec requires console output on every run and JSONL only when `--log <path>` is provided.",
+        "The stable `run_id` introduced on the run context must appear in every event record."
+      ],
+      "constraints": [
+        "Human-readable terminal progress is always enabled even when JSONL logging is disabled.",
+        "The JSONL event schema must remain stable and must emit at least `run_started`, `step_started`, `agent_invoked`, `step_finished`, and `run_finished`.",
+        "Every JSONL record must include the stable `run_id` plus timestamp and relevant step or agent context.",
+        "When a step fails because an agent response cannot be parsed or validated, the JSONL stream must preserve the raw failed agent response."
+      ],
+      "implementation_guidelines": [
+        "Keep the event-writer implementation separate from the terminal presenter so tests can assert the JSONL contract without parsing ANSI text.",
+        "Emit events from the orchestrator and step boundaries instead of from the shell wrapper.",
+        "Attach the raw agent response only on failure paths that need debugging evidence rather than on every successful event.",
+        "Open the JSONL file only when `--log` is set and append one valid JSON object per line."
+      ],
+      "acceptance_criteria": [
+        "A normal run prints clear terminal messages for run start, step progress, agent usage, and final outcome even when `--log` is omitted.",
+        "A run started with `--log <path>` writes newline-delimited JSON objects whose event types include the five required schema events.",
+        "Every emitted JSONL record contains the stable `run_id` from the immutable run context.",
+        "If agent output cannot be parsed or validated, the resulting failure event includes the raw agent response for debugging."
+      ],
+      "assumptions": [
+        "Creating parent directories for the requested log path is not required unless the chosen file-writing utility already does so naturally.",
+        "A stable JSONL schema can be documented by field names in code and README text without generating a separate JSON Schema file."
+      ],
+      "dependencies": [
+        "TASK-002",
+        "TASK-005"
+      ]
+    },
+    {
+      "id": "TASK-007",
+      "title": "Reduce the shell entrypoint to a compatibility wrapper",
+      "objective": "Replace the legacy Bash lifecycle implementation with a thin wrapper that delegates supported legacy arguments to the new Python CLI.",
+      "type": "implementation",
+      "status": "pending",
+      "story_addressed": "UC-001",
+      "requirements_addressed": [
+        "FR-019",
+        "NFR-002"
+      ],
+      "files": [
+        "ralph/ralph.sh"
+      ],
+      "out_of_scope": [
+        "Do not preserve the Bash implementation loop, prompt execution, or retrospective flow.",
+        "Do not add new shell-only behavior that differs from the Python CLI.",
+        "Do not reimplement JSON parsing or status handling in Bash."
+      ],
+      "existing_context": [
+        "The current `ralph/ralph.sh` owns argument parsing, feature validation, Codex execution, loop control, and retrospective behavior.",
+        "The spec keeps `ralph/ralph.sh` only as a temporary migration wrapper.",
+        "The legacy wrapper currently accepts `--feature-dir`, `--max-iterations`, `--coding-model`, `--retro-model`, and `--retro-only`."
+      ],
+      "constraints": [
+        "The wrapper must delegate supported lifecycle arguments to the Python CLI instead of owning any independent workflow logic.",
+        "Legacy `--feature-dir` must map to the new positional `<path>` argument, and `--coding-model` must map to `--model`.",
+        "Unsupported legacy retrospective flags must fail fast with an explicit migration error instead of silently pretending the Python CLI still supports them.",
+        "Keep the wrapper narrow enough that future removal is a file deletion, not another migration project."
+      ],
+      "implementation_guidelines": [
+        "Strip the script down to argument translation, Python CLI invocation, and minimal usage or migration messaging.",
+        "Use one execution path that eventually runs the new Python CLI rather than leaving fallback shell logic behind.",
+        "Translate only the legacy arguments that map directly onto the MVP `run` mode.",
+        "Return the Python CLI exit code unchanged so the wrapper does not invent a second exit-code contract."
+      ],
+      "acceptance_criteria": [
+        "The shell wrapper no longer contains Codex subprocess invocation, prompt-file loading, iteration looping, or retrospective execution logic.",
+        "Invoking `ralph/ralph.sh` with supported legacy run arguments delegates to the Python CLI behavior instead of a Bash lifecycle implementation.",
+        "Passing unsupported legacy retrospective flags fails fast with a clear migration message and a non-zero exit status.",
+        "The wrapper preserves the Python CLI exit status without remapping successful, blocked, failed, or setup-error outcomes."
+      ],
+      "assumptions": [
+        "Because the MVP only covers `run`, the compatibility wrapper may reject `--retro-only` and `--retro-model` instead of emulating the retired retrospective flow.",
+        "The wrapper may invoke `python -m ralph` directly from the repository checkout even though the installed console script name is also `ralph`."
+      ],
+      "dependencies": [
+        "TASK-001",
+        "TASK-005"
+      ]
+    },
+    {
+      "id": "TASK-008",
+      "title": "Document the CLI contract and JSONL schema",
+      "objective": "Update Ralph’s public documentation so the new CLI surface, exit behavior, and machine-readable event schema are explicit and stable.",
+      "type": "documentation",
+      "status": "pending",
+      "story_addressed": "UC-002",
+      "requirements_addressed": [
+        "FR-016",
+        "FR-017",
+        "FR-018",
+        "NFR-002",
+        "NFR-003",
+        "NFR-007"
+      ],
+      "files": [
+        "ralph/README.md",
+        "ralph/CONTEXT.md"
+      ],
+      "out_of_scope": [
+        "Do not edit `docs/plans/ralph-cli/*` or restore obsolete retrospective design material.",
+        "Do not rewrite the Ralph feature spec in `docs/plans/ralph-harness/spec.md`.",
+        "Do not add installation instructions for unrelated backend or extension tooling."
+      ],
+      "existing_context": [
+        "The current `ralph/README.md` still documents the Bash harness and retrospective-only mode.",
+        "The current `ralph/CONTEXT.md` already defines the domain terms introduced by the harness spec.",
+        "The spec treats the JSONL schema as a stable public contract rather than an internal debugging detail."
+      ],
+      "constraints": [
+        "Document `ralph run <path>` as the primary public entrypoint and remove or clearly retire obsolete retrospective-only usage.",
+        "List the supported run flags and their defaults exactly as implemented by the Python CLI.",
+        "Describe the JSONL event schema in terms of required event types and required shared fields such as `run_id` and timestamp.",
+        "Document deterministic exit behavior for success, blocked termination, failed termination, and invalid usage or setup errors."
+      ],
+      "implementation_guidelines": [
+        "Rewrite the usage section around the Python CLI first, then explain the temporary shell wrapper as migration-only compatibility behavior.",
+        "Keep `ralph/CONTEXT.md` aligned with any concrete field names or module names introduced by the implementation so the glossary stays authoritative.",
+        "Document the JSONL schema in a way that downstream automation can rely on without reading the code.",
+        "Remove references to the obsolete retrospective lifecycle from user-facing documentation unless they are explicitly described as retired migration history."
+      ],
+      "acceptance_criteria": [
+        "`ralph/README.md` documents `ralph run <path>` as the primary entrypoint and names the supported `run` flags with their defaults.",
+        "`ralph/README.md` describes the JSONL logging contract, including the required event types and the shared `run_id` field.",
+        "`ralph/README.md` states the deterministic exit-behavior categories for success, blocked, failed, and invalid usage or setup errors.",
+        "`ralph/CONTEXT.md` remains consistent with the implemented module boundaries and does not describe the old Bash harness as the canonical architecture."
+      ],
+      "assumptions": [
+        "The public JSONL schema can be documented directly in `ralph/README.md` without creating a separate schema artifact.",
+        "Keeping the glossary current in `ralph/CONTEXT.md` is sufficient for module-boundary documentation in this repo."
+      ],
+      "dependencies": [
+        "TASK-006",
+        "TASK-007"
+      ]
+    },
+    {
+      "id": "TASK-009",
+      "title": "Add automated verification for the Ralph harness MVP",
+      "objective": "Create the focused automated test coverage that proves the new CLI, orchestrator, step parsing, logging, and wrapper behaviors match the MVP contract.",
+      "type": "validation",
+      "status": "pending",
+      "story_addressed": "UC-003",
+      "requirements_addressed": [
+        "FR-001",
+        "FR-002",
+        "FR-003",
+        "FR-004",
+        "FR-005",
+        "FR-006",
+        "FR-007",
+        "FR-008",
+        "FR-009",
+        "FR-010",
+        "FR-011",
+        "FR-012",
+        "FR-013",
+        "FR-014",
+        "FR-015",
+        "FR-016",
+        "FR-017",
+        "FR-018",
+        "FR-019",
+        "FR-020",
+        "NFR-001",
+        "NFR-002",
+        "NFR-003",
+        "NFR-004",
+        "NFR-005",
+        "NFR-006",
+        "NFR-007"
+      ],
+      "files": [
+        "ralph/tests/test_cli.py",
+        "ralph/tests/test_agents.py",
+        "ralph/tests/test_code_step.py",
+        "ralph/tests/test_orchestrator.py",
+        "ralph/tests/test_logging.py",
+        "ralph/tests/test_wrapper.py"
+      ],
+      "out_of_scope": [
+        "Do not add live Codex-dependent integration tests that require networked or attended runs.",
+        "Do not broaden the test suite into retrospective or multi-step workflow scenarios that the MVP excludes.",
+        "Do not modify obsolete `docs/plans/ralph-cli/*` fixtures or plans."
+      ],
+      "existing_context": [
+        "The repository does not currently contain a dedicated Ralph Python test suite.",
+        "The spec’s edge cases enumerate the invalid-path, missing-artifact, unknown-agent, malformed-response, blocked, complete, and iteration-cap scenarios that must be covered.",
+        "The shell wrapper is temporary, so its tests should focus on delegation and rejection behavior rather than re-testing workflow internals."
+      ],
+      "constraints": [
+        "Tests must stub or fake agent execution so the suite is deterministic and does not require real Codex runs.",
+        "Validation coverage must include CLI defaults and option handling, strict JSON-only parsing, orchestrator transition rules, JSONL event emission, and wrapper delegation.",
+        "The validation task must verify the exact blocked-message passthrough requirement and the presence of raw failed agent responses in JSONL failure paths.",
+        "Keep test execution local and automation-friendly by using a standard Python test runner from the repository checkout."
+      ],
+      "implementation_guidelines": [
+        "Add focused unit tests for each module boundary instead of one monolithic end-to-end test file.",
+        "Use temporary directories and fake feature folders to verify required-artifact validation and optional log-file output.",
+        "Mock the agent registry and agent execution boundaries so transition behavior is tested independently of the Codex subprocess implementation.",
+        "Include wrapper tests that assert supported legacy arguments are translated correctly and unsupported retrospective flags fail fast."
+      ],
+      "acceptance_criteria": [
+        "The Ralph test suite covers CLI defaulting and flag parsing, unknown-agent rejection, missing feature artifacts, repeat or complete or blocked or fail orchestrator outcomes, strict JSON-only parsing, and iteration-cap termination.",
+        "The logging tests verify that `run_started`, `step_started`, `agent_invoked`, `step_finished`, and `run_finished` events are emitted with a stable `run_id` in every record when `--log` is enabled.",
+        "The failure-path logging tests verify that an unparseable or invalid agent response is preserved in the machine-readable log.",
+        "Running `python -m unittest discover -s ralph/tests` from the repository root succeeds without requiring a real Codex invocation."
+      ],
+      "assumptions": [
+        "Using the standard library `unittest` runner is acceptable for the new Ralph package because the repository does not currently define a root-level pytest dependency.",
+        "Wrapper-behavior tests may execute the shell script through subprocesses that stub the Python CLI target instead of invoking the full installed console script."
+      ],
+      "dependencies": [
+        "TASK-001",
+        "TASK-002",
+        "TASK-003",
+        "TASK-004",
+        "TASK-005",
+        "TASK-006",
+        "TASK-007",
+        "TASK-008"
+      ]
+    }
+  ]
+}

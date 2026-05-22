@@ -1,0 +1,3 @@
+interface:
+  display_name: "Create tasks"
+  short_description: "Convert a specification into a list of implementation tasks."

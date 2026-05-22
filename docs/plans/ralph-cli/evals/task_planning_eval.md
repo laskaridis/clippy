@@ -30,7 +30,6 @@ Evaluation procedure:
 1. Extract all explicit requirements from the specification.
 2. Map each requirement to one or more tasks.
 3. Identify:
-
    * Missing requirements
    * Invented requirements
    * Oversized tasks
