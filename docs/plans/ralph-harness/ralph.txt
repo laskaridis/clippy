@@ -3,6 +3,7 @@
 - Use frozen dataclasses for run-context and terminal outcome types so orchestration state stays immutable and easy to reason about.
 - Keep built-in registries static and expose a dedicated lookup helper that raises a specific unknown-item error so callers can fail fast without inspecting the mapping directly.
 - Load bundled prompt assets with `importlib.resources.files("ralph")` so prompt lookups work the same in editable installs and packaged wheels.
+- Keep the orchestrator's step implementation imports local inside the run loop when the workflow module imports orchestrator types, so the package avoids circular import failures.
 
 ## [2026-05-22 11:59:04 EEST]
 - Task id
@@ -94,6 +95,30 @@
 - Learnings for future iterations:
   - Bundled prompt assets are safer to load with `importlib.resources.files("ralph")` than with filesystem-relative paths, because the same code then works in editable installs and packaged wheels.
   - The Code step should keep strict JSON validation local so future orchestrator work can rely on typed step results instead of ad hoc string parsing.
+- Scope deviations:
+  - None.
+- Follow up needed:
+  - None.
+---
+## [2026-05-22 12:19:47 EEST]
+- Task id
+  - TASK-005
+- What was implemented:
+  - Added feature-directory validation plus a hard-coded run loop in `ralph/orchestrator.py` that executes the built-in `CodeStep`, handles `repeat` / `complete` / `blocked` / `fail`, and produces deterministic terminal run outcomes.
+  - Expanded `ralph/cli.py` to parse `run` options for agent, model, max iterations, and optional log path, then map typed run outcomes to stable exit codes and terminal messages.
+- Files changed:
+  - `ralph/orchestrator.py`
+  - `ralph/cli.py`
+  - `docs/plans/ralph-harness/tasks.json`
+  - `docs/plans/ralph-harness/ralph.txt`
+- Verification:
+  - `python -m compileall ralph` completed successfully.
+  - `python -m ralph run --help` showed the `run` subcommand plus `--agent`, `--model`, `--max-iterations`, and `--log`.
+  - `python -m ralph run /tmp/ralph-harness-does-not-exist-12345` exited with code `2` and reported the missing feature directory before any agent work started.
+  - `python -m ralph run /tmp/ralph-harness-does-not-exist-12345 --max-iterations 0` exited with code `2` and rejected the invalid iteration limit at argument parsing time.
+- Learnings for future iterations:
+  - The orchestrator should import the workflow step lazily inside the run loop to avoid a circular import between `ralph.orchestrator` and `ralph.workflow.code`.
+  - `argparse` is a clean fit for these CLI defaults because invalid numeric input can fail fast before the run context is even created.
 - Scope deviations:
   - None.
 - Follow up needed:

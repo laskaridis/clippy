@@ -230,7 +230,7 @@
       "title": "Implement the hard-coded run orchestrator",
       "objective": "Add the Ralph lifecycle orchestrator that validates required artifacts, runs the Code step loop, and terminates with deterministic outcomes.",
       "type": "implementation",
-      "status": "pending",
+      "status": "completed",
       "story_addressed": "UC-001",
       "requirements_addressed": [
         "FR-001",
