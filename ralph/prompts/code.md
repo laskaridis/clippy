@@ -125,28 +125,38 @@ A frontend task is NOT complete until browser verification passes.
 
 ## CRITICAL: Response Contract (Mandatory)
 
-Your response MUST start with exactly one status line as line 1:
+Your response MUST be exactly one JSON object and nothing else. Do not wrap it
+in markdown fences or add prose before or after the object.
 
-- `RALPH_STATUS=CONTINUE`
-- `RALPH_STATUS=COMPLETE`
-- `RALPH_STATUS=BLOCKED`
+The JSON object MUST use one of these shapes:
 
-DO NOT include any other text on line 1. This is CRITICAL to get right because
-the ralph loop harness depends on it to detect when it needs to stop.
+- `{"outcome":"repeat"}`
+- `{"outcome":"complete"}`
+- `{"outcome":"blocked","blocker_text":"..."}`
+- `{"outcome":"fail","failure_summary":"..."}`
 
-If the status is `RALPH_STATUS=BLOCKED`, line 2 MUST be a natural-language
-blocker summary that includes the exact unblock condition.
+Rules:
+
+- `outcome` must be one of `repeat`, `complete`, `blocked`, or `fail`.
+- `blocked` responses must include a non-empty `blocker_text` string.
+- `fail` responses must include a non-empty `failure_summary` string.
+- `repeat` and `complete` responses must not include any additional fields.
+- Leading and trailing whitespace around the JSON object is allowed, but any
+  other surrounding text is a contract violation.
 
 ## Stop Condition
 
 After completing a task, check if ALL stories have been completed.
 
-- If ALL tasks are complete and passing, use `RALPH_STATUS=COMPLETE`.
-- If there are still tasks not completed, use `RALPH_STATUS=CONTINUE`.
+- If ALL tasks are complete and passing, use `{"outcome":"complete"}`.
+- If there are still tasks not completed, use `{"outcome":"repeat"}`.
 - If progress is blocked by environment/runtime prerequisites after a
   revalidation pass (same blocker signature, no code-level next step), use
-  `RALPH_STATUS=BLOCKED` and provide line 2 with blocker reason + exact
-  unblock condition.
+  `{"outcome":"blocked","blocker_text":"..."}` and provide the blocker reason
+  plus exact unblock condition.
+- If validation finds a defect, use
+  `{"outcome":"fail","failure_summary":"..."}` and generate a follow-up fix
+  task instead of silently folding the fix into the validation entry.
 
 ## Important
 

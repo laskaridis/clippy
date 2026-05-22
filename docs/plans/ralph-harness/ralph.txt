@@ -2,6 +2,7 @@
 - When multiple editable installs expose the same top-level package, verify `sys.meta_path` ordering; distribution naming can affect which checkout wins.
 - Use frozen dataclasses for run-context and terminal outcome types so orchestration state stays immutable and easy to reason about.
 - Keep built-in registries static and expose a dedicated lookup helper that raises a specific unknown-item error so callers can fail fast without inspecting the mapping directly.
+- Load bundled prompt assets with `importlib.resources.files("ralph")` so prompt lookups work the same in editable installs and packaged wheels.
 
 ## [2026-05-22 11:59:04 EEST]
 - Task id
@@ -67,8 +68,32 @@
   - `python -m compileall ralph` completed successfully.
   - A direct import probe resolved `codex`, rejected an unknown agent with `UnknownAgentError`, and instantiated `AgentRequest` with the expected typed fields.
 - Learnings for future iterations:
-  - Static built-in registries are a clean fit for Ralph because the spec wants fast failure for unknown names and no runtime discovery.
-  - The Codex adapter should capture the output file before cleanup so later steps can parse the raw agent response reliably.
+- Static built-in registries are a clean fit for Ralph because the spec wants fast failure for unknown names and no runtime discovery.
+- The Codex adapter should capture the output file before cleanup so later steps can parse the raw agent response reliably.
+- Scope deviations:
+  - None.
+- Follow up needed:
+  - None.
+---
+## [2026-05-22 12:48:00 EEST]
+- Task id
+  - TASK-004
+- What was implemented:
+  - Added `ralph.workflow.CodeStep` as a single-shot step that loads the bundled code prompt, invokes the selected agent once, and converts strict JSON responses into typed step results.
+  - Updated `ralph/prompts/code.md` so the built-in coding prompt now requires JSON-only output with explicit outcome-specific fields.
+- Files changed:
+  - `ralph/workflow/__init__.py`
+  - `ralph/workflow/code.py`
+  - `ralph/prompts/code.md`
+  - `docs/plans/ralph-harness/tasks.json`
+  - `docs/plans/ralph-harness/ralph.txt`
+- Verification:
+  - `python -m compileall ralph` completed successfully.
+  - A direct smoke script instantiated `CodeStep` with a fake agent and verified `complete`, `blocked`, and malformed-JSON responses map to `CompleteStepResult`, `BlockedStepResult`, and `FailedStepResult` respectively.
+  - The smoke script also verified the rendered prompt includes the selected feature directory path and that malformed JSON preserves the raw response.
+- Learnings for future iterations:
+  - Bundled prompt assets are safer to load with `importlib.resources.files("ralph")` than with filesystem-relative paths, because the same code then works in editable installs and packaged wheels.
+  - The Code step should keep strict JSON validation local so future orchestrator work can rely on typed step results instead of ad hoc string parsing.
 - Scope deviations:
   - None.
 - Follow up needed:

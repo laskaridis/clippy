@@ -173,7 +173,7 @@
       "title": "Implement the single-iteration Code step contract",
       "objective": "Build the Code step so it loads the built-in prompt, invokes the selected agent once, and converts only strict JSON responses into step results.",
       "type": "implementation",
-      "status": "pending",
+      "status": "completed",
       "story_addressed": "UC-003",
       "requirements_addressed": [
         "FR-008",
