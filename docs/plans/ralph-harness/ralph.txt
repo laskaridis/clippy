@@ -7,6 +7,7 @@
 - Keep terminal presenters and JSONL emitters separate, then fan them out through a composite sink so human output and machine logs stay independently testable.
 - Keep shell compatibility wrappers as pure translators that `exec` the Python module entrypoint, so the wrapper preserves the underlying exit code and never reimplements lifecycle logic.
 - When a wrapper must import the local checkout from arbitrary launch directories, prepend the repository root to `PYTHONPATH` before the `exec` call instead of changing the caller's working directory.
+- When a migration shell wrapper remains, document the Python CLI as the canonical entrypoint and describe the wrapper as compatibility-only.
 
 ## [2026-05-22 12:30:23 EEST]
 - Task id
@@ -27,6 +28,29 @@
 - Learnings for future iterations:
   - Compatibility wrappers should stay narrow enough that removing them later is a file deletion, not another migration project.
   - If the wrapper is launched from outside the repository root, adding the repo root to `PYTHONPATH` is enough to import the local package without changing the caller's working directory.
+- Scope deviations:
+  - None.
+- Follow up needed:
+  - None.
+---
+## [2026-05-22 12:34:19 EEST]
+- Task id
+  - TASK-008
+- What was implemented:
+  - Rewrote `ralph/README.md` around the Python `ralph run <path>` CLI, its default flags, terminal output, JSONL logging contract, and deterministic exit behavior.
+  - Updated `ralph/CONTEXT.md` so the module glossary reflects the Python-first CLI and the logging module / run-event terminology.
+- Files changed:
+  - `ralph/README.md`
+  - `ralph/CONTEXT.md`
+  - `docs/plans/ralph-harness/tasks.json`
+  - `docs/plans/ralph-harness/ralph.txt`
+- Verification:
+  - `git diff --check` completed successfully after fixing the trailing blank line in `ralph/README.md`.
+  - `python -m compileall ralph` completed successfully.
+  - `python -m ralph run --help >/dev/null` completed successfully and confirmed the CLI still exposes the documented `run` flags.
+- Learnings for future iterations:
+  - When a migration wrapper is retained, the canonical documentation should lead with the Python entrypoint and only describe the shell wrapper as compatibility behavior.
+  - Stable JSONL logging docs are clearer when they separate the shared record fields from the per-event payload fields.
 - Scope deviations:
   - None.
 - Follow up needed:

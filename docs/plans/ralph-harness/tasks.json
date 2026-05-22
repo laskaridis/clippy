@@ -397,7 +397,7 @@
       "title": "Document the CLI contract and JSONL schema",
       "objective": "Update Ralph’s public documentation so the new CLI surface, exit behavior, and machine-readable event schema are explicit and stable.",
       "type": "documentation",
-      "status": "pending",
+      "status": "completed",
       "story_addressed": "UC-002",
       "requirements_addressed": [
         "FR-016",
