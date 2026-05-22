@@ -4,6 +4,7 @@
 - Keep built-in registries static and expose a dedicated lookup helper that raises a specific unknown-item error so callers can fail fast without inspecting the mapping directly.
 - Load bundled prompt assets with `importlib.resources.files("ralph")` so prompt lookups work the same in editable installs and packaged wheels.
 - Keep the orchestrator's step implementation imports local inside the run loop when the workflow module imports orchestrator types, so the package avoids circular import failures.
+- Keep terminal presenters and JSONL emitters separate, then fan them out through a composite sink so human output and machine logs stay independently testable.
 
 ## [2026-05-22 11:59:04 EEST]
 - Task id
@@ -119,6 +120,49 @@
 - Learnings for future iterations:
   - The orchestrator should import the workflow step lazily inside the run loop to avoid a circular import between `ralph.orchestrator` and `ralph.workflow.code`.
   - `argparse` is a clean fit for these CLI defaults because invalid numeric input can fail fast before the run context is even created.
+- Scope deviations:
+  - None.
+- Follow up needed:
+  - None.
+---
+## [2026-05-22 12:26:04 EEST]
+- Task id
+  - TASK-006
+- What was implemented:
+  - Added `ralph.logging` with a terminal presenter, JSONL event sink, and composite fanout sink for the run lifecycle events.
+  - Threaded lifecycle event emission through `ralph.orchestrator.run` so every run now reports `run_started`, `step_started`, `agent_invoked`, `step_finished`, and `run_finished` boundaries.
+  - Updated `ralph.cli` to always attach terminal progress output and optionally add JSONL logging when `--log` is provided.
+- Files changed:
+  - `ralph/logging.py`
+  - `ralph/orchestrator.py`
+  - `ralph/cli.py`
+  - `docs/plans/ralph-harness/tasks.json`
+  - `docs/plans/ralph-harness/ralph.txt`
+- Verification:
+  - `python -m compileall ralph` completed successfully.
+  - `python -m ralph run --help` confirmed the `run` subcommand still advertises `--agent`, `--model`, `--max-iterations`, and `--log`.
+  - A controlled in-process smoke run with a fake `CodeStep` verified the terminal presenter prints run start, step progress, agent usage, and final completion output while the JSONL stream contains the required event types.
+  - A second smoke run with a failing fake `CodeStep` verified that the `step_finished` and `run_finished` JSONL records preserve the raw failed agent response.
+- Learnings for future iterations:
+  - Binding presenter streams with `default_factory` keeps stdout/stderr capture-friendly in smoke tests and avoids freezing the import-time stream objects.
+  - Emitting lifecycle events from the orchestrator boundary keeps the logging contract separate from the step implementation while still producing a stable schema.
+- Scope deviations:
+  - None.
+- Follow up needed:
+  - None.
+---
+## [2026-05-22 12:27:03 EEST]
+- Task id
+  - TASK-006
+- What was implemented:
+  - Flushed terminal presenter writes immediately so mixed stdout/stderr progress stays in the expected order for setup errors and failures.
+- Files changed:
+  - `ralph/logging.py`
+- Verification:
+  - `python -m compileall ralph` completed successfully after the flush change.
+  - `python -m ralph run /tmp/ralph-harness-does-not-exist-12345` now prints the run-start line before the setup-error messages and exits with code `2`.
+- Learnings for future iterations:
+  - When a CLI prints progress on stdout and errors on stderr, explicit flushes help preserve the intended order in combined terminal output.
 - Scope deviations:
   - None.
 - Follow up needed:
