@@ -1,0 +1,27 @@
+## Codebase Patterns
+- When multiple editable installs expose the same top-level package, verify `sys.meta_path` ordering; distribution naming can affect which checkout wins.
+
+## [2026-05-22 11:59:04 EEST]
+- Task id
+  - TASK-001
+- What was implemented:
+  - Added a root `pyproject.toml` so the repository installs as an editable package and exposes a `ralph` console script.
+  - Added the initial `ralph` Python package with `__init__.py`, `__main__.py`, and a minimal `cli.py` that parses the `run` subcommand.
+- Files changed:
+  - `pyproject.toml`
+  - `ralph/__init__.py`
+  - `ralph/__main__.py`
+  - `ralph/cli.py`
+- Verification:
+  - `python -m pip install -e .` completed successfully.
+  - `python -m compileall ralph` completed successfully.
+  - `ralph --help` printed the new CLI help showing the `run` subcommand.
+  - `python -m ralph --help` printed the same CLI help.
+- Learnings for future iterations:
+  - Editable installs from other worktrees can shadow this checkout when top-level package names collide; checking `sys.meta_path` helped confirm the active finder order.
+  - For this repo, the console script should be validated both via `python -m ralph` and the installed `ralph` executable because the shell may already have an unrelated command cached.
+- Scope deviations:
+  - None.
+- Follow up needed:
+  - None.
+---

@@ -6,7 +6,7 @@
       "title": "Create the installable Ralph CLI entrypoint",
       "objective": "Add the Python package scaffold and `ralph run <path>` command surface that becomes the stable public entrypoint for the harness.",
       "type": "implementation",
-      "status": "pending",
+      "status": "completed",
       "story_addressed": "UC-001",
       "requirements_addressed": [
         "FR-001",
