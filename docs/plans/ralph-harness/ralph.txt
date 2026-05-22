@@ -5,7 +5,33 @@
 - Load bundled prompt assets with `importlib.resources.files("ralph")` so prompt lookups work the same in editable installs and packaged wheels.
 - Keep the orchestrator's step implementation imports local inside the run loop when the workflow module imports orchestrator types, so the package avoids circular import failures.
 - Keep terminal presenters and JSONL emitters separate, then fan them out through a composite sink so human output and machine logs stay independently testable.
+- Keep shell compatibility wrappers as pure translators that `exec` the Python module entrypoint, so the wrapper preserves the underlying exit code and never reimplements lifecycle logic.
+- When a wrapper must import the local checkout from arbitrary launch directories, prepend the repository root to `PYTHONPATH` before the `exec` call instead of changing the caller's working directory.
 
+## [2026-05-22 12:30:23 EEST]
+- Task id
+  - TASK-007
+- What was implemented:
+  - Reduced `ralph/ralph.sh` to a thin compatibility wrapper that translates `--feature-dir`, `--max-iterations`, and `--coding-model` into the Python CLI and rejects retired retrospective flags with explicit migration errors.
+  - Made the wrapper invoke `python -m ralph run ...` through `exec` while preserving the underlying exit status and resolving the local checkout with `PYTHONPATH`.
+- Files changed:
+  - `ralph/ralph.sh`
+  - `docs/plans/ralph-harness/tasks.json`
+  - `docs/plans/ralph-harness/ralph.txt`
+- Verification:
+  - `bash -n ralph/ralph.sh` completed successfully.
+  - `python -m compileall ralph` completed successfully.
+  - A delegated wrapper smoke test with a stubbed `python3` verified that `./ralph/ralph.sh --feature-dir demo/feature --max-iterations 7 --coding-model test-model` forwarded `-m ralph run demo/feature --max-iterations 7 --model test-model` and preserved the stub exit code `37`.
+  - `./ralph/ralph.sh --retro-only` exited with code `2` and printed `Migration error: --retro-only is retired. Use: python -m ralph run <path>`.
+  - `./ralph/ralph.sh --retro-model gpt-5.4-medium` exited with code `2` and printed `Migration error: --retro-model is retired. Use: python -m ralph run <path>`.
+- Learnings for future iterations:
+  - Compatibility wrappers should stay narrow enough that removing them later is a file deletion, not another migration project.
+  - If the wrapper is launched from outside the repository root, adding the repo root to `PYTHONPATH` is enough to import the local package without changing the caller's working directory.
+- Scope deviations:
+  - None.
+- Follow up needed:
+  - None.
+---
 ## [2026-05-22 11:59:04 EEST]
 - Task id
   - TASK-001

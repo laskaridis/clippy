@@ -346,7 +346,7 @@
       "title": "Reduce the shell entrypoint to a compatibility wrapper",
       "objective": "Replace the legacy Bash lifecycle implementation with a thin wrapper that delegates supported legacy arguments to the new Python CLI.",
       "type": "implementation",
-      "status": "pending",
+      "status": "completed",
       "story_addressed": "UC-001",
       "requirements_addressed": [
         "FR-019",
