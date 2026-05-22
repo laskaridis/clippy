@@ -290,7 +290,7 @@
       "title": "Add terminal progress output and JSONL event logging",
       "objective": "Implement the always-on human-readable run reporting and the optional stable JSONL event stream for machine consumers.",
       "type": "implementation",
-      "status": "pending",
+      "status": "completed",
       "story_addressed": "UC-002",
       "requirements_addressed": [
         "FR-016",

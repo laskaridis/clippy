@@ -1,10 +1,12 @@
 from __future__ import annotations
 
 import argparse
+from contextlib import ExitStack
 from pathlib import Path
 from collections.abc import Sequence
 import sys
 
+from .logging import CompositeEventSink, EventSink, JsonlEventSink, TerminalEventSink
 from .orchestrator import (
     RunBlocked,
     RunCompleted,
@@ -83,34 +85,40 @@ def _run_command(args: argparse.Namespace) -> int:
         max_iterations=args.max_iterations,
         log_path=args.log,
     )
-    outcome = run_harness(run_context)
+    terminal_sink = TerminalEventSink()
+    with ExitStack() as stack:
+        sinks: list[EventSink] = [terminal_sink]
+        if args.log is not None:
+            try:
+                jsonl_sink = stack.enter_context(JsonlEventSink(args.log))
+            except OSError as exc:
+                print(f"Unable to open JSONL log path {args.log}: {exc}", file=sys.stderr)
+                return EXIT_SETUP_ERROR
+            sinks.append(jsonl_sink)
+
+        event_sink = (
+            terminal_sink
+            if len(sinks) == 1
+            else CompositeEventSink(tuple(sinks))
+        )
+        outcome = run_harness(run_context, event_sink=event_sink)
     return _exit_code_for_outcome(outcome)
 
 
 def _exit_code_for_outcome(outcome: RunOutcome) -> int:
     if isinstance(outcome, RunCompleted):
-        print(outcome.message)
         return EXIT_SUCCESS
 
     if isinstance(outcome, RunBlocked):
-        print(outcome.blocker_text)
         return EXIT_BLOCKED
 
     if isinstance(outcome, RunFailed):
-        print(outcome.failure_summary, file=sys.stderr)
         return EXIT_FAILURE
 
     if isinstance(outcome, RunSetupError):
-        print(outcome.message, file=sys.stderr)
-        if outcome.missing_artifacts:
-            print(
-                "Missing workflow artifacts: " + ", ".join(outcome.missing_artifacts),
-                file=sys.stderr,
-            )
         return EXIT_SETUP_ERROR
 
     if isinstance(outcome, RunUsageError):
-        print(outcome.message, file=sys.stderr)
         return EXIT_SETUP_ERROR
 
     raise TypeError(f"Unhandled run outcome type: {type(outcome)!r}")
