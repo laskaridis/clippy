@@ -116,7 +116,7 @@
       "title": "Implement the built-in agent registry and Codex runner",
       "objective": "Add the built-in agent abstraction and the MVP `codex` implementation that performs one AFK prompt invocation per request.",
       "type": "implementation",
-      "status": "pending",
+      "status": "completed",
       "story_addressed": "UC-003",
       "requirements_addressed": [
         "FR-002",
