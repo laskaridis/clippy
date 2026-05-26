@@ -1,6 +1,7 @@
 ---
 name: create-tasks
-description: Convert the specified specification document into a list of tasks that can be executed by a coding agent. Use this skill when you have a specification document and want to break it down into actionable tasks for a coding agent to implement.
+description: Convert a specification document into a list of tasks that can be executed by a coding agent. Use this skill when you have a specification document and want to break it down into actionable tasks for a coding agent to implement.
+argument-hint: Where is the specification document located that you want to convert into tasks?
 ---
 
 ## Purpose
@@ -15,14 +16,15 @@ The user is requried to provide a specification file. If none has been provided 
 
 ## Constraints
 
-- This skill is meant to be use for planning only. This means that you are not allowed to add or modify any repository files other than the requested output task list.
+You are running in **RESTRICTED WRITE MODE**. This means that you are not allowed to add or modify any repository files other than the requested output task list.
 
 ## Task generation guidelines
 
 1. Create tasks with clear goals:
 
-- Each task must have one clear, specific and unabmiguous objective. Avoid unclear, vague and ambiguous task goals that would allow the model to second guess.
-- It is important that by reading the task a low-reasoning coding agent avoids guessing what it needs to implement or how to implement it.
+- Each task must have one clear, specific and unabmiguous objective.
+- Avoid unclear, vague and ambiguous task goals that would allow the model to second guess.
+- It is crucial by reading the task a low-reasoning coding agent avoids guessing what it needs to implement or how to implement it.
 
 2. Create small tasks:
 
@@ -34,7 +36,7 @@ The user is requried to provide a specification file. If none has been provided 
 - Split a task if it combines more than one major concern.
 - Split a task if a low-reasoning agent would need to make more than one architectural or policy decision while implementing it.
 
-4. Design for verifiable tasks:
+4. Create verifiable tasks:
 
 - Each task must include clear, unabmiguous and locally verifiable acceptance criteria which verify observable behaviour.
 - Acceptance criteria must be locally observable from files, return values, CLI behavior, persisted artifacts, or deterministic tests.
@@ -45,9 +47,9 @@ The user is requried to provide a specification file. If none has been provided 
 - Provide clear and unambiguous implementation guidelines as if you are explaining to a junior developer how to implement the task.
 - Avoid vague instructions such as “refactor for clarity”, “optimize the implementation”, or “implement in a clean way”.
 
-4. Trace every task back to an explicity user story or requirement:
+4. Link tasks to an explicity user story or requirement:
 
-- If a task cannot be dreclty traced back to a specific user story or requirement, either remove it or narrow it.
+- If a task cannot be directly traced back to a specific user story or requirement, either remove it or narrow it.
 
 5. Ask the user for clarifications as needed:
 
@@ -58,9 +60,12 @@ The user is requried to provide a specification file. If none has been provided 
 ## Workflow 
 
 1. First read the entire specification file before you start generating tasks.
-2. Inspect the repository as needed to get context on existing structure and likely affected files. TIP: spawn subagents to avoid context-rot and have the subagents return only the information you need.
-3. Generate a prioritized list of tasks following the task generation guidelines below.
-4. Review the tasks using the final validation checklist below.
+
+2. Inspect the repository as needed to get context on existing structure and likely affected files.
+
+3. Generate a prioritized list of tasks following the task generation guidelines.
+
+4. Review all tasks using the final validation checklist below.
 
 ## Output
 
@@ -75,7 +80,6 @@ Use the following schema EXACTLY:
       "id": "TASK-001",
       "title": "<less or equal to 80 characters, imperative>",
       "objective": "<1 sentence description of what needs to be accomplished>",
-      "type": "<implementation|validation|refactor|documentation|cleanup>",
       "status": "<pending|completed>",
       "story_addressed": "<the id of the user story or requirement this task traces back to>",
       "requirements_addressed": [
@@ -114,7 +118,6 @@ Use the following schema EXACTLY:
   "id": "TASK-001",
   "title": "Prevent duplicate products in wishlist",
   "objective": "Ensure that adding the same product to a wishlist more than once does not create duplicate wishlist entries.",
-  "type": "implementation",
   "status": "pending",
   "story_addressed": "US-001",
   "requirements_addressed": [
@@ -161,7 +164,7 @@ Use the following schema EXACTLY:
 }
 ```
 
-## Final Validation
+## Final verificaiton checklist
 
 Before returning, verify that all of the following conditions are satisfied:
 
@@ -170,8 +173,7 @@ Before returning, verify that all of the following conditions are satisfied:
 [ ] Every task has one clear, specific and unambiguous outcome that aligns with the specification.
 [ ] Every task has a small, clear and tightly bunded file scope.
 [ ] Every task has clear, unambiguous and verifiable acceptance criteria.
-[ ] No task requires second guessing how it will be implemented.
+[ ] No task requires second guessing how it will be implemented or how it will be verified.
 [ ] Task dependencies reference valid IDs and there are no circular dependencies between tasks.
-[ ] Validation tasks depend on every implementation task whose output they verify.
 [ ] All the user stories and requirements mentioned in the specification are covered by at least one task.
-[ ] Each task can be traced back directly to a user story or a functional/non-functional requirement which has been explicitly mentioned on the task.
+[ ] Each task can be traced back directly to a user story or a functional/non-functional requirement explicitly mentioned in the task.
