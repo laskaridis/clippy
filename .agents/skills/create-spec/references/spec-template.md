@@ -36,27 +36,15 @@ Examples:
 
 Describe the story in concise, plain language. Use either of the following story formats which fits best to the particular situation.
 
-1. Connextra story format
-
-Use when you need to focus on the user who benefits.
-
-Format: As a <user>, I want to <capability>, so that <value>
+1. When you need to focus on who benefits: As a <user>, I want to <capability>, so that <value>
 
 Example: As a returning customer, I want to save my payment details, so that I can check out faster on future purchases.
 
-2. Job story format
-
-Use when you need to focus more on the specific context or trigger and less on the user.
-
-Format: When <situation/trigger>, I want to <capability>, so that <value>.
+2. When you need to focus on the specific context or trigger and less on the user: When <situation/trigger>, I want to <capability>, so that <value>.
 
 Example: When my internet connection drops, I want to see a clear offline troubleshooting guide, so that I can fix the issue without contacting support.
 
-3. System story format
-
-Use when writing stories for technical features.
-
-Format: For <system/component>, we need to <capability>, so that <value>.
+3. When writing stories for technical features: For <system/component>, we need to <capability>, so that <value>.
 
 Example: For the database server, we need to upgrade to version 15.2, so that we can ensure security compliance and reduce query load times.
 
@@ -114,23 +102,14 @@ All requirements **must** be expressed strictly using [EARS](./ears-syntax.md) s
 
 ## Solution
 
-Provide a high-level description of the solution. Focus on high-level design elements which critically affect the implemenation.
+Provide a technical description of the solution. Focus on high-level design elements which critically affect the implemenation.
 
-### Key architectural decisions
-
-List any key architectural decisions.
-
-### Modules
-
-List explictly any core modules which are relevant to the solution (i.e. must be changed, created or removed). For each state their boundaries, responsibilities and inter-dependencies.
-
-### Interfaces & Schemas
-
-Explicitly describe core interfaces, API contracts or schemas.
-
-### Important technical considerations
-
-Add any additional technical clarifications or considerations which materially impact the implementation.
+- Key architectural or design decisions.
+- Core modules, their boundaries, responsibilities and inter-dependencies.
+- Interfaces
+- API contracts
+- Schemas
+- Any additional technical clarifications or considerations which materially impact the implementation.
 
 ## Assumptions
 
