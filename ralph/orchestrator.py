@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Literal, TypeAlias
+from typing import Any, Literal, TypeAlias
 from uuid import uuid4
 
 from .logging import (
@@ -93,6 +93,8 @@ RunOutcome: TypeAlias = (
     | RunUsageError
 )
 
+TerminalRunOutcome: TypeAlias = RunCompleted | RunBlocked | RunFailed | RunSetupError
+
 
 def validate_feature_directory(feature_dir: Path) -> RunSetupError | None:
     """Validate that the feature directory exists and has the required files."""
@@ -126,6 +128,74 @@ def validate_feature_directory(feature_dir: Path) -> RunSetupError | None:
     return None
 
 
+def _emit_run_finished(sink: EventSink, outcome: TerminalRunOutcome) -> TerminalRunOutcome:
+    sink.emit(
+        RunFinishedEvent(
+            timestamp=utc_timestamp(),
+            run_id=outcome.run_id,
+            outcome=outcome.outcome,
+            **_run_finished_event_fields(outcome),
+        )
+    )
+    return outcome
+
+
+def _run_finished_event_fields(outcome: TerminalRunOutcome) -> dict[str, Any]:
+    if isinstance(outcome, RunCompleted):
+        return {
+            "iterations": outcome.iterations,
+            "message": outcome.message,
+        }
+
+    if isinstance(outcome, RunBlocked):
+        return {
+            "iterations": outcome.iterations,
+            "blocker_text": outcome.blocker_text,
+        }
+
+    if isinstance(outcome, RunFailed):
+        return {
+            "iterations": outcome.iterations,
+            "failure_summary": outcome.failure_summary,
+            "raw_response": outcome.raw_response,
+        }
+
+    return {
+        "message": outcome.message,
+        "missing_artifacts": outcome.missing_artifacts,
+    }
+
+
+def _terminal_outcome_for_step_result(
+    context: RunContext,
+    iteration: int,
+    step_result_outcome: str,
+    blocker_text: str | None,
+    failure_summary: str | None,
+    raw_response: str | None,
+) -> TerminalRunOutcome:
+    if step_result_outcome == "complete":
+        return RunCompleted(
+            message=f"Run completed successfully after {iteration} iteration(s).",
+            iterations=iteration,
+            run_id=context.run_id,
+        )
+
+    if step_result_outcome == "blocked":
+        return RunBlocked(
+            blocker_text=blocker_text or "",
+            iterations=iteration,
+            run_id=context.run_id,
+        )
+
+    return RunFailed(
+        failure_summary=failure_summary or "Code step failed without a failure summary.",
+        raw_response=raw_response,
+        iterations=iteration,
+        run_id=context.run_id,
+    )
+
+
 def run(context: RunContext, event_sink: EventSink | None = None) -> RunOutcome:
     """Run the built-in Ralph workflow for one feature directory."""
 
@@ -143,21 +213,14 @@ def run(context: RunContext, event_sink: EventSink | None = None) -> RunOutcome:
 
     setup_error = validate_feature_directory(context.feature_dir)
     if setup_error is not None:
-        outcome = RunSetupError(
-            message=setup_error.message,
-            missing_artifacts=setup_error.missing_artifacts,
-            run_id=context.run_id,
-        )
-        sink.emit(
-            RunFinishedEvent(
-                timestamp=utc_timestamp(),
+        return _emit_run_finished(
+            sink,
+            RunSetupError(
+                message=setup_error.message,
+                missing_artifacts=setup_error.missing_artifacts,
                 run_id=context.run_id,
-                outcome=outcome.outcome,
-                message=outcome.message,
-                missing_artifacts=outcome.missing_artifacts,
-            )
+            ),
         )
-        return outcome
 
     from .workflow import CodeStep
 
@@ -198,72 +261,26 @@ def run(context: RunContext, event_sink: EventSink | None = None) -> RunOutcome:
         if step_result.outcome == "repeat":
             continue
 
-        if step_result.outcome == "complete":
-            outcome = RunCompleted(
-                message=f"Run completed successfully after {iteration} iteration(s).",
-                iterations=iteration,
-                run_id=context.run_id,
-            )
-            sink.emit(
-                RunFinishedEvent(
-                    timestamp=utc_timestamp(),
-                    run_id=context.run_id,
-                    outcome=outcome.outcome,
-                    iterations=outcome.iterations,
-                    message=outcome.message,
-                )
-            )
-            return outcome
+        return _emit_run_finished(
+            sink,
+            _terminal_outcome_for_step_result(
+                context=context,
+                iteration=iteration,
+                step_result_outcome=step_result.outcome,
+                blocker_text=getattr(step_result, "blocker_text", None),
+                failure_summary=getattr(step_result, "failure_summary", None),
+                raw_response=getattr(step_result, "raw_response", None),
+            ),
+        )
 
-        if step_result.outcome == "blocked":
-            outcome = RunBlocked(
-                blocker_text=step_result.blocker_text,
-                iterations=iteration,
-                run_id=context.run_id,
-            )
-            sink.emit(
-                RunFinishedEvent(
-                    timestamp=utc_timestamp(),
-                    run_id=context.run_id,
-                    outcome=outcome.outcome,
-                    iterations=outcome.iterations,
-                    blocker_text=outcome.blocker_text,
-                )
-            )
-            return outcome
-
-        outcome = RunFailed(
-            failure_summary=step_result.failure_summary,
-            raw_response=step_result.raw_response,
-            iterations=iteration,
+    return _emit_run_finished(
+        sink,
+        RunFailed(
+            failure_summary=(
+                f"Reached the max-iterations limit ({context.max_iterations}) without "
+                "completion."
+            ),
+            iterations=context.max_iterations,
             run_id=context.run_id,
-        )
-        sink.emit(
-            RunFinishedEvent(
-                timestamp=utc_timestamp(),
-                run_id=context.run_id,
-                outcome=outcome.outcome,
-                iterations=outcome.iterations,
-                failure_summary=outcome.failure_summary,
-                raw_response=outcome.raw_response,
-            )
-        )
-        return outcome
-
-    outcome = RunFailed(
-        failure_summary=(
-            f"Reached the max-iterations limit ({context.max_iterations}) without completion."
         ),
-        iterations=context.max_iterations,
-        run_id=context.run_id,
     )
-    sink.emit(
-        RunFinishedEvent(
-            timestamp=utc_timestamp(),
-            run_id=context.run_id,
-            outcome=outcome.outcome,
-            iterations=outcome.iterations,
-            failure_summary=outcome.failure_summary,
-        )
-    )
-    return outcome

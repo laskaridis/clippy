@@ -1,6 +1,12 @@
 {
   "version": 1,
   "skills": {
+    "refactor": {
+      "source": "laskaridis/skills",
+      "sourceType": "github",
+      "skillPath": "skills/refactor/SKILL.md",
+      "computedHash": "ac4a039f529cb2d95667a58a0a595636782ba0debc5666e17197fc03b10937de"
+    },
     "tdd": {
       "source": "mattpocock/skills",
       "sourceType": "github",
