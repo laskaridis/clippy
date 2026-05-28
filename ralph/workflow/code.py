@@ -4,7 +4,7 @@ import json
 from dataclasses import dataclass
 from importlib import resources
 from pathlib import Path
-from typing import cast
+from typing import Callable, cast
 
 from ralph.agents import AgentRequest, AgentResult, UnknownAgentError, get_agent
 
@@ -19,6 +19,7 @@ from ..orchestrator import RunContext
 
 
 _PROMPT_RESOURCE = "prompts/code.md"
+_OutcomeParser = Callable[[dict[str, object], str], StepResult]
 
 
 @dataclass(frozen=True, slots=True)
@@ -85,40 +86,38 @@ class CodeStep:
                 raw_response=raw_response,
             )
 
-        if outcome == "repeat":
-            return self._parse_repeat_response(payload, raw_response)
-        if outcome == "complete":
-            return self._parse_complete_response(payload, raw_response)
-        if outcome == "blocked":
-            return self._parse_blocked_response(payload, raw_response)
-        if outcome == "fail":
-            return self._parse_failed_response(payload, raw_response)
+        parser = self._response_parser(outcome)
+        if parser is None:
+            return FailedStepResult(
+                failure_summary=f"Code step response used an unknown outcome: {outcome}.",
+                raw_response=raw_response,
+            )
 
-        return FailedStepResult(
-            failure_summary=f"Code step response used an unknown outcome: {outcome}.",
-            raw_response=raw_response,
-        )
+        return parser(payload, raw_response)
 
     def _parse_repeat_response(self, payload: dict[str, object], raw_response: str) -> StepResult:
-        if set(payload) != {"outcome"}:
+        invalid = self._unexpected_fields(payload, {"outcome"})
+        if invalid is not None:
             return FailedStepResult(
-                failure_summary="Code step repeat response must contain only the outcome field.",
+                failure_summary=invalid,
                 raw_response=raw_response,
             )
         return RepeatStepResult()
 
     def _parse_complete_response(self, payload: dict[str, object], raw_response: str) -> StepResult:
-        if set(payload) != {"outcome"}:
+        invalid = self._unexpected_fields(payload, {"outcome"})
+        if invalid is not None:
             return FailedStepResult(
-                failure_summary="Code step complete response must contain only the outcome field.",
+                failure_summary=invalid,
                 raw_response=raw_response,
             )
         return CompleteStepResult()
 
     def _parse_blocked_response(self, payload: dict[str, object], raw_response: str) -> StepResult:
-        if set(payload) != {"outcome", "blocker_text"}:
+        invalid = self._unexpected_fields(payload, {"outcome", "blocker_text"})
+        if invalid is not None:
             return FailedStepResult(
-                failure_summary="Code step blocked response must contain outcome and blocker_text fields only.",
+                failure_summary=invalid,
                 raw_response=raw_response,
             )
 
@@ -132,9 +131,10 @@ class CodeStep:
         return BlockedStepResult(blocker_text=cast(str, blocker_text))
 
     def _parse_failed_response(self, payload: dict[str, object], raw_response: str) -> StepResult:
-        if set(payload) != {"outcome", "failure_summary"}:
+        invalid = self._unexpected_fields(payload, {"outcome", "failure_summary"})
+        if invalid is not None:
             return FailedStepResult(
-                failure_summary="Code step fail response must contain outcome and failure_summary fields only.",
+                failure_summary=invalid,
                 raw_response=raw_response,
             )
 
@@ -149,6 +149,14 @@ class CodeStep:
             failure_summary=cast(str, failure_summary),
             raw_response=raw_response,
         )
+
+    def _response_parser(self, outcome: str) -> _OutcomeParser | None:
+        return {
+            "repeat": self._parse_repeat_response,
+            "complete": self._parse_complete_response,
+            "blocked": self._parse_blocked_response,
+            "fail": self._parse_failed_response,
+        }.get(outcome)
 
     @staticmethod
     def _captured_response(result: AgentResult) -> str | None:
@@ -165,3 +173,17 @@ class CodeStep:
     @staticmethod
     def _is_nonempty_text(value: object) -> bool:
         return isinstance(value, str) and value.strip() != ""
+
+    @staticmethod
+    def _unexpected_fields(payload: dict[str, object], expected_fields: set[str]) -> str | None:
+        if set(payload) == expected_fields:
+            return None
+
+        outcome = payload.get("outcome")
+        if expected_fields == {"outcome"}:
+            return f"Code step {outcome} response must contain only the outcome field."
+
+        field_names = ", ".join(sorted(field for field in expected_fields if field != "outcome"))
+        return (
+            f"Code step {outcome} response must contain outcome and {field_names} fields only."
+        )
