@@ -30,7 +30,9 @@ class ClipDetailView(LoginRequiredMixin, DetailView):
         self.object = self.get_object()
 
         raw_labels = request.POST.get("labels", "")
-        labels = resolve_or_create_labels(user=request.user, names=raw_labels.split(","))
+        labels = resolve_or_create_labels(
+            user=request.user, names=raw_labels.split(",")
+        )
 
         # Setting the labels list replaces any previous associations; an empty
         # POST payload clears all labels for the clip.

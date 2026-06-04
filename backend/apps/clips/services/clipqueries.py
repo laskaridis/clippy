@@ -45,7 +45,5 @@ def build_filtered_clips_queryset(*, user, query_params: QueryDict):
 
 def _clips_queryset_for_user(*, user):
     return (
-        Clip.objects.filter(user=user)
-        .select_related("user")
-        .prefetch_related("labels")
+        Clip.objects.filter(user=user).select_related("user").prefetch_related("labels")
     )
