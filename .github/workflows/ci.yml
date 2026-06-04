@@ -302,6 +302,9 @@ jobs:
         run: pnpm exec playwright install chromium
         working-directory: extension
 
+      - name: Assert backend-run default port contract
+        run: make -n backend-run | grep 'DJANGO_DEV_PORT:-8000'
+
       - name: Run extension e2e suite
         run: pnpm run test:e2e
         working-directory: extension
