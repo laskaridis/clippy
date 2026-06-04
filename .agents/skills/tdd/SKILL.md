@@ -1,109 +1,82 @@
 ---
 name: tdd
-description: Test-driven development with red-green-refactor loop. Use when user wants to build features or fix bugs using TDD, mentions "red-green-refactor", wants integration tests, or asks for test-first development.
+description: Guide coding agents through test-driven development for code changes. Use when the user asks to implement, fix, refactor, or extend behavior using TDD, red-green-refactor, test-first development, characterization tests, regression tests, or when a change should be driven by failing tests before production code is edited.
 ---
 
-# Test-Driven Development
+# TDD
 
-## Philosophy
+Use this skill to make tests the executable description of the desired behavior before changing production code.
 
-**Core principle**: Tests should verify behavior through public interfaces, not implementation details. Code can change entirely; tests shouldn't.
+## Core Rule
 
-**Good tests** are integration-style: they exercise real code paths through public APIs. They describe _what_ the system does, not _how_ it does it. A good test reads like a specification - "user can checkout with valid cart" tells you exactly what capability exists. These tests survive refactors because they don't care about internal structure.
+Do not edit production code for a behavior change until you have written or identified a failing test that describes the intended behavior.
 
-**Bad tests** are coupled to implementation. They mock internal collaborators, test private methods, or verify through external means (like querying a database directly instead of using the interface). The warning sign: your test breaks when you refactor, but behavior hasn't changed. If you rename an internal function and tests fail, those tests were testing implementation, not behavior.
+Exceptions:
 
-See [tests.md](tests.md) for examples and [mocking.md](mocking.md) for mocking guidelines.
-
-## Anti-Pattern: Horizontal Slices
-
-**DO NOT write all tests first, then all implementation.** This is "horizontal slicing" - treating RED as "write all tests" and GREEN as "write all code."
-
-This produces **crap tests**:
-
-- Tests written in bulk test _imagined_ behavior, not _actual_ behavior
-- You end up testing the _shape_ of things (data structures, function signatures) rather than user-facing behavior
-- Tests become insensitive to real changes - they pass when behavior breaks, fail when behavior is fine
-- You outrun your headlights, committing to test structure before understanding the implementation
-
-**Correct approach**: Vertical slices via tracer bullets. One test → one implementation → repeat. Each test responds to what you learned from the previous cycle. Because you just wrote the code, you know exactly what behavior matters and how to verify it.
-
-```
-WRONG (horizontal):
-  RED:   test1, test2, test3, test4, test5
-  GREEN: impl1, impl2, impl3, impl4, impl5
-
-RIGHT (vertical):
-  RED→GREEN: test1→impl1
-  RED→GREEN: test2→impl2
-  RED→GREEN: test3→impl3
-  ...
-```
+- You may inspect production code to understand seams, existing behavior, and test placement.
+- You may make test-only setup changes needed to express the failing behavior.
+- You may skip the red step only when the user explicitly asks for it, the change is purely mechanical, or the project cannot run tests locally. State the reason clearly.
 
 ## Workflow
 
-### 1. Planning
+1. Clarify the behavior:
 
-When exploring the codebase, use the project's domain glossary so that test names and interface vocabulary match the project's language, and respect ADRs in the area you're touching.
+- Identify the smallest observable behavior change.
+- If expected behavior is ambiguous, ask before writing tests.
+- Prefer testing public behavior through stable interfaces over private implementation details.
 
-Before writing any code:
+2. Find the existing test pattern:
 
-- [ ] Confirm with user what interface changes are needed
-- [ ] Confirm with user which behaviors to test (prioritize)
-- [ ] Identify opportunities for [deep modules](deep-modules.md) (small interface, deep implementation)
-- [ ] Design interfaces for [testability](interface-design.md)
-- [ ] List the behaviors to test (not implementation steps)
-- [ ] Get user approval on the plan
+- Locate nearby tests for the same module, feature, command, route, component, or integration.
+- Reuse the project's existing test framework, fixtures, naming style, assertions, factories, and helper conventions.
+- If no relevant tests exist, add the smallest new test file in the conventional location.
 
-Ask: "What should the public interface look like? Which behaviors are most important to test?"
+3. Write the red test:
 
-**You can't test everything.** Confirm with the user exactly which behaviors matter most. Focus testing effort on critical paths and complex logic, not every possible edge case.
+- Add one failing test for the next smallest behavior slice.
+- Make the test fail for the right reason, not because of syntax errors, missing imports, bad fixtures, or an incorrect assumption.
+- Run the narrowest relevant test command and capture the failure.
 
-### 2. Tracer Bullet
+4. Make it green:
 
-Write ONE test that confirms ONE thing about the system:
+- Implement the minimum production code needed to pass the failing test.
+- Avoid broad rewrites, speculative abstractions, unrelated cleanup, or extra behavior not covered by the test.
+- Run the same narrow test until it passes.
 
-```
-RED:   Write test for first behavior → test fails
-GREEN: Write minimal code to pass → test passes
-```
+5. Refactor safely:
 
-This is your tracer bullet - proves the path works end-to-end.
+- Improve names, structure, duplication, and seams only while tests are green.
+- Keep each refactor behavior-preserving and small.
+- Run the relevant tests after refactoring.
 
-### 3. Incremental Loop
+6. Repeat:
 
-For each remaining behavior:
+- Add the next failing test only after the prior slice is green.
+- Expand from narrow unit tests to integration or end-to-end tests when behavior crosses boundaries.
+- Finish by running the broader relevant suite for the changed area.
 
-```
-RED:   Write next test → fails
-GREEN: Minimal code to pass → passes
-```
+## Test Selection
 
-Rules:
+- Use characterization tests first when modifying legacy or poorly understood behavior. Lock current behavior before changing it.
+- Use regression tests for bug fixes. Reproduce the bug with a failing test before fixing it.
+- Use unit tests for isolated business rules, parsing, validation, calculations, and branch-heavy logic.
+- Use integration tests for persistence, API boundaries, framework wiring, auth, serialization, queues, or cross-module behavior.
+- Use end-to-end tests only for critical user flows or when lower-level tests cannot observe the behavior reliably.
 
-- One test at a time
-- Only enough code to pass current test
-- Don't anticipate future tests
-- Keep tests focused on observable behavior
+## Implementation Discipline
 
-### 4. Refactor
+- Keep tests deterministic: avoid real time, network, randomness, or shared global state unless the project already has controlled helpers.
+- Prefer one behavioral assertion per test scenario, with enough assertions to prove the behavior.
+- Name tests after the behavior they specify, not the method internals.
+- Add the minimum fixture data needed to explain the scenario.
+- Do not weaken or delete existing tests to make the suite pass unless the user explicitly confirms the behavior changed.
+- Treat flaky failures, broad snapshot updates, and "test only passes alone" as design feedback to fix, not as noise to ignore.
 
-After all tests pass, look for [refactor candidates](refactoring.md):
+## Reporting
 
-- [ ] Extract duplication
-- [ ] Deepen modules (move complexity behind simple interfaces)
-- [ ] Apply SOLID principles where natural
-- [ ] Consider what new code reveals about existing code
-- [ ] Run tests after each refactor step
+When summarizing TDD work, include:
 
-**Never refactor while RED.** Get to GREEN first.
-
-## Checklist Per Cycle
-
-```
-[ ] Test describes behavior, not implementation
-[ ] Test uses public interface only
-[ ] Test would survive internal refactor
-[ ] Code is minimal for this test
-[ ] No speculative features added
-```
+- The failing test added and the behavior it captured.
+- The narrow command used to observe red and green.
+- The production change made to satisfy the test.
+- Any broader verification run, or why broader verification was not possible.
