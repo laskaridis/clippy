@@ -133,7 +133,7 @@ backend-run:
 	@cd backend && ./scripts/require-database-url.sh backend-run
 	@cd backend && python manage.py migrate
 	@cd backend && python manage.py shell -c "from apps.accounts.bootstrap import ensure_admin_user_from_env; print(ensure_admin_user_from_env())"
-	@cd backend && python manage.py runserver 0.0.0.0:$${DJANGO_DEV_PORT}
+	@cd backend && python manage.py runserver 0.0.0.0:$${DJANGO_DEV_PORT:-8000}
 
 # Remove backend cache artifacts
 backend-clean:

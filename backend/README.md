@@ -30,12 +30,14 @@ make backend-run
 ```
 
 That command runs migrations, ensures the local admin user exists, and starts
-`python manage.py runserver 0.0.0.0:${DJANGO_DEV_PORT}` from `backend/`.
+`python manage.py runserver 0.0.0.0:${DJANGO_DEV_PORT:-8000}` from `backend/`.
+If `DJANGO_DEV_PORT` is unset, the backend defaults to `8000`. When running
+multiple sandboxes or worktrees in parallel, set distinct explicit port values.
 
 From the host browser, verify the login page at:
 
 ```text
-http://localhost:${DJANGO_DEV_PORT}/accounts/login/
+http://localhost:<DJANGO_DEV_PORT or 8000>/accounts/login/
 ```
 
 ## Tests

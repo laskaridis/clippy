@@ -47,7 +47,10 @@ Run popup integration tests against a real Chromium extension runtime and backen
 make extension-test-e2e
 ```
 
-If the backend is not already reachable, the Playwright helper starts it with `make backend-run` from the repository root.
+If the backend is not already reachable, the Playwright helper starts it with
+`make backend-run` from the repository root. That command uses
+`DJANGO_DEV_PORT` when set and otherwise defaults to `8000`; use distinct
+explicit ports for parallel sandboxes or worktrees.
 
 This validates the signed-out popup experience end-to-end (status message, login button, and hidden save/label controls).
 It also validates signed-in state by logging in through `/accounts/login/` and confirming
