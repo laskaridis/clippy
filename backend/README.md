@@ -46,6 +46,9 @@ Run backend non-E2E tests (default local backend test path):
 make backend-test-unit
 ```
 
+If `DATABASE_URL` is missing, the command now fails fast with a sandbox-first
+setup hint instead of surfacing a later Django settings import error.
+
 Run backend browser E2E tests (Playwright):
 
 ```bash
