@@ -1,5 +1,7 @@
 from django.contrib.auth import get_user_model
+from django.core import mail
 from django.test import TestCase
+from django.test.utils import override_settings
 from django.urls import reverse
 from django.utils.encoding import force_bytes
 from django.utils.http import urlsafe_base64_encode
@@ -63,6 +65,30 @@ class AccountsAuthTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, "accounts/pages/register.html")
 
+    @override_settings(
+        EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend",
+        DEFAULT_FROM_EMAIL="test-no-reply@clippy.local",
+    )
+    def test_register_creates_inactive_user_and_sends_activation_email(self) -> None:
+        response = self.client.post(
+            reverse("accounts:register"),
+            {
+                "username": "signup-user@example.com",
+                "password1": "RefactorTestPassword123!",
+                "password2": "RefactorTestPassword123!",
+            },
+        )
+
+        self.assertRedirects(response, reverse("accounts:login"))
+        user = get_user_model().objects.get(username="signup-user@example.com")
+        self.assertEqual(user.email, "signup-user@example.com")
+        self.assertFalse(user.is_active)
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertEqual(mail.outbox[0].to, ["signup-user@example.com"])
+        self.assertEqual(mail.outbox[0].from_email, "test-no-reply@clippy.local")
+        self.assertIn("Confirm your Clippy account", mail.outbox[0].subject)
+        self.assertIn("/accounts/activate/", mail.outbox[0].body)
+
     def test_password_reset_pages_render_modular_templates(self) -> None:
         reset_form_response = self.client.get(reverse("accounts:password_reset"))
         self.assertEqual(reset_form_response.status_code, 200)
@@ -122,6 +148,25 @@ class AccountsAuthTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, "accounts/pages/activation-complete.html")
+
+    def test_activation_marks_user_active_with_valid_token(self) -> None:
+        user = get_user_model().objects.create_user(
+            email="activation-success@example.com",
+            username="activation-success@example.com",
+            password="password123",
+            is_active=False,
+        )
+        uid = urlsafe_base64_encode(force_bytes(user.pk))
+        token = default_token_generator.make_token(user)
+
+        response = self.client.get(
+            reverse("accounts:activate", kwargs={"uidb64": uid, "token": token})
+        )
+
+        self.assertEqual(response.status_code, 200)
+        user.refresh_from_db()
+        self.assertTrue(user.is_active)
+        self.assertContains(response, "Your account is active")
 
     def test_successful_login_redirects_to_clips(self) -> None:
         User = get_user_model()
@@ -200,6 +245,39 @@ class EnsureAdminUserBootstrapTests(TestCase):
         self.assertTrue(admin_user.is_staff)
         self.assertTrue(admin_user.is_superuser)
         self.assertTrue(admin_user.check_password("secret123"))
+
+    def test_ensure_admin_user_updates_existing_user(self) -> None:
+        user = get_user_model().objects.create_user(
+            username="admin",
+            email="old-admin@example.com",
+            password="password123",
+            is_staff=False,
+            is_superuser=False,
+        )
+
+        with patch.dict(
+            "os.environ",
+            {"DJANGO_ADMIN_EMAIL": "new-admin@example.com"},
+            clear=False,
+        ):
+            result = ensure_admin_user_from_env()
+
+        self.assertEqual(result, "updated:admin")
+        user.refresh_from_db()
+        self.assertTrue(user.is_staff)
+        self.assertTrue(user.is_superuser)
+        self.assertEqual(user.email, "new-admin@example.com")
+
+    def test_ensure_admin_user_returns_exists_for_matching_admin(self) -> None:
+        get_user_model().objects.create_superuser(
+            username="admin",
+            email="admin@clippy.local",
+            password="password123",
+        )
+
+        result = ensure_admin_user_from_env()
+
+        self.assertEqual(result, "exists:admin")
 
     def test_ensure_admin_user_skips_in_production_environment(self) -> None:
         User = get_user_model()

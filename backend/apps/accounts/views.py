@@ -47,56 +47,65 @@ class SignUpView(FormView):
     success_url = reverse_lazy("accounts:login")
 
     def form_valid(self, form):
+        user = self._create_inactive_user(form)
+        self._send_activation_email(user)
+        return super().form_valid(form)
+
+    def _create_inactive_user(self, form) -> User:
         user: User = form.save(commit=False)
         # Treat username as email for this app and require activation.
         user.email = form.cleaned_data.get("username")
         user.is_active = False
         user.save()
+        return user
 
-        token = default_token_generator.make_token(user)
-        uid = urlsafe_base64_encode(force_bytes(user.pk))
-        activation_link = self.request.build_absolute_uri(
-            reverse("accounts:activate", kwargs={"uidb64": uid, "token": token})
+    def _send_activation_email(self, user: User) -> None:
+        send_mail(
+            "Confirm your Clippy account",
+            self._build_activation_message(user),
+            getattr(settings, "DEFAULT_FROM_EMAIL", "no-reply@example.com"),
+            [user.email],
         )
 
-        context = {
-            "user": user,
-            "activation_link": activation_link,
-            "site_name": "Clippy",
-        }
-
-        subject = "Confirm your Clippy account"
-        message = (
+    def _build_activation_message(self, user: User) -> str:
+        activation_link = self._build_activation_link(user)
+        return (
             f"Hi {user.username},\n\n"
             f"Thanks for signing up to Clippy.\n\n"
             f"Please confirm your email by visiting this link:\n{activation_link}\n\n"
             f"If you didn’t request this, you can safely ignore this email."
         )
 
-        from_email = getattr(settings, "DEFAULT_FROM_EMAIL", "no-reply@example.com")
-        send_mail(subject, message, from_email, [user.email])
-
-        return super().form_valid(form)
+    def _build_activation_link(self, user: User) -> str:
+        token = default_token_generator.make_token(user)
+        uid = urlsafe_base64_encode(force_bytes(user.pk))
+        return self.request.build_absolute_uri(
+            reverse("accounts:activate", kwargs={"uidb64": uid, "token": token})
+        )
 
 
 class ActivateAccountView(View):
     template_name = "accounts/pages/activation-complete.html"
 
     def get(self, request, uidb64, token):  # pragma: no cover - simple flow
-        user = None
+        user = self._get_user_from_uid(uidb64)
+        success = self._activate_user(user, token)
+        return render(request, self.template_name, {"success": success})
+
+    def _get_user_from_uid(self, uidb64) -> User | None:
         try:
             uid = force_str(urlsafe_base64_decode(uidb64))
-            user = get_object_or_404(User, pk=uid)
+            return get_object_or_404(User, pk=uid)
         except Exception:
-            user = None
+            return None
 
-        success = False
-        if user is not None and default_token_generator.check_token(user, token):
-            user.is_active = True
-            user.save()
-            success = True
+    def _activate_user(self, user: User | None, token: str) -> bool:
+        if user is None or not default_token_generator.check_token(user, token):
+            return False
 
-        return render(request, self.template_name, {"success": success})
+        user.is_active = True
+        user.save()
+        return True
 
 
 class ClippyPasswordResetView(PasswordResetView):
