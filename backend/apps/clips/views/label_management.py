@@ -3,6 +3,7 @@ from django.shortcuts import get_object_or_404, redirect
 from django.views.generic import TemplateView
 
 from apps.clips.models import Label
+from apps.clips.services import normalize_label_name, normalize_optional_text
 
 
 class LabelManagementView(LoginRequiredMixin, TemplateView):
@@ -22,9 +23,9 @@ class LabelManagementView(LoginRequiredMixin, TemplateView):
         action = request.POST.get("action")
 
         if action == "create":
-            name = (request.POST.get("name") or "").strip()
-            description = (request.POST.get("description") or "").strip() or None
-            color = (request.POST.get("color") or "").strip() or None
+            name = normalize_label_name(request.POST.get("name"))
+            description = normalize_optional_text(request.POST.get("description"))
+            color = normalize_optional_text(request.POST.get("color"))
 
             if name:
                 Label.objects.get_or_create(
@@ -39,9 +40,9 @@ class LabelManagementView(LoginRequiredMixin, TemplateView):
         label = get_object_or_404(Label, id=label_id, user=request.user)
 
         if action == "update":
-            name = (request.POST.get("name") or "").strip()
-            description = (request.POST.get("description") or "").strip() or None
-            color = (request.POST.get("color") or "").strip() or None
+            name = normalize_label_name(request.POST.get("name"))
+            description = normalize_optional_text(request.POST.get("description"))
+            color = normalize_optional_text(request.POST.get("color"))
 
             if name:
                 label.name = name

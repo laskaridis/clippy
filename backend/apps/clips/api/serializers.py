@@ -3,6 +3,10 @@ from urllib.parse import urlparse
 from rest_framework import serializers
 
 from apps.clips.models import Clip, Label
+from apps.clips.services import (
+    normalize_label_name,
+    resolve_or_create_labels,
+)
 
 
 class LabelSerializer(serializers.ModelSerializer):
@@ -41,8 +45,7 @@ class LabelCreateCommandSerializer(serializers.Serializer):
                 "Authentication required to create labels"
             )
 
-        normalized_name = validated_data.get("name", "").strip()
-        validated_data["name"] = normalized_name
+        validated_data["name"] = normalize_label_name(validated_data.get("name"))
         return Label.objects.create(user=user, **validated_data)
 
 
@@ -57,7 +60,7 @@ class LabelUpdateCommandSerializer(serializers.Serializer):
 
     def update(self, instance: Label, validated_data):
         if "name" in validated_data:
-            validated_data["name"] = validated_data["name"].strip()
+            validated_data["name"] = normalize_label_name(validated_data["name"])
         for field, value in validated_data.items():
             setattr(instance, field, value)
         instance.save()
@@ -120,13 +123,7 @@ class CreateClipCommandSerializer(serializers.Serializer):
         )
 
         if label_names:
-            labels = []
-            for name in label_names:
-                cleaned_name = name.strip()
-                if not cleaned_name:
-                    continue
-                label, _ = Label.objects.get_or_create(user=user, name=cleaned_name)
-                labels.append(label)
+            labels = resolve_or_create_labels(user=user, names=label_names)
             if labels:
                 clip.labels.add(*labels)
 
