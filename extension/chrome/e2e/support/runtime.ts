@@ -71,6 +71,18 @@ function resetBackendStartupLogs(): void {
   backendStderrBuffer.length = 0;
 }
 
+function waitForProcessExit(process: ChildProcess): Promise<void> {
+  if (process.exitCode !== null) {
+    return Promise.resolve();
+  }
+
+  return new Promise((resolve) => {
+    process.once("exit", () => {
+      resolve();
+    });
+  });
+}
+
 function collectBackendStartupLogs(process: ChildProcess): void {
   process.stdout?.on("data", (chunk: Buffer | string) => {
     appendLogLines(backendStdoutBuffer, String(chunk));
@@ -135,20 +147,23 @@ export async function ensureBackendRunning(): Promise<void> {
   }
 
   resetBackendStartupLogs();
-  backendProcess = spawn("make", ["backend-run"], {
+  const spawnedProcess = spawn("make", ["backend-run"], {
     cwd: REPO_ROOT,
     stdio: "pipe",
     env: BACKEND_ENV,
   });
+  backendProcess = spawnedProcess;
 
-  collectBackendStartupLogs(backendProcess);
+  collectBackendStartupLogs(spawnedProcess);
 
-  backendProcess.on("error", (error) => {
-    backendStartupError = error;
+  spawnedProcess.on("error", (error) => {
+    if (backendProcess === spawnedProcess) {
+      backendStartupError = error;
+    }
   });
 
-  backendProcess.on("exit", (code, signal) => {
-    if (backendStartupError) {
+  spawnedProcess.on("exit", (code, signal) => {
+    if (backendProcess !== spawnedProcess || backendStartupError) {
       return;
     }
 
@@ -160,10 +175,19 @@ export async function ensureBackendRunning(): Promise<void> {
   await waitForBackend();
 }
 
-export function stopBackendProcess(): void {
-  if (backendProcess && !backendProcess.killed) {
-    backendProcess.kill("SIGTERM");
+export async function stopBackendProcess(): Promise<void> {
+  const processToStop = backendProcess;
+  backendProcess = null;
+
+  if (!processToStop || processToStop.exitCode !== null) {
+    return;
   }
+
+  if (!processToStop.killed) {
+    processToStop.kill("SIGTERM");
+  }
+
+  await waitForProcessExit(processToStop);
 }
 
 export function ensureActiveE2EUser(): void {
