@@ -48,21 +48,9 @@ def quick_search(
     )
 
     selected = sorted(candidates, key=_candidate_sort_key)[:effective_limit]
-    hits: QuickSearchGroups = {
-        "clips": [],
-        "labels": [],
-        "websites": [],
-    }
+    hits = _empty_hits()
     for candidate in selected:
-        item = {
-            key: value for key, value in candidate.items() if not key.startswith("_")
-        }
-        if candidate["type"] == "clip":
-            hits["clips"].append(item)
-        elif candidate["type"] == "label":
-            hits["labels"].append(item)
-        else:
-            hits["websites"].append(item)
+        hits[_candidate_group_name(candidate["type"])].append(_public_candidate(candidate))
 
     return {
         "query": validated_query,
@@ -75,11 +63,7 @@ def _empty_result(query: str) -> QuickSearchResult:
     return {
         "query": query,
         "total": 0,
-        "hits": {
-            "clips": [],
-            "labels": [],
-            "websites": [],
-        },
+        "hits": _empty_hits(),
     }
 
 
@@ -124,11 +108,7 @@ def _postgresql_candidates(*, user, query: str, limit: int) -> list[dict[str, An
             ),
         )
         .annotate(
-            score=ExpressionWrapper(
-                (Coalesce(F("rank"), Value(0.0)) * Value(0.7))
-                + (Coalesce(F("similarity"), Value(0.0)) * Value(0.3)),
-                output_field=FloatField(),
-            ),
+            score=_score_expression(),
             snippet=Coalesce(
                 NullIf(
                     SearchHeadline(
@@ -160,11 +140,7 @@ def _postgresql_candidates(*, user, query: str, limit: int) -> list[dict[str, An
             latest_created_at=Max("clips__created_at", filter=Q(clips__user=user)),
         )
         .annotate(
-            score=ExpressionWrapper(
-                (Coalesce(F("rank"), Value(0.0)) * Value(0.7))
-                + (Coalesce(F("similarity"), Value(0.0)) * Value(0.3)),
-                output_field=FloatField(),
-            )
+            score=_score_expression()
         )
         .filter(Q(rank__gt=0) | Q(similarity__gt=0))
         .order_by("-score", "name", "id")
@@ -181,11 +157,7 @@ def _postgresql_candidates(*, user, query: str, limit: int) -> list[dict[str, An
             similarity=Max(TrigramSimilarity("url", query)),
         )
         .annotate(
-            score=ExpressionWrapper(
-                (Coalesce(F("rank"), Value(0.0)) * Value(0.7))
-                + (Coalesce(F("similarity"), Value(0.0)) * Value(0.3)),
-                output_field=FloatField(),
-            )
+            score=_score_expression()
         )
         .filter(Q(rank__gt=0) | Q(similarity__gt=0))
         .order_by("-score", "-latest_created_at", "url")[:limit]
@@ -193,49 +165,83 @@ def _postgresql_candidates(*, user, query: str, limit: int) -> list[dict[str, An
 
     candidates: list[dict[str, Any]] = []
     for row in clip_qs:
-        candidates.append(
-            {
-                "type": "clip",
-                "score": float(row["score"]),
-                "clip_id": str(row["id"]),
-                "title": row["title"],
-                "snippet": row["snippet"] or "",
-                "url": row["url"],
-                "target_url": f"/clips/{row['id']}/",
-                "_recency": row["created_at"],
-                "_lexical": (row["title"] or "").lower(),
-                "_identity": str(row["id"]),
-            }
-        )
+        candidates.append(_build_clip_candidate(row))
 
     for row in label_qs:
-        candidates.append(
-            {
-                "type": "label",
-                "score": float(row["score"]),
-                "label_slug": row["slug"],
-                "name": row["name"],
-                "clip_count": row["clip_count"],
-                "target_url": f"/clips?label={row['slug']}",
-                "_recency": row["latest_created_at"],
-                "_lexical": row["name"].lower(),
-                "_identity": row["slug"],
-            }
-        )
+        candidates.append(_build_label_candidate(row))
 
     for row in website_qs:
-        encoded_url = quote(row["url"], safe="")
-        candidates.append(
-            {
-                "type": "website",
-                "score": float(row["score"]),
-                "url": row["url"],
-                "clip_count": row["clip_count"],
-                "target_url": f"/clips?url={encoded_url}",
-                "_recency": row["latest_created_at"],
-                "_lexical": row["url"].lower(),
-                "_identity": row["url"].lower(),
-            }
-        )
+        candidates.append(_build_website_candidate(row))
 
     return candidates
+
+
+def _empty_hits() -> QuickSearchGroups:
+    return {
+        "clips": [],
+        "labels": [],
+        "websites": [],
+    }
+
+
+def _public_candidate(candidate: dict[str, Any]) -> dict[str, Any]:
+    return {key: value for key, value in candidate.items() if not key.startswith("_")}
+
+
+def _candidate_group_name(candidate_type: str) -> str:
+    if candidate_type == "clip":
+        return "clips"
+    if candidate_type == "label":
+        return "labels"
+    return "websites"
+
+
+def _score_expression() -> ExpressionWrapper:
+    return ExpressionWrapper(
+        (Coalesce(F("rank"), Value(0.0)) * Value(0.7))
+        + (Coalesce(F("similarity"), Value(0.0)) * Value(0.3)),
+        output_field=FloatField(),
+    )
+
+
+def _build_clip_candidate(row: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "type": "clip",
+        "score": float(row["score"]),
+        "clip_id": str(row["id"]),
+        "title": row["title"],
+        "snippet": row["snippet"] or "",
+        "url": row["url"],
+        "target_url": f"/clips/{row['id']}/",
+        "_recency": row["created_at"],
+        "_lexical": (row["title"] or "").lower(),
+        "_identity": str(row["id"]),
+    }
+
+
+def _build_label_candidate(row: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "type": "label",
+        "score": float(row["score"]),
+        "label_slug": row["slug"],
+        "name": row["name"],
+        "clip_count": row["clip_count"],
+        "target_url": f"/clips?label={row['slug']}",
+        "_recency": row["latest_created_at"],
+        "_lexical": row["name"].lower(),
+        "_identity": row["slug"],
+    }
+
+
+def _build_website_candidate(row: dict[str, Any]) -> dict[str, Any]:
+    encoded_url = quote(row["url"], safe="")
+    return {
+        "type": "website",
+        "score": float(row["score"]),
+        "url": row["url"],
+        "clip_count": row["clip_count"],
+        "target_url": f"/clips?url={encoded_url}",
+        "_recency": row["latest_created_at"],
+        "_lexical": row["url"].lower(),
+        "_identity": row["url"].lower(),
+    }

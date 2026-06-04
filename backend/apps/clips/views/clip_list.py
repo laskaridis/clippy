@@ -1,16 +1,17 @@
+from functools import cached_property
+
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.views.generic import ListView
 
 from apps.clips.filtering import (
     clear_all_filters_query,
-    parse_label_slugs,
     remove_label_query,
 )
 from apps.clips.models import Clip
 from apps.clips.services import (
-    apply_label_and_filter,
+    build_clip_filter_state,
+    build_filtered_clips_queryset,
     build_web_label_filters_dataset,
-    resolve_selected_labels,
 )
 
 PANEL_STATES = {"expanded", "collapsed", "open", "closed"}
@@ -28,32 +29,25 @@ class ClipListView(LoginRequiredMixin, ListView):
     template_name = "clips/pages/list.html"
     context_object_name = "clips"
 
+    @cached_property
+    def filter_state(self):
+        return build_clip_filter_state(
+            user=self.request.user,
+            query_params=self.request.GET,
+        )
+
     def get_queryset(self):
-        queryset = (
-            Clip.objects.filter(user=self.request.user)
-            .select_related("user")
-            .prefetch_related("labels")
+        return build_filtered_clips_queryset(
+            user=self.request.user,
+            query_params=self.request.GET,
         )
-        selected_label_slugs = parse_label_slugs(self.request.GET.getlist("label"))
-        selected_labels = resolve_selected_labels(
-            user=self.request.user, selected_label_slugs=selected_label_slugs
-        )
-        queryset = apply_label_and_filter(queryset=queryset, labels=selected_labels)
-
-        url_filter = self.request.GET.get("url")
-        if url_filter:
-            queryset = queryset.filter(url=url_filter)
-
-        return queryset
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        selected_label_slugs = parse_label_slugs(self.request.GET.getlist("label"))
-        selected_labels = resolve_selected_labels(
-            user=self.request.user, selected_label_slugs=selected_label_slugs
-        )
-        context["active_url_filter"] = self.request.GET.get("url") or ""
-        context["selected_label_slugs"] = [label.slug for label in selected_labels]
+        selected_labels = self.filter_state["selected_labels"]
+        selected_label_slugs = self.filter_state["selected_label_slugs"]
+        context["active_url_filter"] = self.filter_state["active_url_filter"]
+        context["selected_label_slugs"] = selected_label_slugs
         context["selected_labels"] = selected_labels
         context["selected_labels_count"] = len(selected_labels)
         context["current_query_params"] = self.request.GET

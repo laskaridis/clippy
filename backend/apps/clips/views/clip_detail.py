@@ -3,7 +3,8 @@ from django.http import HttpResponse
 from django.shortcuts import redirect
 from django.views.generic import DetailView
 
-from apps.clips.models import Clip, Label
+from apps.clips.models import Clip
+from apps.clips.services import resolve_or_create_labels
 
 
 class ClipDetailView(LoginRequiredMixin, DetailView):
@@ -29,12 +30,7 @@ class ClipDetailView(LoginRequiredMixin, DetailView):
         self.object = self.get_object()
 
         raw_labels = request.POST.get("labels", "")
-        names = [name.strip() for name in raw_labels.split(",") if name.strip()]
-
-        labels = []
-        for name in names:
-            label, _ = Label.objects.get_or_create(user=request.user, name=name)
-            labels.append(label)
+        labels = resolve_or_create_labels(user=request.user, names=raw_labels.split(","))
 
         # Setting the labels list replaces any previous associations; an empty
         # POST payload clears all labels for the clip.
