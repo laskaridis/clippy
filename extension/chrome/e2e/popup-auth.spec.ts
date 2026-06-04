@@ -26,7 +26,7 @@ test.beforeAll(async () => {
 });
 
 test.afterAll(async () => {
-  stopBackendProcess();
+  await stopBackendProcess();
 });
 
 test("signed-out popup shows login prompt and hides save controls", async () => {

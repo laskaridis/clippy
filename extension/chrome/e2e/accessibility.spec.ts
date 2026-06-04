@@ -21,7 +21,7 @@ test.beforeAll(async () => {
 });
 
 test.afterAll(async () => {
-  stopBackendProcess();
+  await stopBackendProcess();
 });
 
 test("[@a11y] login page meets WCAG 2.1 AA serious/critical gate", async () => {
