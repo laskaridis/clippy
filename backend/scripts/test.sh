@@ -23,6 +23,8 @@ if [[ "${1:-}" == "-h" || "${1:-}" == "--help" ]]; then
   exit 0
 fi
 
+"${SCRIPT_DIR}/require-database-url.sh" "backend-test-unit"
+
 echo "[backend-test] running: python manage.py test --exclude-tag=e2e $*"
 (
   cd "${BACKEND_DIR}"

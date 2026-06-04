@@ -24,6 +24,8 @@ if [[ "${1:-}" == "-h" || "${1:-}" == "--help" ]]; then
   exit 0
 fi
 
+"${SCRIPT_DIR}/require-database-url.sh" "backend-test-e2e"
+
 if [[ "${BACKEND_E2E_SKIP_BROWSER_INSTALL:-0}" != "1" ]]; then
   echo "[backend-e2e] ensuring Playwright Chromium browser (best effort)"
   if ! (
