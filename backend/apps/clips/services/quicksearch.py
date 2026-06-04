@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, TypedDict
+from typing import Any, Literal, TypedDict
 from urllib.parse import quote
 
 from django.contrib.postgres.search import (
@@ -28,6 +28,9 @@ class QuickSearchGroups(TypedDict):
     websites: list[dict[str, Any]]
 
 
+QuickSearchGroupName = Literal["clips", "labels", "websites"]
+
+
 class QuickSearchResult(TypedDict):
     query: str
     total: int
@@ -50,7 +53,9 @@ def quick_search(
     selected = sorted(candidates, key=_candidate_sort_key)[:effective_limit]
     hits = _empty_hits()
     for candidate in selected:
-        hits[_candidate_group_name(candidate["type"])].append(_public_candidate(candidate))
+        hits[_candidate_group_name(candidate["type"])].append(
+            _public_candidate(candidate)
+        )
 
     return {
         "query": validated_query,
@@ -139,9 +144,7 @@ def _postgresql_candidates(*, user, query: str, limit: int) -> list[dict[str, An
             clip_count=Count("clips", filter=Q(clips__user=user), distinct=True),
             latest_created_at=Max("clips__created_at", filter=Q(clips__user=user)),
         )
-        .annotate(
-            score=_score_expression()
-        )
+        .annotate(score=_score_expression())
         .filter(Q(rank__gt=0) | Q(similarity__gt=0))
         .order_by("-score", "name", "id")
         .values("slug", "name", "clip_count", "latest_created_at", "score")[:limit]
@@ -156,9 +159,7 @@ def _postgresql_candidates(*, user, query: str, limit: int) -> list[dict[str, An
             rank=Max(SearchRank(SearchVector("url", config="simple"), search_query)),
             similarity=Max(TrigramSimilarity("url", query)),
         )
-        .annotate(
-            score=_score_expression()
-        )
+        .annotate(score=_score_expression())
         .filter(Q(rank__gt=0) | Q(similarity__gt=0))
         .order_by("-score", "-latest_created_at", "url")[:limit]
     )
@@ -188,7 +189,7 @@ def _public_candidate(candidate: dict[str, Any]) -> dict[str, Any]:
     return {key: value for key, value in candidate.items() if not key.startswith("_")}
 
 
-def _candidate_group_name(candidate_type: str) -> str:
+def _candidate_group_name(candidate_type: str) -> QuickSearchGroupName:
     if candidate_type == "clip":
         return "clips"
     if candidate_type == "label":

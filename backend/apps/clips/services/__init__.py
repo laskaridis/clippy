@@ -3,7 +3,11 @@ from .clipqueries import (
     build_clip_filter_state,
     build_filtered_clips_queryset,
 )
-from .labels import normalize_label_name, normalize_optional_text, resolve_or_create_labels
+from .labels import (
+    normalize_label_name,
+    normalize_optional_text,
+    resolve_or_create_labels,
+)
 from .quicksearch import QuickSearchGroups, QuickSearchResult, quick_search
 from .searchfilters import (
     WebLabelFilterItem,
